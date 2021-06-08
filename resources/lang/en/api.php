@@ -18,7 +18,7 @@ return [
         "email_not_found" => "Email incorrect",
         'token_expired' => "Token expired",
         'email_already_exist' => 'Email already exist',
-        "otp_not_found" => "OTP is incorrect",
+        "code_not_found" => "Code is incorrect",
         'invalid_token' => 'The provided token is not valid',
         'not_found_match' => 'You can not send message to unmatch user',
     ],

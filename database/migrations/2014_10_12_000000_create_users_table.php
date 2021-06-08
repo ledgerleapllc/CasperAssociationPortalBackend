@@ -22,9 +22,16 @@ class CreateUsersTable extends Migration
             $table->string('telegram')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('type');
+            $table->string('entity_name')->nullable();
+            $table->string('entity_type')->nullable();
+            $table->string('entity_register_number')->nullable();
+            $table->string('entity_register_country')->nullable();
+            $table->string('entity_tax')->nullable();
             $table->timestamp('last_login_at')->nullable();
             $table->rememberToken();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
