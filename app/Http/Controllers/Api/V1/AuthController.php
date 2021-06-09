@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\LoginRequest;
 use App\Http\Requests\Api\RegisterEntityRequest;
 use App\Http\Requests\Api\RegisterIndividualRequest;
+use App\Http\Requests\Api\ResetPasswordRequest;
+use App\Http\Requests\Api\SendResetPasswordMailRequeslRequest;
+use App\Mail\ResetPasswordMail;
 use App\Mail\UserVerifyMail;
 use App\Models\User;
 use App\Models\VerifyUser;
@@ -16,6 +19,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -154,12 +158,84 @@ class AuthController extends Controller
         }
     }
 
+    /**
+     * Send a reset link to the given user.
+     *
+     * @param Request $request request
+     *
+     * @return Json
+     */
+    public function sendResetLinkEmail(SendResetPasswordMailRequeslRequest $request)
+    {
+        try {
+            $user = $this->userRepo->first(
+                [
+                    'email' => $request->email,
+                ]
+            );
+            if (!$user) {
+                return $this->errorResponse(__('api.error.email_not_found'), Response::HTTP_BAD_REQUEST);
+            }
+            $code = Str::random(60);
+            $url = $request->header('origin') ?? $request->root();
+            $resetUrl = $url . '/password/reset?code=' . $code;
+            $passwordReset = $this->verifyUserRepo->updateOrCreate(
+                [
+                    'email' => $user->email,
+                    'type' => VerifyUser::TYPE_RESET_PASSWORD,
+                ],
+                [
+                    'code' => $code,
+                    'created_at' => now(),
+                ]
+            );
+            if ($passwordReset) {
+                Mail::to($request->email)->send(new ResetPasswordMail($resetUrl));
+            }
+            return $this->metaSuccess();
+        } catch (\Exception $ex) {
+            return $this->errorResponse(__('api.error.internal_error'), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Reset the given user's password.
+     *
+     * @param Request $request request
+     *
+     * @return Json
+     */
+    public function resetPassword(ResetPasswordRequest $request)
+    {
+        try {
+            $passwordReset = $this->verifyUserRepo->first(
+                [
+                    'code' => $request->code,
+                    'type' => VerifyUser::TYPE_RESET_PASSWORD,
+                    'email' => $request->email
+                ]
+            );
+            if ($this->checCode($passwordReset)) {
+                DB::beginTransaction();
+                $this->userRepo->updateConditions(['password' => bcrypt($request->password)], ['email' => $passwordReset->email]);
+                $passwordReset->delete();
+                DB::commit();
+                return $this->metaSuccess();
+            }
+            DB::rollBack();
+            return $this->errorResponse(__('api.error.code_not_found'), Response::HTTP_BAD_REQUEST);
+        } catch (\Exception $ex) {
+            DB::rollBack();
+            return $this->errorResponse(__('api.error.internal_error'), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
     public function createTokenFromUser($user, $info = [])
     {
         $token = $user->createToken(config('auth.secret_code'));
         $data = array_merge([
             'user_id' => $user->id,
-            'is_verify' => $user->email_verified_at ? true : false
+            'is_verify' => $user->email_verified_at ? true : false,
+            'type' => $user->type,
         ], $info);
         return $this->responseToken($token, $data);
     }

@@ -24,7 +24,7 @@ class User extends Authenticatable
         'last_name',
         'email',
         'password',
-        'forumn',
+        'pseudonym',
         'telegram',
         'last_login_at',
         'email_verified_at',

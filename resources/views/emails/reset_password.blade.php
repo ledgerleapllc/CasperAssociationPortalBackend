@@ -15,9 +15,8 @@
 </head>
 
 <body class="clean-body" style="margin: 0; padding: 0; -webkit-text-size-adjust: 100%; background-color: #FFFFFF;">
-<h1>Welcome to the Casperl !</h1>
-<h3>Please find your confirmation code below to activate your account.</h3>
-<p>{{ $code }}</p>
+<h3>You are receiving this email because we received a password reset request for your account.</h3>
+<p><a href="{{ $url }}">Reset Pasword</a></p>
 </body>
 
 </html>

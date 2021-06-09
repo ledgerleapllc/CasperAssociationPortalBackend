@@ -19,6 +19,8 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function() {
     Route::post('/auth/login', [AuthController::class, 'login'])->name('login');;
     Route::post('/auth/register-entity', [AuthController::class, 'registerEntity']);
     Route::post('/auth/register-individual', [AuthController::class, 'registerIndividual']);
+    Route::post('/auth/send-reset-password', [AuthController::class, 'sendResetLinkEmail']);
+    Route::post('auth/reset-password', [AuthController::class, 'resetPassword']);
     Route::middleware(['auth:api'])->group(function () {
         Route::post('/users/verify-email', [AuthController::class, 'verifyEmail']);
     });

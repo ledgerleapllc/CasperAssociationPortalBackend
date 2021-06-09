@@ -29,12 +29,12 @@ class RegisterEntityRequest extends FormRequest
             'entity_register_number' => 'required|string|max:255',
             'entity_register_country' => 'required|string|max:255',
             'entity_tax' => 'nullable|string|max:255',
-            'first_name' => 'required|regex:/^[A-Za-z. ]{2,255}$/',
-            'last_name' => 'required|regex:/^[A-Za-z. ]{2,255}$/',
+            'first_name' => 'required|regex:/^[A-Za-z. ]{1,255}$/',
+            'last_name' => 'required|regex:/^[A-Za-z. ]{1,255}$/',
             'email' => 'required|email|max:256|unique:users',
             'password' => 'required|min:8|max:80',
-            'forumn' => 'required|alpha_num|max:200',
-            'telegram' => 'nullable|regex:/^[A-Za-z_@]{2,255}$/',
+            'pseudonym' => 'required|alpha_num|max:200',
+            'telegram' => 'nullable|regex:/^[@][a-zA-Z0-9_-]+$/',
         ];
     }
 }

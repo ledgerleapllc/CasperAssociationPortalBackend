@@ -28,8 +28,8 @@ class RegisterIndividualRequest extends FormRequest
             'last_name' =>'required|regex:/^[A-Za-z. ]{2,255}$/',
             'email' => 'required|email|max:256|unique:users',
             'password' => 'required|min:8|max:80',
-            'forumn' => 'required|alpha_num|max:200',
-            'telegram' => 'nullable|regex:/^[A-Za-z_@]{2,255}$/',
+            'pseudonym' => 'required|alpha_num|max:200',
+            'telegram' => 'nullable|regex:/^[@][a-zA-Z0-9_-]+$/',
         ];
     }
 }
