@@ -178,7 +178,7 @@ class AuthController extends Controller
             }
             $code = Str::random(60);
             $url = $request->header('origin') ?? $request->root();
-            $resetUrl = $url . '/password/reset?code=' . $code;
+            $resetUrl = $url . '/reset-passwordt?code=' . $code . '&email=' . urlencode( $request->email);
             $passwordReset = $this->verifyUserRepo->updateOrCreate(
                 [
                     'email' => $user->email,
@@ -227,6 +227,36 @@ class AuthController extends Controller
         } catch (\Exception $ex) {
             DB::rollBack();
             return $this->errorResponse(__('api.error.internal_error'), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+     /**
+     * Resend verify email
+     *
+     * @param Request $request request
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function resendVerifyEmail(Request $request)
+    {
+        try {
+            $user = auth()->user();
+            $code = generateString(7);
+            $userVerify = $this->verifyUserRepo->updateOrCreate(
+                [
+                    'email' => $user->email,
+                    'type' => VerifyUser::TYPE_VERIFY_EMAIL,
+                ],
+                [
+                    'code' => $code,
+                    'created_at' => now()
+                ]
+            );
+            if ($userVerify) {
+                Mail::to($user->email)->send(new UserVerifyMail($code));
+            }
+            return $this->metaSuccess();
+        } catch (\Exception $e) {
+            throw $e;
         }
     }
     public function createTokenFromUser($user, $info = [])

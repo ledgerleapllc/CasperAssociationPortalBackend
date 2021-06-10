@@ -21,5 +21,6 @@ return [
         "code_not_found" => "Code is incorrect",
         'invalid_token' => 'The provided token is not valid',
         'not_found_match' => 'You can not send message to unmatch user',
+        'not_same_current_password' => 'New password cannot be same as the current one',
     ],
 ];
