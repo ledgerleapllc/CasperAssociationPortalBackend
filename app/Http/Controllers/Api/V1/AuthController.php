@@ -178,7 +178,7 @@ class AuthController extends Controller
             }
             $code = Str::random(60);
             $url = $request->header('origin') ?? $request->root();
-            $resetUrl = $url . '/reset-passwordt?code=' . $code . '&email=' . urlencode( $request->email);
+            $resetUrl = $url . '/update-password?code=' . $code . '&email=' . urlencode( $request->email);
             $passwordReset = $this->verifyUserRepo->updateOrCreate(
                 [
                     'email' => $user->email,
