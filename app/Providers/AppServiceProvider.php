@@ -27,6 +27,5 @@ class AppServiceProvider extends ServiceProvider
         Passport::routes();
         Passport::personalAccessTokensExpireIn(now()->addDay(30));
         Passport::refreshTokensExpireIn(now()->addMinutes(60));
-        Passport::loadKeysFrom(base_path().'/secret-key');
     }
 }

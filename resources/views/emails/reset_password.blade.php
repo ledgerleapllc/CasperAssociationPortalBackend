@@ -16,7 +16,7 @@
 
 <body class="clean-body" style="margin: 0; padding: 0; -webkit-text-size-adjust: 100%; background-color: #FFFFFF;">
 <h3>You are receiving this email because we received a password reset request for your account.</h3>
-<p><a href="{{ $url }}">Reset Pasword</a></p>
+<a href="{{ $url }}">Reset Pasword</a>
 </body>
 
 </html>
