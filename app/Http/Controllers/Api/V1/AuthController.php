@@ -52,7 +52,10 @@ class AuthController extends Controller
     {
         $user = $this->userRepo->first(['email' => $request->email]);
         if ($user && Hash::check($request->password, $user->password)) {
-            return $this->createTokenFromUser($user);
+            if ($user->email_verified_at && $user->signature_request_id && $user->node_verified_at && $user->kyc_verified_at) {
+                return $this->createTokenFromUser($user);
+            }
+            return $this->errorResponse(__('Please verify user.'), Response::HTTP_BAD_REQUEST);
         }
         return $this->errorResponse(__('api.error.login_not_found'), Response::HTTP_BAD_REQUEST);
     }
@@ -178,7 +181,7 @@ class AuthController extends Controller
             }
             $code = Str::random(60);
             $url = $request->header('origin') ?? $request->root();
-            $resetUrl = $url . '/update-password?code=' . $code . '&email=' . urlencode( $request->email);
+            $resetUrl = $url . '/update-password?code=' . $code . '&email=' . urlencode($request->email);
             $passwordReset = $this->verifyUserRepo->updateOrCreate(
                 [
                     'email' => $user->email,
@@ -229,7 +232,7 @@ class AuthController extends Controller
             return $this->errorResponse(__('api.error.internal_error'), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
-     /**
+    /**
      * Resend verify email
      *
      * @param Request $request request

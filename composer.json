@@ -6,13 +6,15 @@
     "license": "MIT",
     "require": {
         "php": "^7.3|^8.0",
-        "doctrine/dbal": "^2.0",
+        "doctrine/dbal": "^3.1",
         "fideloper/proxy": "^4.4",
         "fruitcake/laravel-cors": "^2.0",
         "guzzlehttp/guzzle": "^7.0.1",
+        "hellosign/hellosign-php-sdk": "^3.7",
         "laravel/framework": "^8.40",
         "laravel/passport": "^10.1",
-        "laravel/tinker": "^2.5"
+        "laravel/tinker": "^2.5",
+        "phpseclib/phpseclib": "~3.0"
     },
     "require-dev": {
         "facade/ignition": "^2.5",
@@ -57,8 +59,7 @@
     "config": {
         "optimize-autoloader": true,
         "preferred-install": "dist",
-        "sort-packages": true,
-        "platform-check": false
+        "sort-packages": true
     },
     "minimum-stability": "dev",
     "prefer-stable": true

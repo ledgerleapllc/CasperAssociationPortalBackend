@@ -29,5 +29,12 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function() {
         Route::post('/users/change-password', [UserController::class, 'changePassword']);
         Route::get('/users/profile', [UserController::class, 'getProfile']);
         Route::post('/users/logout', [UserController::class, 'logout']);
+        Route::post('users/hellosign-request', [UserController::class, 'sendHellosignRequest']);
+        Route::post('users/submit-public-address', [UserController::class, 'submitPublicAddress']);
+        Route::post('users/verify-file-casper-signer', [UserController::class, 'verifyFileCasperSigner']);
+        Route::post('users/submit-kyc', [UserController::class, 'functionSubmitKYC']);
+        Route::post('users/verify-owner-node', [UserController::class, 'verifyOwnerNode']);
+        Route::post('users/owner-node', [UserController::class, 'addOwnerNode']);
+        Route::get('users/owner-node', [UserController::class, 'getOwnerNodes']);
     });
 });

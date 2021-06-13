@@ -14,6 +14,9 @@ class User extends Authenticatable
     use HasFactory, Notifiable, HasApiTokens, SoftDeletes;
     const TYPE_INDIVIDUAL = 'Individual';
     const TYPE_ENTITY = 'Entity';
+    const STATUS_PENDING = 'pending';
+    const STATUS_APPROVED = 'approved';
+    const STATUS_BAN = 'denied';
     /**
      * The attributes that are mass assignable.
      *
@@ -34,6 +37,11 @@ class User extends Authenticatable
         'entity_register_number',
         'entity_register_country',
         'entity_tax',
+        'signature_request_id',
+        'public_address_node',
+        'node_verified_at',
+        'kyc_verified_at',
+        'status',
     ];
 
     /**
@@ -56,5 +64,10 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'node_verified_at' => 'datetime',
     ];
+    
+    public function profile() {
+        return $this->hasOne('App\Profile', 'user_id');
+    }
 }
