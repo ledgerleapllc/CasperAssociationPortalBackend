@@ -36,5 +36,6 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function() {
         Route::post('users/verify-owner-node', [UserController::class, 'verifyOwnerNode']);
         Route::post('users/owner-node', [UserController::class, 'addOwnerNode']);
         Route::get('users/owner-node', [UserController::class, 'getOwnerNodes']);
+        Route::get('users/message-content', [UserController::class, 'getMessageContent']);
     });
 });

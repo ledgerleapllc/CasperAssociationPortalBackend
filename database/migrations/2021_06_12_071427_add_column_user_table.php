@@ -18,6 +18,7 @@ class AddColumnUserTable extends Migration
             $table->string('public_address_node')->nullable();
             $table->timestamp('node_verified_at')->nullable();
             $table->string('status')->nullable();
+            $table->string('message_content')->nullable();
             $table->timestamp('kyc_verified_at')->nullable();
         });
     }

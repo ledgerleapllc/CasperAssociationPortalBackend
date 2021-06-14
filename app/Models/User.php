@@ -42,6 +42,7 @@ class User extends Authenticatable
         'node_verified_at',
         'kyc_verified_at',
         'status',
+        'message_content',
     ];
 
     /**

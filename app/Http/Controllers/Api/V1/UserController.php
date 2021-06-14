@@ -164,6 +164,21 @@ class UserController extends Controller
     }
 
     /**
+     * submit node address
+     */
+    public function getMessageContent()
+    {
+        $user = auth()->user();
+        $timestamp = date('m/d/Y');
+        $message = "Please use the Casper Signature python tool to sign this message! " . $timestamp;
+        $user->update(['message_content' => $message]);
+        $filename = 'signature';
+        return response()->streamDownload(function () use ($message) {
+            echo $message;
+        }, $filename);
+    }
+
+    /**
      * verify file casper singer
      */
     public function verifyFileCasperSigner(VerifyFileCasperSignerRequest $request)
@@ -171,8 +186,7 @@ class UserController extends Controller
         try {
             $casperSigVerify = new CasperSigVerify();
             $user = auth()->user();
-            $timestamp = date('m/d/Y');
-            $message = "Please use the Casper Signature python tool to sign this message! " . $timestamp;
+            $message = $user->message_content;
             $public_validator_key = $user->public_address_node;
             $file = $request->file;
 
@@ -263,7 +277,8 @@ class UserController extends Controller
     /**
      * get Owner nodes
      */
-    public function getOwnerNodes() {
+    public function getOwnerNodes()
+    {
         $user = auth()->user();
         $owners = OwnerNode::where('user_id', $user->id)->get();
         return $this->successResponse($owners);
