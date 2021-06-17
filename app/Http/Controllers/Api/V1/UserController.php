@@ -127,7 +127,7 @@ class UserController extends Controller
             $client = new \HelloSign\Client($client_key);
             $request = new \HelloSign\TemplateSignatureRequest;
 
-            // $request->enableTestMode();
+            $request->enableTestMode();
             $request->setTemplateId($template_id);
             $request->setSubject('User Agreement');
             $request->setSigner('User', $user->email, $user->first_name . ' ' . $user->last_name);
@@ -175,7 +175,7 @@ class UserController extends Controller
         $timestamp = date('m/d/Y');
         $message = "Please use the Casper Signature python tool to sign this message! " . $timestamp;
         $user->update(['message_content' => $message]);
-        $filename = 'signature';
+        $filename = 'message.txt';
         return response()->streamDownload(function () use ($message) {
             echo $message;
         }, $filename);
