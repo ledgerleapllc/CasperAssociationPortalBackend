@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\HelloSignController;
 use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -15,6 +16,9 @@ use Illuminate\Support\Facades\Route;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
+Route::namespace('Api')->middleware([])->group(function() {
+    Route::post('hellosign', [HelloSignController::class, 'hellosignHook']);
+});
 
 Route::prefix('v1')->namespace('Api')->middleware([])->group(function() {
     Route::post('/auth/login', [AuthController::class, 'login'])->name('login');;

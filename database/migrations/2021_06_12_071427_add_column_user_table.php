@@ -20,6 +20,7 @@ class AddColumnUserTable extends Migration
             $table->string('status')->nullable();
             $table->string('message_content')->nullable();
             $table->timestamp('kyc_verified_at')->nullable();
+            $table->string('hellosign_form')->nullable();
         });
     }
 

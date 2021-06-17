@@ -121,17 +121,16 @@ class UserController extends Controller
     {
         $user = auth()->user();
         if ($user) {
-            $client_key = env('HELLOSIGN_CLIENT_KEY', '186d6f8e6f8a10c68e01331a6d4db470d3efb2f1bca5b5ccaab10f709d0685a3');
-            $client_id = env('HELLOSIGN_CLINET_ID', '119af0f8172151d7caf51f2d03d5220c');
-            $template_id = env('HELLOSIGN_TEMPLATE_ID', '90397955c16c67193083a4ede5738df0879ad292');
+            $client_key = env('HELLOSIGN_CLIENT_KEY', 'e0c85dde1ba2697d4236a6bc6c98ed2d3ca7e3b1cb375f35b286f2c0d07b22d8');
+            $client_id = env('HELLOSIGN_CLINET_ID', '986d4bc5f54a0b9a96e1816d2204a4a0');
+            $template_id = env('HELLOSIGN_TEMPLATE_ID', 'f4d05a88c5d27709b9ad6d7722921b185c95e1a9');
             $client = new \HelloSign\Client($client_key);
             $request = new \HelloSign\TemplateSignatureRequest;
-            $request->enableTestMode();
 
+            // $request->enableTestMode();
             $request->setTemplateId($template_id);
-            $request->setSubject('Program Associate Agreement');
+            $request->setSubject('User Agreement');
             $request->setSigner('User', $user->email, $user->first_name . ' ' . $user->last_name);
-
             $request->setCustomFieldValue('FullName', $user->first_name . ' ' . $user->last_name);
             $request->setCustomFieldValue('FullName2', $user->first_name . ' ' . $user->last_name);
 
@@ -140,15 +139,19 @@ class UserController extends Controller
 
             $embedded_request = new \HelloSign\EmbeddedSignatureRequest($request, $client_id);
             $response = $client->createEmbeddedSignatureRequest($embedded_request);
+    
             $signature_request_id = $response->getId();
+    
             $signatures = $response->getSignatures();
             $signature_id = $signatures[0]->getId();
+    
             $response = $client->getEmbeddedSignUrl($signature_id);
             $sign_url = $response->getSignUrl();
+    
             $user->update(['signature_request_id' => $signature_request_id]);
             return $this->successResponse([
+                'signature_request_id' => $signature_request_id,
                 'url' => $sign_url,
-                'signature_request_id' => $signature_request_id
             ]);
         }
         return $this->errorResponse(__('Hellosign request fail'), Response::HTTP_BAD_REQUEST);
