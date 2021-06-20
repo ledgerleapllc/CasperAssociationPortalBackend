@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AdminController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\HelloSignController;
 use App\Http\Controllers\Api\V1\UserController;
@@ -41,5 +42,12 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function() {
         Route::post('users/owner-node', [UserController::class, 'addOwnerNode']);
         Route::get('users/owner-node', [UserController::class, 'getOwnerNodes']);
         Route::get('users/message-content', [UserController::class, 'getMessageContent']);
+        Route::prefix('admin')->middleware(['role_admin'])->group(function () {
+            Route::get('/users', [AdminController::class, 'getUsers']);
+            Route::get('/users/{id}', [AdminController::class, 'getUserDetail'])->where('id', '[0-9]+');
+            Route::get('/dashboard', [AdminController::class, 'infoDashboard']);
+            Route::get('/users/kyc/{id}', [AdminController::class, 'getKYC'])->where('id', '[0-9]+');
+        });
     });
+   
 });

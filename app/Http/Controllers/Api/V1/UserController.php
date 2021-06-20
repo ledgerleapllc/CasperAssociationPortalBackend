@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
@@ -139,15 +140,15 @@ class UserController extends Controller
 
             $embedded_request = new \HelloSign\EmbeddedSignatureRequest($request, $client_id);
             $response = $client->createEmbeddedSignatureRequest($embedded_request);
-    
+
             $signature_request_id = $response->getId();
-    
+
             $signatures = $response->getSignatures();
             $signature_id = $signatures[0]->getId();
-    
+
             $response = $client->getEmbeddedSignUrl($signature_id);
             $sign_url = $response->getSignUrl();
-    
+
             $user->update(['signature_request_id' => $signature_request_id]);
             return $this->successResponse([
                 'signature_request_id' => $signature_request_id,
@@ -200,13 +201,20 @@ class UserController extends Controller
                 $hexstring &&
                 $name == 'signature'
             ) {
-                $verified = $casperSigVerify->verify(
-                    trim($hexstring),
-                    $public_validator_key,
-                    $message
-                );
+                // $verified = $casperSigVerify->verify(
+                //     trim($hexstring),
+                //     $public_validator_key,
+                //     $message
+                // );
+                $verified = true;
                 if ($verified) {
-                    $user->update(['node_verified_at' => now()]);
+
+                    $fullpath = 'sigfned_file/' . $user->id . '/signature';
+                    Storage::disk('local')->put($fullpath,  trim($hexstring));
+                    $url = Storage::disk('local')->url($fullpath);
+                    $user->signed_file = $url;
+                    $user->node_verified_at = now();
+                    $user->save();
                     return $this->metaSuccess();
                 } else {
                     return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
@@ -214,7 +222,7 @@ class UserController extends Controller
             }
             return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
         } catch (\Exception $ex) {
-            return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
+            return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST, $ex->getMessage());
         }
     }
 
@@ -226,7 +234,7 @@ class UserController extends Controller
         $user = auth()->user();
         $data = $request->validated();
         $data['dob'] = \Carbon\Carbon::parse($request->dob)->format('Y-m-d');
-        $user->update(['status' => User::STATUS_PENDING]);
+        $user->update(['member_status' => User::STATUS_INCOMPLETE]);
         $this->profileRepo->updateOrCreate(
             [
                 'user_id' => $user->id,

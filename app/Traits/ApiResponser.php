@@ -50,11 +50,12 @@ trait ApiResponser
      *
      * @return \Illuminate\Http\Response
      */
-    protected function errorResponse($message, $code)
+    protected function errorResponse($message, $code, $error = '')
     {
         return response()->json([
             'message' => $message,
             'code' => $code,
+            'error' => $error,
             'data' => [
                 'status' => $code,
             ],

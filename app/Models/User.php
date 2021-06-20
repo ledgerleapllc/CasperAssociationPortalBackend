@@ -14,9 +14,14 @@ class User extends Authenticatable
     use HasFactory, Notifiable, HasApiTokens, SoftDeletes;
     const TYPE_INDIVIDUAL = 'Individual';
     const TYPE_ENTITY = 'Entity';
-    const STATUS_PENDING = 'pending';
-    const STATUS_APPROVED = 'approved';
-    const STATUS_BAN = 'denied';
+
+    const STATUS_INCOMPLETE = 'Incomplete';
+    const STATUS_INTAKE = 'Intake';
+    const STATUS_NEW = 'New';
+    const STATUS_ACTIVE = 'Active';
+    const STATUS_PROBATION = 'Probation';
+    const STATUS_REVOKED = 'Revoked';
+
     /**
      * The attributes that are mass assignable.
      *
@@ -41,8 +46,10 @@ class User extends Authenticatable
         'public_address_node',
         'node_verified_at',
         'kyc_verified_at',
-        'status',
+        'member_status',
         'message_content',
+        'role',
+        'signed_file',
     ];
 
     /**
@@ -57,6 +64,16 @@ class User extends Authenticatable
     ];
 
     /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array
+     */
+    protected $appends = [
+        'full_name',
+        'signed_file_url'
+    ];
+
+    /**
      * The attributes that should be cast to native types.
      *
      * @var array
@@ -67,8 +84,24 @@ class User extends Authenticatable
         'updated_at' => 'datetime',
         'node_verified_at' => 'datetime',
     ];
-    
-    public function profile() {
-        return $this->hasOne('App\Profile', 'user_id');
+
+    /**
+     * Get the user's full name.
+     *
+     * @return string
+     */
+    public function getFullNameAttribute()
+    {
+        return "{$this->first_name} {$this->last_name}";
+    }
+
+    public function getSignedFileUrlAttribute()
+    {
+        return url('/') .   $this->signed_file;
+    }
+
+    public function profile()
+    {
+        return $this->hasOne('App\Models\Profile', 'user_id');
     }
 }

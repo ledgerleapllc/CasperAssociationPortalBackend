@@ -12,10 +12,7 @@ class HelloSignController extends Controller
     // Hellosign Hook
     public function hellosignHook(Request $request)
     {
-        Log::info($request);
-
         $payload = $request->get('json');
-        Log::info($payload);
         if (!$payload) return "error";
 
         $data = json_decode($payload, true);

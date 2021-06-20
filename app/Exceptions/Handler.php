@@ -57,7 +57,7 @@ class Handler extends ExceptionHandler
         });
 
         $this->renderable(function (\Exception $exception, $request) {
-            return $this->errorResponse(__('api.error.internal_error'), Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->errorResponse(__('api.error.internal_error'), Response::HTTP_INTERNAL_SERVER_ERROR, $exception->getMessage());
         });
     }
 }

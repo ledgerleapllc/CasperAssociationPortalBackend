@@ -52,11 +52,9 @@ class AuthController extends Controller
     {
         $user = $this->userRepo->first(['email' => $request->email]);
         if ($user && Hash::check($request->password, $user->password)) {
-            if ($user->email_verified_at && $user->signature_request_id && $user->node_verified_at && $user->kyc_verified_at) {
-                return $this->createTokenFromUser($user);
-            }
-            return $this->errorResponse(__('Please verify user.'), Response::HTTP_BAD_REQUEST);
+            return $this->createTokenFromUser($user);
         }
+
         return $this->errorResponse(__('api.error.login_not_found'), Response::HTTP_BAD_REQUEST);
     }
 
@@ -75,6 +73,7 @@ class AuthController extends Controller
             $data['password'] = bcrypt($request->password);
             $data['last_login_at'] = now();
             $data['type'] = User::TYPE_ENTITY;
+            $data['member_status'] = User::STATUS_INCOMPLETE;
             $user = $this->userRepo->create($data);
             $code = generateString(7);
             $userVerify = $this->verifyUserRepo->updateOrCreate(
@@ -113,6 +112,7 @@ class AuthController extends Controller
             $data['password'] = bcrypt($request->password);
             $data['last_login_at'] = now();
             $data['type'] = User::TYPE_INDIVIDUAL;
+            $data['member_status'] = User::STATUS_INCOMPLETE;
             $user = $this->userRepo->create($data);
             $code = generateString(7);
             $userVerify = $this->verifyUserRepo->updateOrCreate(
@@ -265,12 +265,7 @@ class AuthController extends Controller
     public function createTokenFromUser($user, $info = [])
     {
         $token = $user->createToken(config('auth.secret_code'));
-        $data = array_merge([
-            'user_id' => $user->id,
-            'is_verify' => $user->email_verified_at ? true : false,
-            'type' => $user->type,
-        ], $info);
-        return $this->responseToken($token, $data);
+        return $this->responseToken($token, $user->toArray());
     }
 
     /**
