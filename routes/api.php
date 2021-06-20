@@ -17,11 +17,12 @@ use Illuminate\Support\Facades\Route;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
-Route::namespace('Api')->middleware([])->group(function() {
+
+Route::namespace('Api')->middleware([])->group(function () {
     Route::post('hellosign', [HelloSignController::class, 'hellosignHook']);
 });
 
-Route::prefix('v1')->namespace('Api')->middleware([])->group(function() {
+Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
     Route::post('/auth/login', [AuthController::class, 'login'])->name('login');;
     Route::post('/auth/register-entity', [AuthController::class, 'registerEntity']);
     Route::post('/auth/register-individual', [AuthController::class, 'registerIndividual']);
@@ -42,12 +43,16 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function() {
         Route::post('users/owner-node', [UserController::class, 'addOwnerNode']);
         Route::get('users/owner-node', [UserController::class, 'getOwnerNodes']);
         Route::get('users/message-content', [UserController::class, 'getMessageContent']);
+        Route::post('users/shuftipro-temp',  [UserController::class, 'saveShuftiproTemp']);
+        Route::put('users/shuftipro-temp', [UserController::class, 'updateShuftiproTemp']);
         Route::prefix('admin')->middleware(['role_admin'])->group(function () {
             Route::get('/users', [AdminController::class, 'getUsers']);
             Route::get('/users/{id}', [AdminController::class, 'getUserDetail'])->where('id', '[0-9]+');
             Route::get('/dashboard', [AdminController::class, 'infoDashboard']);
-            Route::get('/users/kyc/{id}', [AdminController::class, 'getKYC'])->where('id', '[0-9]+');
+            Route::get('/users/{id}/kyc', [AdminController::class, 'getKYC'])->where('id', '[0-9]+');
+            Route::post('/users/{id}/approve-kyc',  [AdminController::class, 'approveKYC'])->where('id', '[0-9]+');
+            Route::post('/users/{id}/deny-kyc',  [AdminController::class, 'denyKYC'])->where('id', '[0-9]+');
+            Route::post('/users/{id}/reset-kyc',  [AdminController::class, 'resetKYC'])->where('id', '[0-9]+');
         });
     });
-   
 });

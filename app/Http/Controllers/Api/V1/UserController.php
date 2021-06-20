@@ -11,6 +11,7 @@ use App\Http\Requests\Api\SubmitPublicAddressRequest;
 use App\Http\Requests\Api\VerifyFileCasperSignerRequest;
 use App\Mail\UserVerifyMail;
 use App\Models\OwnerNode;
+use App\Models\ShuftiproTemp;
 use App\Models\User;
 use App\Models\VerifyUser;
 use App\Repositories\OwnerNodeRepository;
@@ -19,6 +20,7 @@ use App\Repositories\UserRepository;
 use App\Repositories\VerifyUserRepository;
 use App\Services\CasperSignature;
 use App\Services\CasperSigVerify;
+use App\Services\ShuftiproCheck;
 use App\Services\Test;
 use Exception;
 use Illuminate\Http\Request;
@@ -28,6 +30,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
@@ -201,12 +204,12 @@ class UserController extends Controller
                 $hexstring &&
                 $name == 'signature'
             ) {
-                // $verified = $casperSigVerify->verify(
-                //     trim($hexstring),
-                //     $public_validator_key,
-                //     $message
-                // );
-                $verified = true;
+                $verified = $casperSigVerify->verify(
+                    trim($hexstring),
+                    $public_validator_key,
+                    $message
+                );
+                // $verified = true;
                 if ($verified) {
 
                     $fullpath = 'sigfned_file/' . $user->id . '/signature';
@@ -293,5 +296,60 @@ class UserController extends Controller
         $user = auth()->user();
         $owners = OwnerNode::where('user_id', $user->id)->get();
         return $this->successResponse($owners);
+    }
+
+    // Save Shuftipro Temp
+    public function saveShuftiproTemp(Request $request)
+    {
+        $user = auth()->user();
+        // Validator
+        $validator = Validator::make($request->all(), [
+            'reference_id' => 'required'
+        ]);
+        if ($validator->fails()) {
+            return $this->validateResponse($validator->errors());
+        }
+
+        $user_id = $user->id;
+        $reference_id = $request->reference_id;
+
+        ShuftiproTemp::where('user_id', $user_id)->delete();
+
+        $record = new ShuftiproTemp;
+        $record->user_id = $user_id;
+        $record->reference_id = $reference_id;
+        $record->save();
+
+        return $this->metaSuccess();
+    }
+
+    // Update Shuftipro Temp Status
+    public function updateShuftiProTemp(Request $request)
+    {
+        $user = auth()->user();
+        // Validator
+        $validator = Validator::make($request->all(), [
+            'reference_id' => 'required'
+        ]);
+        if ($validator->fails()) {
+            return $this->validateResponse($validator->errors());
+        }
+
+        $user_id = $user->id;
+        $reference_id = $request->reference_id;
+
+        $record = ShuftiproTemp::where('user_id', $user_id)
+            ->where('reference_id', $reference_id)
+            ->first();
+        if ($record) {
+            $record->status = 'booked';
+            $record->save();
+            // check shuftipro
+            $shuftiproCheck = new ShuftiproCheck();
+            $shuftiproCheck->handle($record);
+            return $this->metaSuccess();
+        }
+
+        return $this->errorResponse('Fail submit AML', Response::HTTP_BAD_REQUEST);
     }
 }

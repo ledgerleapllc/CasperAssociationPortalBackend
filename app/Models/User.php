@@ -104,4 +104,12 @@ class User extends Authenticatable
     {
         return $this->hasOne('App\Models\Profile', 'user_id');
     }
+
+    public function shuftipro() {
+        return $this->hasOne('App\Models\Shuftipro', 'user_id');
+    }
+
+    public function shuftiproTemp() {
+        return $this->hasOne('App\Models\ShuftiproTemp', 'user_id');
+    }
 }
