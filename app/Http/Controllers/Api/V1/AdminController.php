@@ -15,7 +15,7 @@ class AdminController extends Controller
 {
     public function getUsers(Request $request)
     {
-        $limit = $request->limit;
+        $limit = $request->limit ?? 15;
         $users = User::where('role', 'member')->orderBy('created_at', 'ASC')->paginate($limit);
         return $this->successResponse($users);
     }
@@ -42,7 +42,7 @@ class AdminController extends Controller
 
     public function getKYC($id)
     {
-        $user = User::where('id', $id)->first();
+        $user = User::with(['shuftipro', 'profile'])->where('id', $id)->first();
         if (!$user || $user->role == 'admin') {
             return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
         }
@@ -117,5 +117,17 @@ class AdminController extends Controller
         }
 
         return $this->errorResponse('Fail Reset KYC', Response::HTTP_BAD_REQUEST);
+    }
+
+    // gei intake
+    public function getIntake(Request $request)
+    {
+        $limit = $request->limit ?? 15;
+        $users =  User::with(['profile', 'ownerNodes'])->where(function ($q) {
+            $q->where('node_verified_at', null)
+                ->orWhere('kyc_verified_at', null);
+        })->where('role', '<>', 'admin')
+        ->paginate($limit);
+        return $this->successResponse($users);
     }
 }

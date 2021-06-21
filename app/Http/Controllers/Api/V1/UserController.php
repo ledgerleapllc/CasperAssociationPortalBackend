@@ -23,6 +23,7 @@ use App\Services\CasperSigVerify;
 use App\Services\ShuftiproCheck;
 use App\Services\Test;
 use Exception;
+use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
@@ -105,7 +106,7 @@ class UserController extends Controller
      */
     public function getProfile()
     {
-        $user = auth()->user();
+        $user = auth()->user()->load('profile');
         return $this->successResponse($user);
     }
 
@@ -352,4 +353,26 @@ class UserController extends Controller
 
         return $this->errorResponse('Fail submit AML', Response::HTTP_BAD_REQUEST);
     }
+
+     // Update Shuftipro Temp Status
+     public function updateTypeOwnerNode(Request $request)
+     {
+         $user = auth()->user();
+         // Validator
+         $validator = Validator::make($request->all(), [
+            'type' => [
+                'required',
+                Rule::in([1, 2]),
+            ],
+         ]);
+         if ($validator->fails()) {
+             return $this->validateResponse($validator->errors());
+         }
+         if($user->profile){
+            $user->profile->type_owner_node = $request->type;
+            $user->profile->save();
+            return $this->metaSuccess();
+         }
+         return $this->errorResponse('Fail update type', Response::HTTP_BAD_REQUEST);
+     }
 }
