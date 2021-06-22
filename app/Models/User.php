@@ -112,4 +112,8 @@ class User extends Authenticatable
     public function shuftiproTemp() {
         return $this->hasOne('App\Models\ShuftiproTemp', 'user_id');
     }
+
+    public function ownerNodes() {
+        return $this->hasMany('App\Models\Shuftipro', 'user_id');
+    }
 }
