@@ -50,6 +50,7 @@ class User extends Authenticatable
         'message_content',
         'role',
         'signed_file',
+        'hellosign_form',
     ];
 
     /**

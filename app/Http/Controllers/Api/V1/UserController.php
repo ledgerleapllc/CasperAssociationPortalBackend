@@ -126,9 +126,9 @@ class UserController extends Controller
     {
         $user = auth()->user();
         if ($user) {
-            $client_key = env('HELLOSIGN_CLIENT_KEY', 'e0c85dde1ba2697d4236a6bc6c98ed2d3ca7e3b1cb375f35b286f2c0d07b22d8');
-            $client_id = env('HELLOSIGN_CLINET_ID', '986d4bc5f54a0b9a96e1816d2204a4a0');
-            $template_id = env('HELLOSIGN_TEMPLATE_ID', 'f4d05a88c5d27709b9ad6d7722921b185c95e1a9');
+            $client_key = 'e0c85dde1ba2697d4236a6bc6c98ed2d3ca7e3b1cb375f35b286f2c0d07b22d8';
+            $client_id = '986d4bc5f54a0b9a96e1816d2204a4a0';
+            $template_id = 'f4d05a88c5d27709b9ad6d7722921b185c95e1a9';
             $client = new \HelloSign\Client($client_key);
             $request = new \HelloSign\TemplateSignatureRequest;
 
@@ -161,6 +161,18 @@ class UserController extends Controller
         }
         return $this->errorResponse(__('Hellosign request fail'), Response::HTTP_BAD_REQUEST);
     }
+    /**
+     * verify bypass
+     */
+    public function verifyBypass()
+    {
+        $user = auth()->user();
+        $user->signature_request_id = 'signature_'  . $user->id . '._id';
+        $user->hellosign_form = 'hellosign_form_' . $user->id ;
+        $user->save();
+        return $this->metaSuccess();
+    }
+
     /**
      * submit node address
      */
@@ -354,25 +366,25 @@ class UserController extends Controller
         return $this->errorResponse('Fail submit AML', Response::HTTP_BAD_REQUEST);
     }
 
-     // Update Shuftipro Temp Status
-     public function updateTypeOwnerNode(Request $request)
-     {
-         $user = auth()->user();
-         // Validator
-         $validator = Validator::make($request->all(), [
+    // Update Shuftipro Temp Status
+    public function updateTypeOwnerNode(Request $request)
+    {
+        $user = auth()->user();
+        // Validator
+        $validator = Validator::make($request->all(), [
             'type' => [
                 'required',
                 Rule::in([1, 2]),
             ],
-         ]);
-         if ($validator->fails()) {
-             return $this->validateResponse($validator->errors());
-         }
-         if($user->profile){
+        ]);
+        if ($validator->fails()) {
+            return $this->validateResponse($validator->errors());
+        }
+        if ($user->profile) {
             $user->profile->type_owner_node = $request->type;
             $user->profile->save();
             return $this->metaSuccess();
-         }
-         return $this->errorResponse('Fail update type', Response::HTTP_BAD_REQUEST);
-     }
+        }
+        return $this->errorResponse('Fail update type', Response::HTTP_BAD_REQUEST);
+    }
 }
