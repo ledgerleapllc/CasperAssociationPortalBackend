@@ -45,6 +45,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
         Route::get('users/message-content', [UserController::class, 'getMessageContent']);
         Route::post('users/shuftipro-temp',  [UserController::class, 'saveShuftiproTemp']);
         Route::put('users/shuftipro-temp', [UserController::class, 'updateShuftiproTemp']);
+        Route::put('/users/type-owner-node',  [UserController::class, 'updateTypeOwnerNode']);
         Route::prefix('admin')->middleware(['role_admin'])->group(function () {
             Route::get('/users', [AdminController::class, 'getUsers']);
             Route::get('/users/{id}', [AdminController::class, 'getUserDetail'])->where('id', '[0-9]+');
