@@ -51,6 +51,7 @@ class User extends Authenticatable
         'role',
         'signed_file',
         'hellosign_form',
+        'letter_file',
     ];
 
     /**

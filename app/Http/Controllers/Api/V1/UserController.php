@@ -9,6 +9,7 @@ use App\Http\Requests\Api\ChangePasswordRequest;
 use App\Http\Requests\Api\SubmitKYCRequest;
 use App\Http\Requests\Api\SubmitPublicAddressRequest;
 use App\Http\Requests\Api\VerifyFileCasperSignerRequest;
+use App\Mail\AddNodeMail;
 use App\Mail\UserVerifyMail;
 use App\Models\OwnerNode;
 use App\Models\ShuftiproTemp;
@@ -120,15 +121,46 @@ class UserController extends Controller
     }
 
     /**
+     * verify file casper singer
+     */
+    public function uploadLetter(Request $request)
+    {
+        try {
+            // Validator
+            $validator = Validator::make($request->all(), [
+                'file' => 'required|mimes:pdf|max:20000',
+            ]);
+            if ($validator->fails()) {
+                return $this->validateResponse($validator->errors());
+            }
+            $user = auth()->user();
+            $filenameWithExt = $request->file('file')->getClientOriginalName();
+            //Get just filename
+            $filename = pathinfo($filenameWithExt, PATHINFO_FILENAME);
+            // Get just ext
+            $extension = $request->file('file')->getClientOriginalExtension();
+            // Filename to store
+            $fileNameToStore = $filename . '_' . time() . '.' . $extension;
+            // Upload Image
+            $path = $request->file('file')->storeAs('users', $fileNameToStore);
+            $user->letter_file = $path;
+            $user->save();
+            return $this->metaSuccess();
+        } catch (\Exception $ex) {
+            return $this->errorResponse(__('Failed upload file'), Response::HTTP_BAD_REQUEST, $ex->getMessage());
+        }
+    }
+
+    /**
      * Send Hellosign Request
      */
     public function sendHellosignRequest()
     {
         $user = auth()->user();
         if ($user) {
-            $client_key = 'e0c85dde1ba2697d4236a6bc6c98ed2d3ca7e3b1cb375f35b286f2c0d07b22d8';
-            $client_id = '986d4bc5f54a0b9a96e1816d2204a4a0';
-            $template_id = 'f4d05a88c5d27709b9ad6d7722921b185c95e1a9';
+            $client_key = '6b3ad195d0fff7be0bde1a2111f54d01ad950ea4f688e11331ac592ee3046788';
+            $client_id = 'd0cb9c3a8a0ce7b34a62985617bf22eb';
+            $template_id = '7de53a8a63cbcb8a6119589e1cd5e624fac8358a';
             $client = new \HelloSign\Client($client_key);
             $request = new \HelloSign\TemplateSignatureRequest;
 
@@ -168,7 +200,7 @@ class UserController extends Controller
     {
         $user = auth()->user();
         $user->signature_request_id = 'signature_'  . $user->id . '._id';
-        $user->hellosign_form = 'hellosign_form_' . $user->id ;
+        $user->hellosign_form = 'hellosign_form_' . $user->id;
         $user->save();
         return $this->metaSuccess();
     }
@@ -295,6 +327,16 @@ class UserController extends Controller
             OwnerNode::where('user_id', $user->id)->delete();
             OwnerNode::insert($ownerNodes);
             $user->update(['kyc_verified_at' => now()]);
+            
+            $url = $request->header('origin') ?? $request->root();
+            $resetUrl = $url . '/register-type';
+            foreach ($ownerNodes as $node) {
+                $email = $node['email'];
+                $user = User::where('email', $email)->first();
+                if (!$user) {
+                    Mail::to($email)->send(new AddNodeMail($resetUrl));
+                }
+            }
             return $this->metaSuccess();
         } catch (\Exception $ex) {
             return $this->errorResponse(__('api.error.internal_error'), Response::HTTP_INTERNAL_SERVER_ERROR);
