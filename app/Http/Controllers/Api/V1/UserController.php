@@ -318,6 +318,7 @@ class UserController extends Controller
             foreach ($data as $value) {
                 $percents += $value['percent'];
                 $value['user_id'] = $user->id;
+                $value['created_at'] = now();
                 array_push($ownerNodes, $value);
             }
             if ($percents >= 100) {
@@ -350,7 +351,20 @@ class UserController extends Controller
     {
         $user = auth()->user();
         $owners = OwnerNode::where('user_id', $user->id)->get();
-        return $this->successResponse($owners);
+        foreach ($owners as $owner) {
+            $email = $owner->email;
+            $userOwner = User::where('email', $email)->first();
+            if ($userOwner) {
+                $owner->kyc_verified_at = $userOwner->kyc_verified_at;
+            } else {
+                $owner->kyc_verified_at = null;
+            }
+        }
+        $data = []; 
+        $data['kyc_verified_at'] = $user->kyc_verified_at;
+        $data['owner_node'] = $owners;
+        
+        return $this->successResponse($data);
     }
 
     // Save Shuftipro Temp

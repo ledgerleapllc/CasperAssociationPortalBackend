@@ -32,6 +32,7 @@ class SubmitKYCRequest extends FormRequest
             'zip' => 'required',
             'country_citizenship' => 'required',
             'country_residence' => 'required',
+            'type' => 'required',
         ];
     }
 }
