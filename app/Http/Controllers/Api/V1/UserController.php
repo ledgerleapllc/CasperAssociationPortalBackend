@@ -171,6 +171,7 @@ class UserController extends Controller
             $request->setSigner('User', $user->email, $user->first_name . ' ' . $user->last_name);
             $request->setCustomFieldValue('FullName', $user->first_name . ' ' . $user->last_name);
             $request->setCustomFieldValue('FullName2', $user->first_name . ' ' . $user->last_name);
+            $request->setClientId($client_id);
 
             $initial = strtoupper(substr($user->first_name, 0, 1)) . strtoupper(substr($user->last_name, 0, 1));
             $request->setCustomFieldValue('Initial', $initial);
@@ -329,7 +330,7 @@ class UserController extends Controller
             OwnerNode::where('user_id', $user->id)->delete();
             OwnerNode::insert($ownerNodes);
             $user->update(['kyc_verified_at' => now()]);
-            
+
             $url = $request->header('origin') ?? $request->root();
             $resetUrl = $url . '/register-type';
             foreach ($ownerNodes as $node) {
@@ -361,10 +362,10 @@ class UserController extends Controller
                 $owner->kyc_verified_at = null;
             }
         }
-        $data = []; 
+        $data = [];
         $data['kyc_verified_at'] = $user->kyc_verified_at;
         $data['owner_node'] = $owners;
-        
+
         return $this->successResponse($data);
     }
 
