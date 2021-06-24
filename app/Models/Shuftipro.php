@@ -9,5 +9,8 @@ class Shuftipro extends Model
 {
     use HasFactory;
     protected $table = 'shuftipro';
-    protected $guarded = [];  
+    protected $guarded = []; 
+    protected $casts = [
+        'data' => 'array'
+    ];
 }

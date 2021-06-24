@@ -30,4 +30,9 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'hellosign' => [
+        'api_key' => env('HELLOSIGN_API_KEY'),
+        'client_id' => env('HELLOSIGN_CLIENT_ID'),
+    ],
+
 ];

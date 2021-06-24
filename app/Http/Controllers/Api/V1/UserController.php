@@ -159,8 +159,8 @@ class UserController extends Controller
     {
         $user = auth()->user();
         if ($user) {
-            $client_key = '6b3ad195d0fff7be0bde1a2111f54d01ad950ea4f688e11331ac592ee3046788';
-            $client_id = 'd0cb9c3a8a0ce7b34a62985617bf22eb';
+            $client_key = config('services.hellosign.api_key');
+            $client_id = config('services.hellosign.client_id');
             $template_id = '7de53a8a63cbcb8a6119589e1cd5e624fac8358a';
             $client = new \HelloSign\Client($client_key);
             $request = new \HelloSign\TemplateSignatureRequest;
@@ -457,6 +457,10 @@ class UserController extends Controller
         if ($user->profile) {
             $user->profile->type_owner_node = $request->type;
             $user->profile->save();
+            if( $request->type == 1) {
+                $user->kyc_verified_at = now();
+                $user->save();
+            }
             return $this->metaSuccess();
         }
         return $this->errorResponse('Fail update type', Response::HTTP_BAD_REQUEST);

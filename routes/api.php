@@ -57,6 +57,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::post('/users/{id}/approve-kyc',  [AdminController::class, 'approveKYC'])->where('id', '[0-9]+');
             Route::post('/users/{id}/deny-kyc',  [AdminController::class, 'denyKYC'])->where('id', '[0-9]+');
             Route::post('/users/{id}/reset-kyc',  [AdminController::class, 'resetKYC'])->where('id', '[0-9]+');
+            Route::get('/users/intakes', [AdminController::class, 'getIntakes']);
         });
     });
 });

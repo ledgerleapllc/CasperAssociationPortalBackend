@@ -79,10 +79,10 @@ class ShuftiproCheck
 
         $data = json_encode([
             'declined_reason' => $declined_reason,
-            // 'event' => $event,
-            // 'proofs' => $proofs,
-            // 'verification_result' => $verification_result,
-            // 'verification_data' => $verification_data
+            'event' => $event,
+            'proofs' => $proofs,
+            'verification_result' => $verification_result,
+            'verification_data' => $verification_data
         ]);
 
         $document_proof = $address_proof = null;

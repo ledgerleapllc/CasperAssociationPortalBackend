@@ -119,11 +119,11 @@ class AdminController extends Controller
         return $this->errorResponse('Fail Reset KYC', Response::HTTP_BAD_REQUEST);
     }
 
-    // gei intake
-    public function getIntake(Request $request)
+    // get intake
+    public function getIntakes(Request $request)
     {
         $limit = $request->limit ?? 15;
-        $users =  User::with(['profile', 'ownerNodes'])->where(function ($q) {
+        $users =  User::with(['profile'])->where(function ($q) {
             $q->where('node_verified_at', null)
                 ->orWhere('kyc_verified_at', null);
         })->where('role', '<>', 'admin')
