@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\AddOwnerNodeRequest;
 use App\Http\Requests\Api\ChangeEmailRequest;
 use App\Http\Requests\Api\ChangePasswordRequest;
+use App\Http\Requests\Api\ResendEmailRequest;
 use App\Http\Requests\Api\SubmitKYCRequest;
 use App\Http\Requests\Api\SubmitPublicAddressRequest;
 use App\Http\Requests\Api\VerifyFileCasperSignerRequest;
@@ -365,6 +366,23 @@ class UserController extends Controller
         $data['owner_node'] = $owners;
         
         return $this->successResponse($data);
+    }
+
+    public function resendEmailOwnerNodes(ResendEmailRequest $request) {
+        $user = auth()->user();
+        $email = $request->email;
+        $owners = OwnerNode::where('user_id', $user->id)->where('email', $email)->first();
+        if ($owners) {
+            $userOwner = User::where('email', $email)->first();
+            if (!$userOwner) {
+                $url = $request->header('origin') ?? $request->root();
+                $resetUrl = $url . '/register-type';
+                Mail::to($email)->send(new AddNodeMail($resetUrl));
+            }
+        } else {
+            return $this->errorResponse('Email does not exist', Response::HTTP_BAD_REQUEST);
+        }
+        return $this->successResponse(null);
     }
 
     // Save Shuftipro Temp

@@ -42,6 +42,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
         Route::post('users/verify-owner-node', [UserController::class, 'verifyOwnerNode']);
         Route::post('users/owner-node', [UserController::class, 'addOwnerNode']);
         Route::get('users/owner-node', [UserController::class, 'getOwnerNodes']);
+        Route::post('users/resend-invite-owner', [UserController::class, 'resendEmailOwnerNodes']);
         Route::get('users/message-content', [UserController::class, 'getMessageContent']);
         Route::post('users/shuftipro-temp',  [UserController::class, 'saveShuftiproTemp']);
         Route::put('users/shuftipro-temp', [UserController::class, 'updateShuftiproTemp']);
