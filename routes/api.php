@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\AdminController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\HelloSignController;
 use App\Http\Controllers\Api\V1\UserController;
+use App\Http\Controllers\Api\V1\DiscussionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -59,5 +60,12 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::post('/users/{id}/reset-kyc',  [AdminController::class, 'resetKYC'])->where('id', '[0-9]+');
             Route::get('/users/intakes', [AdminController::class, 'getIntakes']);
         });
+        Route::prefix('discussions')->group(function() {
+            Route::get('/list', [DiscussionController::class, 'getDiscussions']);
+            Route::get('/detail/{id}', [DiscussionController::class, 'getDiscussion']);
+            Route::post('/new', [DiscussionController::class, 'postDiscussion']);
+            Route::post('/{id}/comment', [DiscussionController::class, 'postComment']);
+        });
+        
     });
 });

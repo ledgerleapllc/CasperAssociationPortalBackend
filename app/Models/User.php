@@ -118,4 +118,12 @@ class User extends Authenticatable
     public function ownerNodes() {
         return $this->hasMany('App\Models\OwnerNode', 'user_id');
     }
+
+    public function pinnedDiscussionsList() {
+        return $this->hasMany('App\Models\DiscussionPin');
+    }
+
+    public function myDiscussionsList() {
+        return $this->hasMany('App\Models\Discussion');
+    }
 }
