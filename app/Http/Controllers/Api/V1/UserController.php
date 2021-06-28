@@ -13,6 +13,7 @@ use App\Http\Requests\Api\VerifyFileCasperSignerRequest;
 use App\Mail\AddNodeMail;
 use App\Mail\UserVerifyMail;
 use App\Models\OwnerNode;
+use App\Models\Profile;
 use App\Models\ShuftiproTemp;
 use App\Models\User;
 use App\Models\VerifyUser;
@@ -198,12 +199,52 @@ class UserController extends Controller
     /**
      * verify bypass
      */
-    public function verifyBypass()
+    public function verifyBypass(Request $request)
     {
         $user = auth()->user();
-        $user->signature_request_id = 'signature_'  . $user->id . '._id';
-        $user->hellosign_form = 'hellosign_form_' . $user->id;
-        $user->save();
+         // Validator
+         $validator = Validator::make($request->all(), [
+            'type' => 'required'
+        ]);
+        if ($validator->fails()) {
+            return $this->validateResponse($validator->errors());
+        }
+        if ($request->type == 'hellosign') {
+            $user->signature_request_id = 'signature_'  . $user->id . '._id';
+            $user->hellosign_form = 'hellosign_form_' . $user->id;
+            $user->letter_file = 'leteter_file.pdf';
+            $user->save();
+        }
+
+        if ($request->type == 'verify-node') {
+            $user->public_address_node = 'public_address_node'  . $user->id ;
+            $user->node_verified_at = now();
+            $user->message_content = 'message_content';
+            $user->signed_file = 'signture';
+            $user->save();
+        }
+
+        if ($request->type == 'submit-kyc') {
+            $user->kyc_verified_at = now();
+            $user->save();
+            if(!$user->profile) {
+                $profile = new Profile();
+                $profile->user_id = $user->id;
+                $profile->first_name = $user->first_name;
+                $profile->last_name = $user->last_name;
+                $profile->dob = '1990-01-01';
+                $profile->country_citizenship ='United States';
+                $profile->country_residence = 'United States';
+                $profile->address = 'New York';
+                $profile->city = 'New York';
+                $profile->zip = '10025';
+                $profile->type_owner_node = 1;
+                $profile->type = $user->type;
+                $profile->save();
+            }
+
+        }
+
         return $this->metaSuccess();
     }
 
@@ -261,8 +302,8 @@ class UserController extends Controller
 
                     $fullpath = 'sigfned_file/' . $user->id . '/signature';
                     Storage::disk('local')->put($fullpath,  trim($hexstring));
-                    $url = Storage::disk('local')->url($fullpath);
-                    $user->signed_file = $url;
+                    // $url = Storage::disk('local')->url($fullpath);
+                    $user->signed_file = $fullpath;
                     $user->node_verified_at = now();
                     $user->save();
                     return $this->metaSuccess();
@@ -369,7 +410,8 @@ class UserController extends Controller
         return $this->successResponse($data);
     }
 
-    public function resendEmailOwnerNodes(ResendEmailRequest $request) {
+    public function resendEmailOwnerNodes(ResendEmailRequest $request)
+    {
         $user = auth()->user();
         $email = $request->email;
         $owners = OwnerNode::where('user_id', $user->id)->where('email', $email)->first();
@@ -458,7 +500,7 @@ class UserController extends Controller
         if ($user->profile) {
             $user->profile->type_owner_node = $request->type;
             $user->profile->save();
-            if( $request->type == 1) {
+            if ($request->type == 1) {
                 $user->kyc_verified_at = now();
                 $user->save();
             }
