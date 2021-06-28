@@ -116,6 +116,6 @@ class User extends Authenticatable
     }
 
     public function ownerNodes() {
-        return $this->hasMany('App\Models\Shuftipro', 'user_id');
+        return $this->hasMany('App\Models\OwnerNode', 'user_id');
     }
 }

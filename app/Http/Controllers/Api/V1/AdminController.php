@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Mail\ResetKYC;
+use App\Models\OwnerNode;
 use App\Models\Shuftipro;
 use App\Models\ShuftiproTemp;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
 class AdminController extends Controller
@@ -26,7 +28,8 @@ class AdminController extends Controller
         if (!$user || $user->role == 'admin') {
             return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
         }
-        return $this->successResponse($user);
+        $response = $user->load(['profile', 'shuftipro','shuftiproTemp']);
+        return $this->successResponse($response);
     }
 
     public function infoDashboard()
@@ -123,11 +126,52 @@ class AdminController extends Controller
     public function getIntakes(Request $request)
     {
         $limit = $request->limit ?? 15;
-        $users =  User::with(['profile'])->where(function ($q) {
-            $q->where('node_verified_at', null)
-                ->orWhere('kyc_verified_at', null);
-        })->where('role', '<>', 'admin')
+        $users =  User::select(['users.created_at as registration_date','users.id', 'users.email', 'users.kyc_verified_at', 'users.node_verified_at'])
+        ->leftJoin('owner_node', function ($join) {
+            $join->on('owner_node.user_id', '=', 'users.id');
+        })
+        ->leftJoin('users as u2', function ($join) {
+            $join->on('owner_node.email', '=', 'u2.email');
+        })
+        ->where(function ($q) {
+            $q->where('users.node_verified_at', null)
+                ->orWhere('users.kyc_verified_at', null)
+                ->orWhere('u2.node_verified_at', null)
+                ->orWhere('u2.kyc_verified_at', null);
+        })->where('users.role', '<>', 'admin')
+        ->groupBy(['users.created_at','users.id', 'users.email', 'users.kyc_verified_at', 'users.node_verified_at'])
         ->paginate($limit);
+
+        foreach ($users as $user) {
+            $total = 0;
+            $unopenedInvites = 0;
+            $ownerNodes = OwnerNode::where('user_id', $user->id)->get();
+            foreach ($ownerNodes as $node) { 
+                $total ++;
+                $user2 = User::select(['users.id', 'users.email', 'users.kyc_verified_at', 'users.node_verified_at'])
+                    ->where('email', $node->email)->first();
+                $node->user = $user2;
+                if ($user2 && $user2->kyc_verified_at && $user2->node_verified_at) {
+                    
+                } else {
+                    $unopenedInvites ++;
+                }
+            }
+
+            $user->beneficial_owners = $total;
+            $user->unopened_invites = $unopenedInvites;
+            if ($unopenedInvites == 0) {
+                $user->owner_kyc_status = 'Approved';
+            } else {
+                $user->owner_kyc_status = 'Not Approve';
+            }
+            if($user->kyc_verified_at && $user->node_verified_at) {
+                $user->kyc_status = 'Approved';
+            } else {
+                $user->kyc_status = 'Not Approved';
+            }
+        }
+
         return $this->successResponse($users);
     }
 }
