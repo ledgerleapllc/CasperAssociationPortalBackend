@@ -126,6 +126,7 @@ class AdminController extends Controller
     public function getIntakes(Request $request)
     {
         $limit = $request->limit ?? 15;
+        $search = $request->search ?? '';
         $users =  User::select(['users.created_at as registration_date','users.id', 'users.email', 'users.kyc_verified_at', 'users.node_verified_at'])
         ->leftJoin('owner_node', function ($join) {
             $join->on('owner_node.user_id', '=', 'users.id');
@@ -139,6 +140,11 @@ class AdminController extends Controller
                 ->orWhere('u2.node_verified_at', null)
                 ->orWhere('u2.kyc_verified_at', null);
         })->where('users.role', '<>', 'admin')
+        ->where(function ($query) use ($search) {
+            if ($search) {
+                $query->where('users.email', 'like', '%' . $search . '%');
+            }
+        })
         ->groupBy(['users.created_at','users.id', 'users.email', 'users.kyc_verified_at', 'users.node_verified_at'])
         ->paginate($limit);
 
