@@ -38,7 +38,7 @@ class DiscussionController extends Controller
         $data = array();
         $user = auth()->user()->load(['pinnedDiscussionsList', 'myDiscussionsList']);
         $data['discussions'] = $this->discussionRepo->getAll();
-        $data['pinned_discussions'] = $user->pinnedDiscussionsList;
+        $data['pinned_discussions'] = $user->pinnedDiscussionsList->pluck('discussion');
         $data['my_discussions'] = $user->myDiscussionsList;
 
         return $this->successResponse($data);
@@ -48,8 +48,10 @@ class DiscussionController extends Controller
         $data = array();
         $discussion = $this->discussionRepo->find($id);
         $discussion->load('commentsList');
+        $discussion->read = $discussion->read + 1;
         $data['discussion'] = $discussion;
-        
+        $discussion->save();
+
         return $this->successResponse($data);
     }
 
@@ -90,10 +92,54 @@ class DiscussionController extends Controller
         ];
         if ($request->comment_id == -1) {
             $data['comment'] = $this->discussionCommentRepo->create($model_data);
+            $discussion = $this->discussionRepo->find($id);
+            $discussion->comments = $discussion->comments + 1;
+            $discussion->save();
         } else {
             $data['comment'] = $this->discussionCommentRepo->update($request->comment_id, $model_data);
         }
 
         return $this->successResponse($data);
+    }
+
+    public function setVote(Request $request, $id) {
+        $data = array();
+        $user = auth()->user();
+        $validator = Validator::make($request->all(), [
+            'is_like' => 'required|boolean'
+        ]);
+        if ($validator->fails()) {
+            return $this->validateResponse($validator->errors());
+        }
+
+        $discussion = $this->discussionRepo->find($id);
+        $discussion->load('commentsList');
+        $vote = $this->discussionVoteRepo->first(['discussion_id' => $id, 'user_id' => $user->id]);
+        if ($vote == null && $discussion->user_id != $user->id) {
+            $this->discussionVoteRepo->create([
+                'discussion_id' => $id,
+                'user_id' => $user -> id,
+                "is_like" => $request->is_like
+            ]);
+
+            if ($request->is_like) 
+                $discussion->likes = $discussion->likes  + 1;
+            else $discussion->dislikes = $discussion->dislikes  + 1;
+            $discussion->save();
+        }        
+
+        return $this->successResponse(["discussion" => $discussion]);    
+    }
+
+    public function setPin(Request $request, $id) {
+        $data = array();
+        $user = auth()->user();
+        $pinned = $this->discussionPinRepo->first(['discussion_id' => $id, 'user_id' => $user->id]);
+        if ($pinned == null) {
+            $this->discussionPinRepo->create(['discussion_id' => $id, 'user_id' => $user->id]);
+        } else {
+            $this->discussionPinRepo->deleteConditions(['discussion_id' => $id, 'user_id' => $user->id]);
+        }
+        return $this->metaSuccess();
     }
 }

@@ -154,6 +154,24 @@ abstract class BaseRepository
         }
     }
 
+    /**
+     * Delete data.
+     *
+     * @param array $where      [array input]
+     *
+     * @return object
+     */
+    public function deleteConditions(array $where)
+    {
+        $data = null;
+        try {
+            $data = $this->model->where($where)->delete();
+            return $data;
+        } catch (Exception $e) {
+            throw $e;
+        }
+    }
+
     public function firstOrCreate(array $attributes, array $values = array())
     {
         try {

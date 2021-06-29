@@ -65,6 +65,8 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('/detail/{id}', [DiscussionController::class, 'getDiscussion']);
             Route::post('/new', [DiscussionController::class, 'postDiscussion']);
             Route::post('/{id}/comment', [DiscussionController::class, 'postComment']);
+            Route::post('/{id}/vote', [DiscussionController::class, 'setVote']);
+            Route::post('/{id}/pin', [DiscussionController::class, 'setPin']);
         });
         
     });

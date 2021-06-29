@@ -72,7 +72,8 @@ class User extends Authenticatable
      */
     protected $appends = [
         'full_name',
-        'signed_file_url'
+        'signed_file_url',
+        'pinned'
     ];
 
     /**
@@ -125,5 +126,13 @@ class User extends Authenticatable
 
     public function myDiscussionsList() {
         return $this->hasMany('App\Models\Discussion');
+    }
+
+    public function getPinnedAttribute() {
+        return $this->pinnedDiscussionsList()->count();
+    }
+
+    public function getNewThreadsAttribute() {
+        return $this->myDiscussionsList()->count();
     }
 }
