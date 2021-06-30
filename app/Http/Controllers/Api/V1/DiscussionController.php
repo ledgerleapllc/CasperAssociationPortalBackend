@@ -9,7 +9,12 @@ use App\Repositories\DiscussionRepository;
 use App\Repositories\DiscussionCommentRepository;
 use App\Repositories\DiscussionPinRepository;
 use App\Repositories\DiscussionVoteRepository;
+use App\Repositories\DiscussionRemoveNewRepository;
 use Illuminate\Support\Facades\Validator;
+use App\Models\Discussion;
+use App\Models\DiscussionPin;
+use App\Models\DiscussionRemoveNew;
+use Carbon\Carbon;
 
 class DiscussionController extends Controller
 {
@@ -18,6 +23,7 @@ class DiscussionController extends Controller
     private $discussionPinRep;
     private $discussionVoteRepo;
     private $discussionCommentRepo;
+    private $discussionRemoveNewRepo;
     
 
     public function __construct(
@@ -25,13 +31,33 @@ class DiscussionController extends Controller
         DiscussionRepository $discussionRepo,
         DiscussionPinRepository $discussionPinRepo,
         DiscussionVoteRepository $discussionVoteRepo,
-        DiscussionCommentRepository $discussionCommentRepo
+        DiscussionCommentRepository $discussionCommentRepo,
+        DiscussionRemoveNewRepository $discussionRemoveNewRepo
     ) {
         $this->userRepo = $userRepo;
         $this->discussionRepo = $discussionRepo;
         $this->discussionPinRepo = $discussionPinRepo;
         $this->discussionVoteRepo = $discussionVoteRepo;
         $this->discussionCommentRepo = $discussionCommentRepo;
+        $this->discussionRemoveNewRepo = $discussionRemoveNewRepo;
+    }
+
+    public function getTrending() {
+        $data = array();
+        $user = auth()->user();
+        $trendings = Discussion::where('likes', '!=', 0)->take(9)->orderBy('likes', 'desc')->get();
+        $remains = 9 - count($trendings);
+        if ($remains > 0) {
+            $trending_ids = $trendings->pluck('id');
+            $removed_ids = DiscussionRemoveNew::where(['user_id' => $user->id])->pluck('discussion_id');
+            $news = Discussion::whereNotIn('id', $trending_ids)
+                            ->whereNotIn('id', $removed_ids)
+                            ->take($remains)->orderBy('id', 'desc')->get();
+            $trendings = array_merge($trendings->toArray(), $news->toArray());
+        }
+        $data['trendings'] = $trendings;
+
+        return $this->successResponse($data);        
     }
 
     public function getDiscussions() {
@@ -99,6 +125,8 @@ class DiscussionController extends Controller
             $data['comment'] = $this->discussionCommentRepo->update($request->comment_id, $model_data);
         }
 
+        $data['comment']['user'] = $user;
+
         return $this->successResponse($data);
     }
 
@@ -140,6 +168,14 @@ class DiscussionController extends Controller
         } else {
             $this->discussionPinRepo->deleteConditions(['discussion_id' => $id, 'user_id' => $user->id]);
         }
+        return $this->metaSuccess();
+    }
+
+    public function removeNewMark(Request $request, $id) {
+        $user = auth()->user();
+        $this->discussionRemoveNewRepo->deleteConditions([['created_at', '=<',  Carbon::now()->subDays(3)]]);
+        $this->discussionRemoveNewRepo->create(['discussion_id' => $id, 'user_id' => $user->id]);        
+
         return $this->metaSuccess();
     }
 }

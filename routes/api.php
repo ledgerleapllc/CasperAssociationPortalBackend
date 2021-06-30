@@ -61,9 +61,11 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('/users/intakes', [AdminController::class, 'getIntakes']);
         });
         Route::prefix('discussions')->group(function() {
+            Route::get('/trending', [DiscussionController::class, 'getTrending']);
             Route::get('/list', [DiscussionController::class, 'getDiscussions']);
             Route::get('/detail/{id}', [DiscussionController::class, 'getDiscussion']);
             Route::post('/new', [DiscussionController::class, 'postDiscussion']);
+            Route::post('/{id}/remove-new', [DiscussionController::class, 'removeNewMark']);
             Route::post('/{id}/comment', [DiscussionController::class, 'postComment']);
             Route::post('/{id}/vote', [DiscussionController::class, 'setVote']);
             Route::post('/{id}/pin', [DiscussionController::class, 'setPin']);
