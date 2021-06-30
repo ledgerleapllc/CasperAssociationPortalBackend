@@ -12,11 +12,14 @@ use App\Http\Requests\Api\SubmitPublicAddressRequest;
 use App\Http\Requests\Api\VerifyFileCasperSignerRequest;
 use App\Mail\AddNodeMail;
 use App\Mail\UserVerifyMail;
+use App\Models\Ballot;
 use App\Models\OwnerNode;
 use App\Models\Profile;
 use App\Models\ShuftiproTemp;
 use App\Models\User;
 use App\Models\VerifyUser;
+use App\Models\Vote;
+use App\Models\VoteResult;
 use App\Repositories\OwnerNodeRepository;
 use App\Repositories\ProfileRepository;
 use App\Repositories\UserRepository;
@@ -508,4 +511,87 @@ class UserController extends Controller
         }
         return $this->errorResponse('Fail update type', Response::HTTP_BAD_REQUEST);
     }
+
+    // get vote list
+    public function getVotes(Request $request) 
+    {
+        $status = $request->status ?? 'active';
+        
+        $limit = $request->limit ?? 15;
+       
+        if ($status != 'active' && $status != 'finish') {
+            return $this->errorResponse('Paramater invalid (status is active or finish)', Response::HTTP_BAD_REQUEST);
+        }
+
+        if ($status == 'active') {
+            $query = Ballot::where('status', 'active');
+        } else {
+            $query = Ballot::where('status', '<>', 'active');
+        }
+        $data = $query->with('vote')->orderBy('created_at', 'ASC')->paginate($limit);
+ 
+        return $this->successResponse($data);
+    }
+
+    // get vote detail
+    public function getVoteDetail($id)
+    {
+        $user = auth()->user();
+        $ballot = Ballot::with(['vote', 'voteResults.user'])->where('id', $id)->first();
+        if (!$ballot) {
+            return $this->errorResponse('Not found ballot', Response::HTTP_BAD_REQUEST);
+        }
+        $ballot->user_vote = VoteResult::where('user_id', $user->id)->where('ballot_id', $ballot->id)->first();
+        return $this->successResponse($ballot);
+    }
+    
+    // vote the ballot
+    public function vote($id, Request $request) 
+    {
+        $user = auth()->user();
+        $vote = $request->vote;
+        if(!$vote || ($vote != 'for' && $vote != 'against')) {
+            return $this->errorResponse('Paramater invalid (vote is for or against)', Response::HTTP_BAD_REQUEST);
+        }
+        $ballot = Ballot::where('id', $id)->first();
+        if (!$ballot) {
+            return $this->errorResponse('Not found ballot', Response::HTTP_BAD_REQUEST);
+        }
+        $voteResult = VoteResult::where('user_id', $user->id)->where('ballot_id', $ballot->id)->first();
+        if ($voteResult) {
+            if ($vote == $voteResult->type) {
+                return $this->metaSuccess();
+            } else {
+                $voteResult->type = $vote;
+                $voteResult->updated_at = now();
+                if ($vote == 'for') {
+                    $ballot->vote->for_value = $ballot->vote->for_value + 1;
+                    $ballot->vote->against_value = $ballot->vote->against_value - 1;
+                } else {
+                    $ballot->vote->for_value = $ballot->vote->for_value - 1;
+                    $ballot->vote->against_value = $ballot->vote->against_value + 1;
+                }
+                $ballot->vote->updated_at = now();
+                $ballot->vote->save();
+                $voteResult->save();
+            }
+        } else {
+            $voteResult = new VoteResult();
+            $voteResult->user_id = $user->id;
+            $voteResult->ballot_id = $ballot->id;
+            $voteResult->vote_id = $ballot->vote->id;
+            $voteResult->type = $vote;
+            $voteResult->save();
+            if ($vote == 'for') {
+                $ballot->vote->for_value = $ballot->vote->for_value + 1;
+            } else {
+                $ballot->vote->against_value = $ballot->vote->against_value + 1;
+            }
+            $ballot->vote->result_count = $ballot->vote->result_count + 1;
+            $ballot->vote->updated_at = now();
+            $ballot->vote->save();
+        }
+        return $this->metaSuccess();
+    }
+    
 }
