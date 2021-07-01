@@ -12,6 +12,7 @@ use App\Models\Shuftipro;
 use App\Models\ShuftiproTemp;
 use App\Models\User;
 use App\Models\Vote;
+use App\Models\VoteResult;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -271,7 +272,7 @@ class AdminController extends Controller
 
     public function getDetailBallot($id)
     {
-        $ballot = Ballot::with(['user', 'vote', 'voteResults.user', 'files'])->where('id', $id)->first();
+        $ballot = Ballot::with(['user', 'vote', 'files'])->where('id', $id)->first();
         if (!$ballot) {
             return $this->errorResponse('Not found ballot', Response::HTTP_BAD_REQUEST);
         }
@@ -286,6 +287,14 @@ class AdminController extends Controller
         }
         $ballot->status = 'cancelled';
         $ballot->save();
+    }
+
+    public function getBallotVotes($id,Request $request)
+    {
+        $limit = $request->limit ?? 15;
+        $data = VoteResult::where('ballot_id', '=', $id)->with('user')->orderBy('created_at', 'ASC')->paginate($limit);
+ 
+        return $this->successResponse($data);
     }
 
     // Get Global Settings

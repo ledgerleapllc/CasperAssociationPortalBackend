@@ -64,6 +64,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::post('/ballots', [AdminController::class, 'submitBallot']);
             Route::get('/ballots', [AdminController::class, 'getBallots']);
             Route::get('/ballots/{id}', [AdminController::class, 'getDetailBallot'])->where('id', '[0-9]+');
+            Route::get('/ballots/{id}/votes', [AdminController::class, 'getBallotVotes'])->where('id', '[0-9]+');
             Route::post('/ballots/{id}/cancel', [AdminController::class, 'cancelBallot'])->where('id', '[0-9]+');
             Route::get('/global-settings', [AdminController::class, 'getGlobalSettings']);
             Route::put('/global-settings', [AdminController::class, 'updateGlobalSettings']);
