@@ -4,14 +4,20 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Mail\ResetKYC;
+use App\Models\Ballot;
+use App\Models\BallotFile;
 use App\Models\OwnerNode;
 use App\Models\Shuftipro;
 use App\Models\ShuftiproTemp;
 use App\Models\User;
+use App\Models\Vote;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class AdminController extends Controller
 {
@@ -28,7 +34,7 @@ class AdminController extends Controller
         if (!$user || $user->role == 'admin') {
             return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
         }
-        $response = $user->load(['profile', 'shuftipro','shuftiproTemp']);
+        $response = $user->load(['profile', 'shuftipro', 'shuftiproTemp']);
         return $this->successResponse($response);
     }
 
@@ -126,35 +132,40 @@ class AdminController extends Controller
     public function getIntakes(Request $request)
     {
         $limit = $request->limit ?? 15;
-        $users =  User::select(['users.created_at as registration_date','users.id', 'users.email', 'users.kyc_verified_at', 'users.node_verified_at'])
-        ->leftJoin('owner_node', function ($join) {
-            $join->on('owner_node.user_id', '=', 'users.id');
-        })
-        ->leftJoin('users as u2', function ($join) {
-            $join->on('owner_node.email', '=', 'u2.email');
-        })
-        ->where(function ($q) {
-            $q->where('users.node_verified_at', null)
-                ->orWhere('users.kyc_verified_at', null)
-                ->orWhere('u2.node_verified_at', null)
-                ->orWhere('u2.kyc_verified_at', null);
-        })->where('users.role', '<>', 'admin')
-        ->groupBy(['users.created_at','users.id', 'users.email', 'users.kyc_verified_at', 'users.node_verified_at'])
-        ->paginate($limit);
+        $search = $request->search ?? '';
+        $users =  User::select(['users.created_at as registration_date', 'users.id', 'users.email', 'users.kyc_verified_at', 'users.node_verified_at'])
+            ->leftJoin('owner_node', function ($join) {
+                $join->on('owner_node.user_id', '=', 'users.id');
+            })
+            ->leftJoin('users as u2', function ($join) {
+                $join->on('owner_node.email', '=', 'u2.email');
+            })
+            ->where(function ($q) {
+                $q->where('users.node_verified_at', null)
+                    ->orWhere('users.kyc_verified_at', null)
+                    ->orWhere('u2.node_verified_at', null)
+                    ->orWhere('u2.kyc_verified_at', null);
+            })->where('users.role', '<>', 'admin')
+            ->where(function ($query) use ($search) {
+                if ($search) {
+                    $query->where('users.email', 'like', '%' . $search . '%');
+                }
+            })
+            ->groupBy(['users.created_at', 'users.id', 'users.email', 'users.kyc_verified_at', 'users.node_verified_at'])
+            ->paginate($limit);
 
         foreach ($users as $user) {
             $total = 0;
             $unopenedInvites = 0;
             $ownerNodes = OwnerNode::where('user_id', $user->id)->get();
-            foreach ($ownerNodes as $node) { 
-                $total ++;
+            foreach ($ownerNodes as $node) {
+                $total++;
                 $user2 = User::select(['users.id', 'users.email', 'users.kyc_verified_at', 'users.node_verified_at'])
                     ->where('email', $node->email)->first();
                 $node->user = $user2;
                 if ($user2 && $user2->kyc_verified_at && $user2->node_verified_at) {
-                    
                 } else {
-                    $unopenedInvites ++;
+                    $unopenedInvites++;
                 }
             }
 
@@ -165,7 +176,7 @@ class AdminController extends Controller
             } else {
                 $user->owner_kyc_status = 'Not Approve';
             }
-            if($user->kyc_verified_at && $user->node_verified_at) {
+            if ($user->kyc_verified_at && $user->node_verified_at) {
                 $user->kyc_status = 'Approved';
             } else {
                 $user->kyc_status = 'Not Approved';
@@ -173,5 +184,104 @@ class AdminController extends Controller
         }
 
         return $this->successResponse($users);
+    }
+
+    public function submitBallot(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+            $user = auth()->user();
+            // Validator
+            $validator = Validator::make($request->all(), [
+                'title' => 'required',
+                'description' => 'required',
+                'time' => 'required',
+                'time_unit' => 'required',
+                'files' => 'array',
+                'files.*' => 'file|max:100000|mimes:pdf,docx',
+            ]);
+            if ($validator->fails()) {
+                return $this->validateResponse($validator->errors());
+            }
+
+            $time = $request->time;
+            $timeUnit = $request->time_unit;
+            $mins = 0;
+            if ($timeUnit == 'mins') {
+                $mins = $time;
+            } else if ($timeUnit == 'hours') {
+                $mins = $time * 60;
+            } else if ($timeUnit == 'days') {
+                $mins = $time * 60 * 24;
+            }
+            $start = Carbon::createFromFormat("Y-m-d H:i:s", Carbon::now('UTC'), "UTC");
+            $now = Carbon::now('UTC');
+            $timeEnd = $start->addMinutes($mins);
+            $ballot = new Ballot();
+            $ballot->user_id = $user->id;
+            $ballot->title = $request->title;
+            $ballot->description = $request->description;
+            $ballot->time = $time;
+            $ballot->time_unit = $timeUnit;
+            $ballot->time_end = $timeEnd;
+            $ballot->status = 'active';
+            $ballot->created_at = $now;
+            $ballot->save();
+            $vote = new Vote();
+            $vote->ballot_id = $ballot->id;
+            $vote->save();
+
+            $files = $request->file('files');
+            foreach ($files as $file) {
+                $name = $file->getClientOriginalName();
+                $folder = 'ballot/' . $ballot->id;
+                $path = $file->storeAs($folder, $name);
+                $url = Storage::url($path);
+                $ballotFile = new BallotFile();
+                $ballotFile->ballot_id = $ballot->id;
+                $ballotFile->name = $name;
+                $ballotFile->path = $path;
+                $ballotFile->url = $url;
+                $ballotFile->save();
+            }
+            DB::commit();
+            return $this->metaSuccess();
+        } catch (\Exception $ex) {
+            DB::rollBack();
+            return $this->errorResponse('Submit ballot fail', Response::HTTP_BAD_REQUEST, $ex->getMessage());
+        }
+    }
+
+    public function getBallots(Request $request)
+    {
+        $limit = $request->limit;
+        $status = $request->status;
+        if ($status == 'active') {
+            $ballots = Ballot::with(['user', 'vote'])->where('ballot.status', 'active')->paginate($limit);
+        } else if ($status && $status != 'active') {
+            $ballots = Ballot::with(['user', 'vote'])->where('ballot.status', '!=', 'active')->paginate($limit);
+        } else {
+            $ballots = Ballot::with(['user', 'vote'])->paginate($limit);
+        }
+        return $this->successResponse($ballots);
+    }
+
+    public function getDetailBallot($id)
+    {
+        $ballot = Ballot::with(['user', 'vote', 'voteResults.user', 'files'])->where('id', $id)->first();
+        if (!$ballot) {
+            return $this->errorResponse('Not found ballot', Response::HTTP_BAD_REQUEST);
+        }
+        return $this->successResponse($ballot);
+    }
+
+    public function cancelBallot($id)
+    {
+        $ballot = Ballot::where('id', $id)->first();
+        if ($ballot->status != 'active') {
+            return $this->errorResponse('Cannot cancle ballot', Response::HTTP_BAD_REQUEST);
+        }
+        $ballot->status = 'cancelled';
+        $ballot->save();
     }
 }

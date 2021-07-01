@@ -50,6 +50,9 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
         Route::put('/users/type-owner-node',  [UserController::class, 'updateTypeOwnerNode']);
         Route::post('users/verify-bypass',  [UserController::class, 'verifyBypass']);
         Route::post('/users/upload-letter',  [UserController::class, 'uploadLetter']);
+        Route::get('users/votes', [UserController::class, 'getVotes']);
+        Route::get('users/votes/{id}', [UserController::class, 'getVoteDetail']);
+        Route::post('users/votes/{id}', [UserController::class, 'vote']);
         Route::prefix('admin')->middleware(['role_admin'])->group(function () {
             Route::get('/users', [AdminController::class, 'getUsers']);
             Route::get('/users/{id}', [AdminController::class, 'getUserDetail'])->where('id', '[0-9]+');
@@ -59,6 +62,10 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::post('/users/{id}/deny-kyc',  [AdminController::class, 'denyKYC'])->where('id', '[0-9]+');
             Route::post('/users/{id}/reset-kyc',  [AdminController::class, 'resetKYC'])->where('id', '[0-9]+');
             Route::get('/users/intakes', [AdminController::class, 'getIntakes']);
+            Route::post('/ballots', [AdminController::class, 'submitBallot']);
+            Route::get('/ballots', [AdminController::class, 'getBallots']);
+            Route::get('/ballots/{id}', [AdminController::class, 'getDetailBallot'])->where('id', '[0-9]+');
+            Route::post('/ballots/{id}/cancel', [AdminController::class, 'cancelBallot'])->where('id', '[0-9]+');
         });
         Route::prefix('discussions')->group(function() {
             Route::get('/trending', [DiscussionController::class, 'getTrending']);
