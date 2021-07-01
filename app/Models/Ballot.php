@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -11,6 +12,11 @@ class Ballot extends Model
 
     protected $table = 'ballot';
     protected $guarded = [];
+
+    public function getTimeEndAttribute($value)
+    {
+        return Carbon::parse($value);
+    }
 
     public function user()
     {

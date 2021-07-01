@@ -7,6 +7,7 @@ use App\Mail\ResetKYC;
 use App\Models\Ballot;
 use App\Models\BallotFile;
 use App\Models\OwnerNode;
+use App\Models\Setting;
 use App\Models\Shuftipro;
 use App\Models\ShuftiproTemp;
 use App\Models\User;
@@ -230,20 +231,22 @@ class AdminController extends Controller
             $vote = new Vote();
             $vote->ballot_id = $ballot->id;
             $vote->save();
-
-            $files = $request->file('files');
-            foreach ($files as $file) {
-                $name = $file->getClientOriginalName();
-                $folder = 'ballot/' . $ballot->id;
-                $path = $file->storeAs($folder, $name);
-                $url = Storage::url($path);
-                $ballotFile = new BallotFile();
-                $ballotFile->ballot_id = $ballot->id;
-                $ballotFile->name = $name;
-                $ballotFile->path = $path;
-                $ballotFile->url = $url;
-                $ballotFile->save();
+            if ($request->hasFile('files')) {
+                $files = $request->file('files');
+                foreach ($files as $file) {
+                    $name = $file->getClientOriginalName();
+                    $folder = 'ballot/' . $ballot->id;
+                    $path = $file->storeAs($folder, $name);
+                    $url = Storage::url($path);
+                    $ballotFile = new BallotFile();
+                    $ballotFile->ballot_id = $ballot->id;
+                    $ballotFile->name = $name;
+                    $ballotFile->path = $path;
+                    $ballotFile->url = $url;
+                    $ballotFile->save();
+                }
             }
+
             DB::commit();
             return $this->metaSuccess();
         } catch (\Exception $ex) {
@@ -283,5 +286,46 @@ class AdminController extends Controller
         }
         $ballot->status = 'cancelled';
         $ballot->save();
+    }
+
+    // Get Global Settings
+    public function getGlobalSettings()
+    {
+        $items = Setting::get();
+        $settings = [];
+        if ($items) {
+            foreach ($items as $item) {
+                $settings[$item->name] = $item->value;
+            }
+        }
+
+        return $this->successResponse($settings);
+    }
+
+    // Update Global Settings
+    public function updateGlobalSettings(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'quorum_rate_ballot' => 'required',
+        ]);
+        if ($validator->fails()) {
+            return $this->validateResponse($validator->errors());
+        }
+        $items = [
+            'quorum_rate_ballot' => $request->quorum_rate_ballot,
+        ];
+        foreach ($items as $name => $value) {
+            $setting = Setting::where('name', $name)->first();
+            if ($setting) {
+                $setting->value = $value;
+                $setting->save();
+            } else {
+                $setting = new Setting();
+                $setting->value = $value;
+                $setting->save();
+            }
+        }
+
+        return $this->metaSuccess();
     }
 }

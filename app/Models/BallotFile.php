@@ -11,4 +11,13 @@ class BallotFile extends Model
 
     protected $table = 'ballot_file';
     protected $guarded = [];
+
+    protected $appends = [
+        'file_url',
+    ];
+
+    public function getFileUrlAttribute()
+    {
+        return asset($this->url);
+    }
 }
