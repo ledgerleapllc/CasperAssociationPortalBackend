@@ -165,7 +165,7 @@ class UserController extends Controller
         if ($user) {
             $client_key = config('services.hellosign.api_key');
             $client_id = config('services.hellosign.client_id');
-            $template_id = '7de53a8a63cbcb8a6119589e1cd5e624fac8358a';
+            $template_id = '80392797521f1adb88743f75ea04203a6504ef81';
             $client = new \HelloSign\Client($client_key);
             $request = new \HelloSign\TemplateSignatureRequest;
 
@@ -513,12 +513,12 @@ class UserController extends Controller
     }
 
     // get vote list
-    public function getVotes(Request $request) 
+    public function getVotes(Request $request)
     {
         $status = $request->status ?? 'active';
-        
+
         $limit = $request->limit ?? 15;
-       
+
         if ($status != 'active' && $status != 'finish') {
             return $this->errorResponse('Paramater invalid (status is active or finish)', Response::HTTP_BAD_REQUEST);
         }
@@ -529,7 +529,7 @@ class UserController extends Controller
             $query = Ballot::where('status', '<>', 'active');
         }
         $data = $query->with('vote')->orderBy('created_at', 'ASC')->paginate($limit);
- 
+
         return $this->successResponse($data);
     }
 
@@ -544,9 +544,9 @@ class UserController extends Controller
         $ballot->user_vote = VoteResult::where('user_id', $user->id)->where('ballot_id', $ballot->id)->first();
         return $this->successResponse($ballot);
     }
-    
+
     // vote the ballot
-    public function vote($id, Request $request) 
+    public function vote($id, Request $request)
     {
         $user = auth()->user();
         $vote = $request->vote;
@@ -593,5 +593,5 @@ class UserController extends Controller
         }
         return $this->metaSuccess();
     }
-    
+
 }
