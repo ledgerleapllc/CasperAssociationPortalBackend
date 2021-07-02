@@ -59,14 +59,23 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::post('/users/{id}/deny-kyc',  [AdminController::class, 'denyKYC'])->where('id', '[0-9]+');
             Route::post('/users/{id}/reset-kyc',  [AdminController::class, 'resetKYC'])->where('id', '[0-9]+');
             Route::get('/users/intakes', [AdminController::class, 'getIntakes']);
+            Route::prefix('/teams')->group(function () {
+                Route::get('/', [AdminController::class, 'getSubAdmins']);
+                Route::post('/invite', [AdminController::class, 'inviteSubAdmin']);
+                Route::post('/reinvite', [AdminController::class, 'resendLink']);
+                Route::get('/{id}/change-permissions', [AdminController::class, 'changeSubAdminPermissions']);
+                Route::get('/{id}/reset-password', [AdminController::class, 'changeSubAdminResetPassword']);
+                Route::delete('/{id}/revoke', [AdminController::class, 'revokeSubAdmin']);
+            });
         });
         Route::prefix('discussions')->group(function() {
             Route::get('/trending', [DiscussionController::class, 'getTrending']);
             Route::get('/list', [DiscussionController::class, 'getDiscussions']);
             Route::get('/detail/{id}', [DiscussionController::class, 'getDiscussion']);
             Route::post('/new', [DiscussionController::class, 'postDiscussion']);
-            Route::post('/{id}/remove-new', [DiscussionController::class, 'removeNewMark']);
-            Route::post('/{id}/comment', [DiscussionController::class, 'postComment']);
+            Route::delete('/{id}/new', [DiscussionController::class, 'removeNewMark']);
+            Route::post('/{id}/comment', [DiscussionController::class, 'createComment']);
+            Route::put('/{id}/comment', [DiscussionController::class, 'updateComment']);
             Route::post('/{id}/vote', [DiscussionController::class, 'setVote']);
             Route::post('/{id}/pin', [DiscussionController::class, 'setPin']);
         });

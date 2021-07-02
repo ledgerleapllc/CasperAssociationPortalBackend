@@ -100,7 +100,33 @@ class DiscussionController extends Controller
         return $this->successResponse($discussion);
     }
 
-    public function postComment(Request $request, $id) {
+    public function createComment(Request $request, $id) {
+        $data = array();
+        $user = auth()->user();
+        $validator = Validator::make($request->all(), [
+            'description' => 'required'
+        ]);
+        if ($validator->fails()) {
+            return $this->validateResponse($validator->errors());
+        }
+        
+        $model_data = [
+            "user_id" => $user->id,
+            "discussion_id" => $id,
+            "description" => $request->description
+        ];
+        
+        $data['comment'] = $this->discussionCommentRepo->create($model_data);
+        $discussion = $this->discussionRepo->find($id);
+        $discussion->comments = $discussion->comments + 1;
+        $discussion->save();
+        
+        $data['comment']['user'] = $user;
+
+        return $this->successResponse($data);
+    }
+
+    public function updateComment(Request $request, $id) {
         $data = array();
         $user = auth()->user();
         $validator = Validator::make($request->all(), [
@@ -116,15 +142,8 @@ class DiscussionController extends Controller
             "discussion_id" => $id,
             "description" => $request->description
         ];
-        if ($request->comment_id == -1) {
-            $data['comment'] = $this->discussionCommentRepo->create($model_data);
-            $discussion = $this->discussionRepo->find($id);
-            $discussion->comments = $discussion->comments + 1;
-            $discussion->save();
-        } else {
-            $data['comment'] = $this->discussionCommentRepo->update($request->comment_id, $model_data);
-        }
-
+        
+        $data['comment'] = $this->discussionCommentRepo->update($request->comment_id, $model_data);
         $data['comment']['user'] = $user;
 
         return $this->successResponse($data);
