@@ -479,10 +479,13 @@ class UserController extends Controller
             $record->save();
             // check shuftipro
             $shuftiproCheck = new ShuftiproCheck();
-            $shuftiproCheck->handle($record);
-            return $this->metaSuccess();
+            $status = $shuftiproCheck->handle($record);
+            if($status == 'success') {
+                return $this->metaSuccess();
+            } else {
+                return $this->errorResponse('Fail submit AML', Response::HTTP_BAD_REQUEST);
+            }
         }
-
         return $this->errorResponse('Fail submit AML', Response::HTTP_BAD_REQUEST);
     }
 

@@ -35,4 +35,8 @@ return [
         'client_id' => env('HELLOSIGN_CLIENT_ID'),
     ],
 
+    'shufti' => [
+        'client_id' => env('SHUFTI_CLIENT_ID'),
+        'client_secret' => env('SHUFTI_CLIENT_SECRET'),
+    ]
 ];
