@@ -186,36 +186,34 @@ class DiscussionController extends Controller
         $is_like = $request->is_like;
         $vote = $this->discussionVoteRepo->first(['discussion_id' => $id, 'user_id' => $user->id]);
         if ($discussion->user_id != $user->id)
-        if ($vote == null) {
-            $this->discussionVoteRepo->create([
-                'discussion_id' => $id,
-                'user_id' => $user -> id,
-                "is_like" => $is_like
-            ]);
-
-            if ($is_like) 
-                $discussion->likes = $discussion->likes  + 1;
-            else $discussion->dislikes = $discussion->dislikes  + 1;
-            $xx = true;
-            $discussion->save();
-        } else {
-            if ($vote->is_like != $is_like) {
-                $this->discussionVoteRepo->update($vote->id, [
-                    'is_like' => $is_like
+            if ($vote == null) {
+                $this->discussionVoteRepo->create([
+                    'discussion_id' => $id,
+                    'user_id' => $user -> id,
+                    "is_like" => $is_like
                 ]);
-                if ($is_like) {
-                    $discussion->dislikes = $discussion->dislikes - 1;
-                    $discussion->likes = $discussion->likes + 1;
-                } else {
-                    $discussion->dislikes = $discussion->dislikes + 1;
-                    $discussion->likes = $discussion->likes - 1;
-                }                    
-            }
-            $xx = false;
-            $discussion->save();
-        }       
 
-        return $this->successResponse(["discussion" => $discussion, "xx" => $xx]);    
+                if ($is_like) 
+                    $discussion->likes = $discussion->likes  + 1;
+                else $discussion->dislikes = $discussion->dislikes  + 1;
+                $discussion->save();
+            } else {
+                if ($vote->is_like != $is_like) {
+                    $this->discussionVoteRepo->update($vote->id, [
+                        'is_like' => $is_like
+                    ]);
+                    if ($is_like) {
+                        $discussion->dislikes = $discussion->dislikes - 1;
+                        $discussion->likes = $discussion->likes + 1;
+                    } else {
+                        $discussion->dislikes = $discussion->dislikes + 1;
+                        $discussion->likes = $discussion->likes - 1;
+                    }                    
+                }
+                $discussion->save();
+            }       
+
+        return $this->successResponse(["discussion" => $discussion]);    
     }
 
     public function setPin(Request $request, $id) {
