@@ -10,7 +10,7 @@ class Discussion extends Model
 {
     use HasFactory;
     protected $guarded = []; 
-    protected $hidden = ['created_at', 'updated_at'];
+    protected $hidden = ['updated_at'];
     protected $appends = ['is_new'];
     protected $with = ['user'];
 

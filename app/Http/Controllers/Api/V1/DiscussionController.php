@@ -62,11 +62,33 @@ class DiscussionController extends Controller
 
     public function getDiscussions() {
         $data = array();
+        $limit = $request->limit ?? 15;
         $user = auth()->user()->load(['pinnedDiscussionsList', 'myDiscussionsList']);
-        $data['discussions'] = $this->discussionRepo->getAll();
-        $data['pinned_discussions'] = $user->pinnedDiscussionsList->pluck('discussion');
-        $data['my_discussions'] = $user->myDiscussionsList;
+        $data = Discussion::where([])->orderBy('created_at', 'DESC')->paginate($limit);
+        // $data['pinned_discussions'] = $user->pinnedDiscussionsList->pluck('discussion');
+        // $data['my_discussions'] = $user->myDiscussionsList;
 
+        return $this->successResponse($data);
+    }
+
+    public function getPinnedDiscussions() {
+        $data = array();
+        $user = auth()->user()->load(['pinnedDiscussionsList']);
+        $data['pinned_discussions'] = $user->pinnedDiscussionsList->pluck('discussion');
+
+        $removedNews = DiscussionRemoveNew::where(['user_id' => $user->id])->pluck('discussion_id');
+        $data['new_discussions'] = Discussion::whereNotIn('id', $removedNews)
+                ->whereDate('created_at', '>',  Carbon::now()->subDays(3))
+                ->get();
+        
+        return $this->successResponse($data);
+    }
+
+    public function getMyDiscussions() {
+        $data = array();
+        $user = auth()->user()->load(['myDiscussionsList']);
+        $data = $user->myDiscussionsList;
+        
         return $this->successResponse($data);
     }
 
