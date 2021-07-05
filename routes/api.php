@@ -68,6 +68,25 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::post('/ballots/{id}/cancel', [AdminController::class, 'cancelBallot'])->where('id', '[0-9]+');
             Route::get('/global-settings', [AdminController::class, 'getGlobalSettings']);
             Route::put('/global-settings', [AdminController::class, 'updateGlobalSettings']);
+            Route::prefix('/teams')->group(function () {
+                Route::get('/', [AdminController::class, 'getSubAdmins']);
+                Route::post('/invite', [AdminController::class, 'inviteSubAdmin']);
+                Route::post('/reinvite', [AdminController::class, 'resendLink']);
+                Route::get('/{id}/change-permissions', [AdminController::class, 'changeSubAdminPermissions']);
+                Route::get('/{id}/reset-password', [AdminController::class, 'changeSubAdminResetPassword']);
+                Route::delete('/{id}/revoke', [AdminController::class, 'revokeSubAdmin']);
+            });
+        });
+        Route::prefix('discussions')->group(function() {
+            Route::get('/trending', [DiscussionController::class, 'getTrending']);
+            Route::get('/list', [DiscussionController::class, 'getDiscussions']);
+            Route::get('/detail/{id}', [DiscussionController::class, 'getDiscussion']);
+            Route::post('/new', [DiscussionController::class, 'postDiscussion']);
+            Route::delete('/{id}/new', [DiscussionController::class, 'removeNewMark']);
+            Route::post('/{id}/comment', [DiscussionController::class, 'createComment']);
+            Route::put('/{id}/comment', [DiscussionController::class, 'updateComment']);
+            Route::post('/{id}/vote', [DiscussionController::class, 'setVote']);
+            Route::post('/{id}/pin', [DiscussionController::class, 'setPin']);
         });
     });
 });

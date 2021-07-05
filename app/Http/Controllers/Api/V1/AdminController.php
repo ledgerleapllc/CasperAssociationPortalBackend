@@ -337,4 +337,80 @@ class AdminController extends Controller
 
         return $this->metaSuccess();
     }
+
+    public function getSubAdmins(Request $request) {
+        $admins = User::where(['role' => 'sub-admin'])->get();
+
+        return $this->successResponse($admins);
+    }
+
+    public function inviteSubAdmin(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+        ]);
+        if ($validator->fails()) {
+            return $this->validateResponse($validator->errors());
+        }
+
+        $admin = User::create([
+            'first_name' => 'faker',
+            'last_name' => 'faker',
+            'email' => $request->email,
+            'password' => '',
+            'type' => 'invited',
+            'role' => 'sub-admin'
+        ]);
+        // $admin->invite_link = '/invite';
+
+        return $this->successResponse(['invited_admin' => $admin]);
+    }
+
+    public function changeSubAdminPermissions(Request $request, $id) {
+        $data['intake'] = $request->intake;
+        $data['users'] = $request->users;
+        $data['ballots'] = $request->ballots;
+        $data['perks'] = $request->perks;
+
+        $admin = User::find($id);
+        if ($admin == null || $admin->role != 'sub-admin') 
+            return $this->errorResponse('No admin to be send invite link', Response::HTTP_BAD_REQUEST);
+
+        $admin->permissions = $data;
+        $admin->save();
+
+        return $this->metaSuccess();
+    }
+
+    public function resendLink(Request $request) {
+        $admin = User::find($id);
+        if ($admin == null || $admin->role != 'sub-admin') 
+            return $this->errorResponse('No admin to be send invite link', Response::HTTP_BAD_REQUEST);
+        
+        // $admin->invite_link = '/invite';
+        $admin->save();
+
+        return $this->metaSuccess();
+    }
+
+    public function changeSubAdminResetPassword(Request $request) {
+        $admin = User::find($id);
+        if ($admin == null || $admin->role != 'sub-admin') 
+            return $this->errorResponse('No admin to be revoked', Response::HTTP_BAD_REQUEST);
+        
+        // $admin->reset_link = '/reset-password';
+        $admin->save();
+
+        return $this->metaSuccess();
+    }
+
+    public function revokeSubAdmin(Request $request, $id) {
+        $admin = User::find($id);
+        if ($admin == null || $admin->role != 'sub-admin') 
+            return $this->errorResponse('No admin to be revoked', Response::HTTP_BAD_REQUEST);
+        
+        $admin->type = 'revoked';
+        $admin->save();
+
+        return $this->successResponse(['revoked' => $admin]);
+    }
 }
