@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\HasApiTokens;
+use App\Models\Discussion;
+use App\Models\DiscussionRemoveNew;
+use Carbon\Carbon;
 
 class User extends Authenticatable
 {
@@ -72,7 +75,9 @@ class User extends Authenticatable
      */
     protected $appends = [
         'full_name',
-        'signed_file_url'
+        'signed_file_url',
+        'pinned',
+        'new_threads'
     ];
 
     /**
@@ -118,4 +123,26 @@ class User extends Authenticatable
     public function ownerNodes() {
         return $this->hasMany('App\Models\OwnerNode', 'user_id');
     }
+
+    public function pinnedDiscussionsList() {
+        return $this->hasMany('App\Models\DiscussionPin');
+    }
+
+    public function myDiscussionsList() {
+        return $this->hasMany('App\Models\Discussion');
+    }
+
+    public function getPinnedAttribute() {
+        return $this->pinnedDiscussionsList()->count();
+    }
+
+    public function getNewThreadsAttribute() {
+        $removedNews = DiscussionRemoveNew::where(['user_id' => $this->id])->pluck('discussion_id');
+        $count = Discussion::whereNotIn('id', $removedNews)
+                ->whereDate('created_at', '>',  Carbon::now()->subDays(3))
+                ->count();
+        
+        return $count;
+    }
+
 }
