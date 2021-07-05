@@ -190,7 +190,7 @@ class AdminController extends Controller
             return $this->validateResponse($validator->errors());
         }
 
-        $user = User::create([
+        $admin = User::create([
             'first_name' => 'faker',
             'last_name' => 'faker',
             'email' => $request->email,
@@ -198,13 +198,25 @@ class AdminController extends Controller
             'type' => 'invited',
             'role' => 'sub-admin'
         ]);
+        // $admin->invite_link = '/invite';
 
-        return $this->successResponse(['invited_admin' => $user]);
+        return $this->successResponse(['invited_admin' => $admin]);
     }
 
-    public function changeSubAdminPermissions(Request $request) {
+    public function changeSubAdminPermissions(Request $request, $id) {
+        $data['intake'] = $request->intake;
+        $data['users'] = $request->users;
+        $data['ballots'] = $request->ballots;
+        $data['perks'] = $request->perks;
 
+        $admin = User::find($id);
+        if ($admin == null || $admin->role != 'sub-admin') 
+            return $this->errorResponse('No admin to be send invite link', Response::HTTP_BAD_REQUEST);
 
+        $admin->permissions = $data;
+        $admin->save();
+
+        return $this->metaSuccess();
     }
 
     public function resendLink(Request $request) {
@@ -236,7 +248,6 @@ class AdminController extends Controller
         
         $admin->type = 'revoked';
         $admin->save();
-
 
         return $this->successResponse(['revoked' => $admin]);
     }

@@ -160,6 +160,8 @@ class DiscussionController extends Controller
         }
 
         $discussion = $this->discussionRepo->find($id);
+        if ($discussion == null)
+            return $this->errorResponse('Invalid discussion id', Response::HTTP_BAD_REQUEST);
         $discussion->load('commentsList');
         $vote = $this->discussionVoteRepo->first(['discussion_id' => $id, 'user_id' => $user->id]);
         if ($vote == null && $discussion->user_id != $user->id) {

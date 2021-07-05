@@ -90,6 +90,7 @@ class User extends Authenticatable
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'node_verified_at' => 'datetime',
+        'permissions' => 'object'
     ];
 
     /**
