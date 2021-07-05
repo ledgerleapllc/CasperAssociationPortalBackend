@@ -65,9 +65,7 @@ class DiscussionController extends Controller
         $limit = $request->limit ?? 15;
         $user = auth()->user()->load(['pinnedDiscussionsList', 'myDiscussionsList']);
         $data = Discussion::where([])->orderBy('created_at', 'DESC')->paginate($limit);
-        // $data['pinned_discussions'] = $user->pinnedDiscussionsList->pluck('discussion');
-        // $data['my_discussions'] = $user->myDiscussionsList;
-
+        
         return $this->successResponse($data);
     }
 
