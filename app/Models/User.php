@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\HasApiTokens;
+use App\Models\Discussion;
+use App\Models\DiscussionRemoveNew;
+use Carbon\Carbon;
 
 class User extends Authenticatable
 {

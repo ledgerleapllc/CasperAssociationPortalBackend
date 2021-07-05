@@ -163,21 +163,39 @@ class DiscussionController extends Controller
         if ($discussion == null)
             return $this->errorResponse('Invalid discussion id', Response::HTTP_BAD_REQUEST);
         $discussion->load('commentsList');
+        $is_like = $request->is_like;
         $vote = $this->discussionVoteRepo->first(['discussion_id' => $id, 'user_id' => $user->id]);
-        if ($vote == null && $discussion->user_id != $user->id) {
+        if ($discussion->user_id != $user->id)
+        if ($vote == null) {
             $this->discussionVoteRepo->create([
                 'discussion_id' => $id,
                 'user_id' => $user -> id,
-                "is_like" => $request->is_like
+                "is_like" => $is_like
             ]);
 
-            if ($request->is_like) 
+            if ($is_like) 
                 $discussion->likes = $discussion->likes  + 1;
             else $discussion->dislikes = $discussion->dislikes  + 1;
+            $xx = true;
             $discussion->save();
-        }        
+        } else {
+            if ($vote->is_like != $is_like) {
+                $this->discussionVoteRepo->update($vote->id, [
+                    'is_like' => $is_like
+                ]);
+                if ($is_like) {
+                    $discussion->dislikes = $discussion->dislikes - 1;
+                    $discussion->likes = $discussion->likes + 1;
+                } else {
+                    $discussion->dislikes = $discussion->dislikes + 1;
+                    $discussion->likes = $discussion->likes - 1;
+                }                    
+            }
+            $xx = false;
+            $discussion->save();
+        }       
 
-        return $this->successResponse(["discussion" => $discussion]);    
+        return $this->successResponse(["discussion" => $discussion, "xx" => $xx]);    
     }
 
     public function setPin(Request $request, $id) {
