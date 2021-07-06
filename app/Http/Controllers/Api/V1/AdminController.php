@@ -360,7 +360,6 @@ class AdminController extends Controller
             'type' => 'invited',
             'role' => 'sub-admin'
         ]);
-        // $admin->invite_link = '/invite';
 
         return $this->successResponse(['invited_admin' => $admin]);
     }
@@ -386,7 +385,6 @@ class AdminController extends Controller
         if ($admin == null || $admin->role != 'sub-admin') 
             return $this->errorResponse('No admin to be send invite link', Response::HTTP_BAD_REQUEST);
         
-        // $admin->invite_link = '/invite';
         $admin->save();
 
         return $this->metaSuccess();
@@ -397,7 +395,6 @@ class AdminController extends Controller
         if ($admin == null || $admin->role != 'sub-admin') 
             return $this->errorResponse('No admin to be revoked', Response::HTTP_BAD_REQUEST);
         
-        // $admin->reset_link = '/reset-password';
         $admin->save();
 
         return $this->metaSuccess();

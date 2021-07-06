@@ -80,7 +80,9 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
         });
         Route::prefix('discussions')->group(function() {
             Route::get('/trending', [DiscussionController::class, 'getTrending']);
-            Route::get('/list', [DiscussionController::class, 'getDiscussions']);
+            Route::get('/all', [DiscussionController::class, 'getDiscussions']);
+            Route::get('/pin', [DiscussionController::class, 'getPinnedDiscussions']);
+            Route::get('/my', [DiscussionController::class, 'getMyDiscussions']);
             Route::get('/detail/{id}', [DiscussionController::class, 'getDiscussion']);
             Route::post('/new', [DiscussionController::class, 'postDiscussion']);
             Route::delete('/{id}/new', [DiscussionController::class, 'removeNewMark']);

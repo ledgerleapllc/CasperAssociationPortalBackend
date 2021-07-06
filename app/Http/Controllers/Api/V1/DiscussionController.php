@@ -62,11 +62,31 @@ class DiscussionController extends Controller
 
     public function getDiscussions() {
         $data = array();
+        $limit = $request->limit ?? 15;
         $user = auth()->user()->load(['pinnedDiscussionsList', 'myDiscussionsList']);
-        $data['discussions'] = $this->discussionRepo->getAll();
-        $data['pinned_discussions'] = $user->pinnedDiscussionsList->pluck('discussion');
-        $data['my_discussions'] = $user->myDiscussionsList;
+        $data = Discussion::where([])->orderBy('created_at', 'DESC')->paginate($limit);
+        
+        return $this->successResponse($data);
+    }
 
+    public function getPinnedDiscussions() {
+        $data = array();
+        $user = auth()->user()->load(['pinnedDiscussionsList']);
+        $data['pinned_discussions'] = $user->pinnedDiscussionsList->pluck('discussion');
+
+        $removedNews = DiscussionRemoveNew::where(['user_id' => $user->id])->pluck('discussion_id');
+        $data['new_discussions'] = Discussion::whereNotIn('id', $removedNews)
+                ->whereDate('created_at', '>',  Carbon::now()->subDays(3))
+                ->get();
+        
+        return $this->successResponse($data);
+    }
+
+    public function getMyDiscussions() {
+        $data = array();
+        $user = auth()->user()->load(['myDiscussionsList']);
+        $data = $user->myDiscussionsList;
+        
         return $this->successResponse($data);
     }
 
@@ -166,36 +186,34 @@ class DiscussionController extends Controller
         $is_like = $request->is_like;
         $vote = $this->discussionVoteRepo->first(['discussion_id' => $id, 'user_id' => $user->id]);
         if ($discussion->user_id != $user->id)
-        if ($vote == null) {
-            $this->discussionVoteRepo->create([
-                'discussion_id' => $id,
-                'user_id' => $user -> id,
-                "is_like" => $is_like
-            ]);
-
-            if ($is_like) 
-                $discussion->likes = $discussion->likes  + 1;
-            else $discussion->dislikes = $discussion->dislikes  + 1;
-            $xx = true;
-            $discussion->save();
-        } else {
-            if ($vote->is_like != $is_like) {
-                $this->discussionVoteRepo->update($vote->id, [
-                    'is_like' => $is_like
+            if ($vote == null) {
+                $this->discussionVoteRepo->create([
+                    'discussion_id' => $id,
+                    'user_id' => $user -> id,
+                    "is_like" => $is_like
                 ]);
-                if ($is_like) {
-                    $discussion->dislikes = $discussion->dislikes - 1;
-                    $discussion->likes = $discussion->likes + 1;
-                } else {
-                    $discussion->dislikes = $discussion->dislikes + 1;
-                    $discussion->likes = $discussion->likes - 1;
-                }                    
-            }
-            $xx = false;
-            $discussion->save();
-        }       
 
-        return $this->successResponse(["discussion" => $discussion, "xx" => $xx]);    
+                if ($is_like) 
+                    $discussion->likes = $discussion->likes  + 1;
+                else $discussion->dislikes = $discussion->dislikes  + 1;
+                $discussion->save();
+            } else {
+                if ($vote->is_like != $is_like) {
+                    $this->discussionVoteRepo->update($vote->id, [
+                        'is_like' => $is_like
+                    ]);
+                    if ($is_like) {
+                        $discussion->dislikes = $discussion->dislikes - 1;
+                        $discussion->likes = $discussion->likes + 1;
+                    } else {
+                        $discussion->dislikes = $discussion->dislikes + 1;
+                        $discussion->likes = $discussion->likes - 1;
+                    }                    
+                }
+                $discussion->save();
+            }       
+
+        return $this->successResponse(["discussion" => $discussion]);    
     }
 
     public function setPin(Request $request, $id) {
