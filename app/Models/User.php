@@ -55,6 +55,7 @@ class User extends Authenticatable
         'signed_file',
         'hellosign_form',
         'letter_file',
+        'permissions'
     ];
 
     /**
@@ -90,6 +91,7 @@ class User extends Authenticatable
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'node_verified_at' => 'datetime',
+        'permissions' => 'array'
     ];
 
     /**

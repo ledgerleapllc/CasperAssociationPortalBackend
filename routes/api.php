@@ -72,9 +72,9 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::prefix('/teams')->group(function () {
                 Route::get('/', [AdminController::class, 'getSubAdmins']);
                 Route::post('/invite', [AdminController::class, 'inviteSubAdmin']);
-                Route::post('/reinvite', [AdminController::class, 'resendLink']);
-                Route::get('/{id}/change-permissions', [AdminController::class, 'changeSubAdminPermissions']);
-                Route::get('/{id}/reset-password', [AdminController::class, 'changeSubAdminResetPassword']);
+                Route::put('/{id}/reinvite', [AdminController::class, 'resendLink']);
+                Route::put('/{id}/change-permissions', [AdminController::class, 'changeSubAdminPermissions']);
+                Route::put('/{id}/reset-password', [AdminController::class, 'resetSubAdminResetPassword']);
                 Route::delete('/{id}/revoke', [AdminController::class, 'revokeSubAdmin']);
             });
         });
