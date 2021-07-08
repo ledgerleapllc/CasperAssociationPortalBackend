@@ -215,7 +215,7 @@ class UserController extends Controller
         if ($request->type == 'hellosign') {
             $user->signature_request_id = 'signature_'  . $user->id . '._id';
             $user->hellosign_form = 'hellosign_form_' . $user->id;
-            $user->letter_file = 'leteter_file.pdf';
+            // $user->letter_file = 'leteter_file.pdf';
             $user->save();
         }
 
@@ -246,6 +246,11 @@ class UserController extends Controller
                 $profile->save();
             }
 
+        }
+
+        if ($request->type == 'letter-upload') {
+            $user->letter_file = 'letter_file.pdf';
+            $user->save();
         }
 
         return $this->metaSuccess();
