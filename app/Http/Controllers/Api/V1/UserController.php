@@ -524,8 +524,11 @@ class UserController extends Controller
     public function getVotes(Request $request)
     {
         $status = $request->status ?? 'active';
-
         $limit = $request->limit ?? 15;
+        $sort_key = $request->sort_key ?? '';
+        $sort_direction = $request->sort_direction ?? '';
+        if (!$sort_key) $sort_key = 'ballot.id';
+        if (!$sort_direction) $sort_direction = 'desc';
 
         if ($status != 'active' && $status != 'finish') {
             return $this->errorResponse('Paramater invalid (status is active or finish)', Response::HTTP_BAD_REQUEST);
@@ -536,7 +539,7 @@ class UserController extends Controller
         } else {
             $query = Ballot::where('status', '<>', 'active');
         }
-        $data = $query->with('vote')->orderBy('created_at', 'ASC')->paginate($limit);
+        $data = $query->with('vote')->orderBy($sort_key, $sort_direction)->paginate($limit);
 
         return $this->successResponse($data);
     }

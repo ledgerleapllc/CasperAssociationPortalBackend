@@ -26,7 +26,12 @@ class AdminController extends Controller
     public function getUsers(Request $request)
     {
         $limit = $request->limit ?? 15;
-        $users = User::where('role', 'member')->orderBy('created_at', 'ASC')->paginate($limit);
+        $sort_key = $request->sort_key ?? '';
+        $sort_direction = $request->sort_direction ?? '';
+        if (!$sort_key) $sort_key = 'created_at';
+        if (!$sort_direction) $sort_direction = 'desc';
+        $users = User::where('role', 'member')->orderBy($sort_key, $sort_direction)
+        ->orderBy($sort_key, $sort_direction)->paginate($limit);
         return $this->successResponse($users);
     }
 
@@ -260,12 +265,20 @@ class AdminController extends Controller
     {
         $limit = $request->limit;
         $status = $request->status;
+        $sort_key = $request->sort_key ?? '';
+        $sort_direction = $request->sort_direction ?? '';
+        if (!$sort_key) $sort_key = 'ballot.id';
+        if (!$sort_direction) $sort_direction = 'desc';
+        
         if ($status == 'active') {
-            $ballots = Ballot::with(['user', 'vote'])->where('ballot.status', 'active')->paginate($limit);
+            $ballots = Ballot::with(['user', 'vote'])->where('ballot.status', 'active')
+            ->orderBy($sort_key, $sort_direction)->paginate($limit);
         } else if ($status && $status != 'active') {
-            $ballots = Ballot::with(['user', 'vote'])->where('ballot.status', '!=', 'active')->paginate($limit);
+            $ballots = Ballot::with(['user', 'vote'])->where('ballot.status', '!=', 'active')
+            ->orderBy($sort_key, $sort_direction)
+            ->paginate($limit);
         } else {
-            $ballots = Ballot::with(['user', 'vote'])->paginate($limit);
+            $ballots = Ballot::with(['user', 'vote'])->orderBy($sort_key, $sort_direction)->paginate($limit);
         }
         return $this->successResponse($ballots);
     }
