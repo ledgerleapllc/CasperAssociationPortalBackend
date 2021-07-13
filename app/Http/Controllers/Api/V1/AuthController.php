@@ -52,6 +52,9 @@ class AuthController extends Controller
     {
         $user = $this->userRepo->first(['email' => $request->email]);
         if ($user && Hash::check($request->password, $user->password)) {
+            if($user->banned == 1) {
+                return $this->errorResponse('User banned', Response::HTTP_BAD_REQUEST);
+            }
             return $this->createTokenFromUser($user);
         }
 

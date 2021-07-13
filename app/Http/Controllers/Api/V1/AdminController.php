@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Mail\ResetKYC;
 use App\Models\Ballot;
 use App\Models\BallotFile;
+use App\Models\DocumentFile;
 use App\Models\OwnerNode;
+use App\Models\Profile;
 use App\Models\Setting;
 use App\Models\Shuftipro;
 use App\Models\ShuftiproTemp;
@@ -66,129 +68,28 @@ class AdminController extends Controller
         return $this->successResponse($response);
     }
 
-    // Approve KYC
-    public function approveKYC($id, Request $request)
-    {
-        $admin = auth()->user();
-
-        $user = User::with(['shuftipro', 'profile'])->where('id', $id)->first();
-        if ($user && $user->profile && $user->shuftipro) {
-            $user->kyc_verified_at = now();
-            $user->save();
-
-            $user->shuftipro->status = 'approved';
-            $user->shuftipro->reviewed = 1;
-            $user->shuftipro->save();
-
-            $user->shuftipro->manual_approved_at = now();
-            $user->shuftipro->manual_reviewer = $admin->email;
-            $user->shuftipro->save();
-            return $this->metaSuccess();
-        }
-        return $this->errorResponse('Fail approve KYC', Response::HTTP_BAD_REQUEST);
-    }
-
-    // Deny KYC
-    public function denyKYC($id, Request $request)
-    {
-        $admin = auth()->user();
-        $user = User::with(['shuftipro', 'profile'])->where('id', $id)->first();
-        if ($user && $user->profile && $user->shuftipro) {
-            $user->kyc_verified_at = null;
-            $user->save();
-
-            $user->shuftipro->status = 'denied';
-            $user->shuftipro->reviewed = 1;
-            $user->shuftipro->save();
-
-            $user->shuftipro->manual_approved_at = now();
-            $user->shuftipro->manual_reviewer = $admin->email;
-            $user->shuftipro->save();
-
-            return $this->metaSuccess();
-        }
-        return $this->errorResponse('Fail deny KYC', Response::HTTP_BAD_REQUEST);
-    }
-
-    // Reset KYC
-    public function resetKYC($userId, Request $request)
-    {
-        $admin = auth()->user();
-
-        $message = trim($request->get('message'));
-        if (!$message) {
-            return $this->errorResponse('please input message', Response::HTTP_BAD_REQUEST);
-        }
-
-        $user = User::with(['profile'])->where('id', $userId)->first();
-        if ($user && $user->profile) {
-            $user->kyc_verified_at = null;
-            $user->save();
-
-            Shuftipro::where('user_id', $user->id)->delete();
-            ShuftiproTemp::where('user_id', $user->id)->delete();
-
-            Mail::to($user->email)->send(new ResetKYC($message));
-            return $this->metaSuccess();
-        }
-
-        return $this->errorResponse('Fail Reset KYC', Response::HTTP_BAD_REQUEST);
-    }
-
     // get intake
     public function getIntakes(Request $request)
     {
         $limit = $request->limit ?? 15;
         $search = $request->search ?? '';
-        $users =  User::select(['users.created_at as registration_date', 'users.id', 'users.email', 'users.kyc_verified_at', 'users.node_verified_at'])
-            ->leftJoin('owner_node', function ($join) {
-                $join->on('owner_node.user_id', '=', 'users.id');
-            })
-            ->leftJoin('users as u2', function ($join) {
-                $join->on('owner_node.email', '=', 'u2.email');
-            })
+        $users =  User::select([
+            'id', 'email', 'node_verified_at', 'letter_verified_at', 'signature_request_id', 'created_at',
+            'first_name', 'last_name', 'letter_file', 'letter_rejected_at'
+        ])
+            ->where('banned', 0)
+            ->where('role', 'member')
             ->where(function ($q) {
                 $q->where('users.node_verified_at', null)
-                    ->orWhere('users.kyc_verified_at', null)
-                    ->orWhere('u2.node_verified_at', null)
-                    ->orWhere('u2.kyc_verified_at', null);
-            })->where('users.role', '<>', 'admin')
+                    ->orWhere('users.letter_verified_at', null)
+                    ->orWhere('users.signature_request_id', null);
+            })
             ->where(function ($query) use ($search) {
                 if ($search) {
                     $query->where('users.email', 'like', '%' . $search . '%');
                 }
             })
-            ->groupBy(['users.created_at', 'users.id', 'users.email', 'users.kyc_verified_at', 'users.node_verified_at'])
             ->paginate($limit);
-
-        foreach ($users as $user) {
-            $total = 0;
-            $unopenedInvites = 0;
-            $ownerNodes = OwnerNode::where('user_id', $user->id)->get();
-            foreach ($ownerNodes as $node) {
-                $total++;
-                $user2 = User::select(['users.id', 'users.email', 'users.kyc_verified_at', 'users.node_verified_at'])
-                    ->where('email', $node->email)->first();
-                $node->user = $user2;
-                if ($user2 && $user2->kyc_verified_at && $user2->node_verified_at) {
-                } else {
-                    $unopenedInvites++;
-                }
-            }
-
-            $user->beneficial_owners = $total;
-            $user->unopened_invites = $unopenedInvites;
-            if ($unopenedInvites == 0) {
-                $user->owner_kyc_status = 'Approved';
-            } else {
-                $user->owner_kyc_status = 'Not Approve';
-            }
-            if ($user->kyc_verified_at && $user->node_verified_at) {
-                $user->kyc_status = 'Approved';
-            } else {
-                $user->kyc_status = 'Not Approved';
-            }
-        }
 
         return $this->successResponse($users);
     }
@@ -302,11 +203,11 @@ class AdminController extends Controller
         $ballot->save();
     }
 
-    public function getBallotVotes($id,Request $request)
+    public function getBallotVotes($id, Request $request)
     {
         $limit = $request->limit ?? 15;
         $data = VoteResult::where('ballot_id', '=', $id)->with('user')->orderBy('created_at', 'ASC')->paginate($limit);
- 
+
         return $this->successResponse($data);
     }
 
@@ -351,13 +252,15 @@ class AdminController extends Controller
         return $this->metaSuccess();
     }
 
-    public function getSubAdmins(Request $request) {
+    public function getSubAdmins(Request $request)
+    {
         $admins = User::where(['role' => 'sub-admin'])->get();
 
         return $this->successResponse($admins);
     }
 
-    public function inviteSubAdmin(Request $request) {
+    public function inviteSubAdmin(Request $request)
+    {
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
         ]);
@@ -377,14 +280,15 @@ class AdminController extends Controller
         return $this->successResponse(['invited_admin' => $admin]);
     }
 
-    public function changeSubAdminPermissions(Request $request, $id) {
+    public function changeSubAdminPermissions(Request $request, $id)
+    {
         $data['intake'] = $request->intake;
         $data['users'] = $request->users;
         $data['ballots'] = $request->ballots;
         $data['perks'] = $request->perks;
 
         $admin = User::find($id);
-        if ($admin == null || $admin->role != 'sub-admin') 
+        if ($admin == null || $admin->role != 'sub-admin')
             return $this->errorResponse('No admin to be send invite link', Response::HTTP_BAD_REQUEST);
 
         $admin->permissions = $data;
@@ -393,34 +297,238 @@ class AdminController extends Controller
         return $this->metaSuccess();
     }
 
-    public function resendLink(Request $request) {
+    public function resendLink(Request $request)
+    {
         $admin = User::find($id);
-        if ($admin == null || $admin->role != 'sub-admin') 
+        if ($admin == null || $admin->role != 'sub-admin')
             return $this->errorResponse('No admin to be send invite link', Response::HTTP_BAD_REQUEST);
-        
+
         $admin->save();
 
         return $this->metaSuccess();
     }
 
-    public function changeSubAdminResetPassword(Request $request) {
+    public function changeSubAdminResetPassword(Request $request, $id)
+    {
         $admin = User::find($id);
-        if ($admin == null || $admin->role != 'sub-admin') 
+        if ($admin == null || $admin->role != 'sub-admin')
             return $this->errorResponse('No admin to be revoked', Response::HTTP_BAD_REQUEST);
-        
+
         $admin->save();
 
         return $this->metaSuccess();
     }
 
-    public function revokeSubAdmin(Request $request, $id) {
+    public function revokeSubAdmin(Request $request, $id)
+    {
         $admin = User::find($id);
-        if ($admin == null || $admin->role != 'sub-admin') 
+        if ($admin == null || $admin->role != 'sub-admin')
             return $this->errorResponse('No admin to be revoked', Response::HTTP_BAD_REQUEST);
-        
+
         $admin->type = 'revoked';
         $admin->save();
 
         return $this->successResponse(['revoked' => $admin]);
+    }
+
+    public function approveIntakeUser($id)
+    {
+        $admin = auth()->user();
+
+        $user = User::where('id', $id)->where('banned', 0)->where('role', 'member')->first();
+        if ($user && $user->letter_file) {
+            $user->letter_verified_at = now();
+            $user->save();
+            return $this->metaSuccess();
+        }
+        return $this->errorResponse('Fail approved User', Response::HTTP_BAD_REQUEST);
+    }
+
+    public function resetIntakeUser($id, Request $request)
+    {
+        $admin = auth()->user();
+
+        $user = User::where('id', $id)->where('banned', 0)->where('role', 'member')->first();
+        if ($user && $user->letter_file && !$user->letter_verified_at) {
+            $user->letter_verified_at = null;
+            $user->letter_file = null;
+            $user->letter_rejected_at = now();
+            $user->save();
+            $message = trim($request->get('message'));
+            if (!$message) {
+                return $this->errorResponse('please input message', Response::HTTP_BAD_REQUEST);
+            }
+            Mail::to($user->email)->send(new ResetKYC($message));
+            return $this->metaSuccess();
+        }
+        return $this->errorResponse('Fail reset User', Response::HTTP_BAD_REQUEST);
+    }
+
+    public function banUser($id)
+    {
+        $admin = auth()->user();
+
+        $user = User::where('id', $id)->where('banned', 0)->first();
+        if ($user) {
+            $user->banned = 1;
+            $user->save();
+            return $this->metaSuccess();
+        }
+        return $this->errorResponse('Fail Ban User', Response::HTTP_BAD_REQUEST);
+    }
+
+    public function getVerificationUsers(Request $request)
+    {
+        $limit = $request->limit ?? 15;
+        $users = User::where('users.role', 'member')->where('banned', 0)
+            ->join('profile', function ($query) {
+                $query->on('profile.user_id', '=', 'users.id')
+                    ->where('profile.status', 'pending');
+            })
+            ->join('shuftipro', 'shuftipro.user_id', '=', 'users.id')
+            ->select([
+                'users.id as user_id',
+                'users.created_at',
+                'users.email',
+                'profile.*',
+                'shuftipro.status as kyc_status',
+                'shuftipro.background_checks_result',
+            ])->paginate($limit);
+        return $this->successResponse($users);
+    }
+
+    // Reset KYC
+    public function resetKYC($id, Request $request)
+    {
+        $admin = auth()->user();
+
+        $message = trim($request->get('message'));
+        if (!$message) {
+            return $this->errorResponse('please input message', Response::HTTP_BAD_REQUEST);
+        }
+
+        $user = User::with(['profile'])->where('id', $id)->first();
+        if ($user && $user->profile) {
+            $user->profile->status = 'pending';
+            $user->profile->save();
+            Shuftipro::where('user_id', $user->id)->delete();
+            ShuftiproTemp::where('user_id', $user->id)->delete();
+            DocumentFile::where('user_id', $user->id)->delete();
+
+            Mail::to($user->email)->send(new ResetKYC($message));
+            return $this->metaSuccess();
+        }
+
+        return $this->errorResponse('Fail Reset KYC', Response::HTTP_BAD_REQUEST);
+    }
+
+    // Reset AML
+    public function resetAML($id, Request $request)
+    {
+        $admin = auth()->user();
+
+        $message = trim($request->get('message'));
+        if (!$message) {
+            return $this->errorResponse('please input message', Response::HTTP_BAD_REQUEST);
+        }
+
+        $user = User::with(['profile'])->where('id', $id)->first();
+        if ($user && $user->profile) {
+            Profile::where('user_id', $user->id)->delete();
+            Shuftipro::where('user_id', $user->id)->delete();
+            ShuftiproTemp::where('user_id', $user->id)->delete();
+            DocumentFile::where('user_id', $user->id)->delete();
+
+            Mail::to($user->email)->send(new ResetKYC($message));
+            return $this->metaSuccess();
+        }
+
+        return $this->errorResponse('Fail Reset AML', Response::HTTP_BAD_REQUEST);
+    }
+
+    // Approve kyc 
+    public function approveKYC($id, Request $request)
+    {
+        $admin = auth()->user();
+
+        $user = User::with(['shuftipro', 'profile'])->where('id', $id)
+            ->where('users.role', 'member')->where('banned', 0)->first();
+        if ($user && $user->profile) {
+            $user->profile->status = 'approved';
+            $user->profile->save();
+            if ($user->shuftipro) {
+                $user->shuftipro->status = 'approved';
+                $user->shuftipro->reviewed = 1;
+                $user->shuftipro->background_checks_result = 1;
+                $user->shuftipro->manual_approved_at = now();
+                $user->shuftipro->manual_reviewer = $admin->email;
+                $user->shuftipro->save();
+            }
+
+            return $this->metaSuccess();
+        }
+        return $this->errorResponse('Fail approve KYC', Response::HTTP_BAD_REQUEST);
+    }
+
+    // Approve AML
+    public function approveAML($id)
+    {
+        $admin = auth()->user();
+
+        $user = User::with(['shuftipro', 'profile'])->where('id', $id)
+            ->where('users.role', 'member')->where('banned', 0)->first();
+        if ($user && $user->profile && $user->shuftipro) {
+            $user->shuftipro->background_checks_result = 1;
+            $user->shuftipro->save();
+            if ($user->shuftipro->status = 'approved') {
+                $user->profile->status = 'approved';
+                $user->profile->save();
+            }
+            return $this->metaSuccess();
+        }
+        return $this->errorResponse('Fail approve AML', Response::HTTP_BAD_REQUEST);
+    }
+
+    public function banAndDenyUser($id)
+    {
+        $user = User::with(['shuftipro', 'profile'])->where('id', $id)
+            ->where('users.role', 'member')->where('banned', 0)->first();
+        if ($user && $user->profileT) {
+            $user->profile->status = 'denied';
+            $user->profile->save();
+            $user->banned = 1;
+            $user->save();
+            return $this->metaSuccess();
+        }
+        return $this->errorResponse('Fail deny and ban user', Response::HTTP_BAD_REQUEST);
+    }
+
+    public function getVerificationDetail($id)
+    {
+        $user = User::with(['shuftipro', 'profile', 'documentFiles'])
+            ->leftJoin('shuftipro', 'shuftipro.user_id', '=', 'users.id')
+            ->where('users.id', $id)
+            ->select([
+                'users.*',
+                'shuftipro.status as kyc_status',
+                'shuftipro.background_checks_result',
+            ])
+            ->where('users.role', 'member')->where('banned', 0)->first();
+        if ($user) {
+            return $this->successResponse($user);
+        }
+        return $this->errorResponse('Fail get verification user', Response::HTTP_BAD_REQUEST);
+    }
+
+    public function approveDocument($id)
+    {
+        $user = User::with(['profile'])->where('id', $id)
+            ->where('users.role', 'member')->where('banned', 0)->first();
+        if ($user && $user->profile) {
+            $user->profile->document_verified_at = now();
+            $user->profile->save();
+            return $this->metaSuccess();
+        }
+        return $this->errorResponse('Fail approve document', Response::HTTP_BAD_REQUEST);
     }
 }

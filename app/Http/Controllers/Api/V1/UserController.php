@@ -149,6 +149,7 @@ class UserController extends Controller
             // Upload Image
             $path = $request->file('file')->storeAs('users', $fileNameToStore);
             $user->letter_file = $path;
+            $user->letter_rejected_at = null;
             $user->save();
             return $this->metaSuccess();
         } catch (\Exception $ex) {
@@ -205,8 +206,8 @@ class UserController extends Controller
     public function verifyBypass(Request $request)
     {
         $user = auth()->user();
-         // Validator
-         $validator = Validator::make($request->all(), [
+        // Validator
+        $validator = Validator::make($request->all(), [
             'type' => 'required'
         ]);
         if ($validator->fails()) {
@@ -220,7 +221,7 @@ class UserController extends Controller
         }
 
         if ($request->type == 'verify-node') {
-            $user->public_address_node = 'public_address_node'  . $user->id ;
+            $user->public_address_node = 'public_address_node'  . $user->id;
             $user->node_verified_at = now();
             $user->message_content = 'message_content';
             $user->signed_file = 'signture';
@@ -230,13 +231,13 @@ class UserController extends Controller
         if ($request->type == 'submit-kyc') {
             $user->kyc_verified_at = now();
             $user->save();
-            if(!$user->profile) {
+            if (!$user->profile) {
                 $profile = new Profile();
                 $profile->user_id = $user->id;
                 $profile->first_name = $user->first_name;
                 $profile->last_name = $user->last_name;
                 $profile->dob = '1990-01-01';
-                $profile->country_citizenship ='United States';
+                $profile->country_citizenship = 'United States';
                 $profile->country_residence = 'United States';
                 $profile->address = 'New York';
                 $profile->city = 'New York';
@@ -245,7 +246,6 @@ class UserController extends Controller
                 $profile->type = $user->type;
                 $profile->save();
             }
-
         }
 
         if ($request->type == 'letter-upload') {
@@ -475,21 +475,18 @@ class UserController extends Controller
 
         $user_id = $user->id;
         $reference_id = $request->reference_id;
-
+        $profile = Profile::where('user_id', $user_id)->first();
+        if ($profile) {
+            $profile->status = 'pending';
+            $profile->save();
+        }
         $record = ShuftiproTemp::where('user_id', $user_id)
             ->where('reference_id', $reference_id)
             ->first();
         if ($record) {
             $record->status = 'booked';
             $record->save();
-            // check shuftipro
-            $shuftiproCheck = new ShuftiproCheck();
-            $status = $shuftiproCheck->handle($record);
-            if($status == 'success') {
-                return $this->metaSuccess();
-            } else {
-                return $this->errorResponse('Fail submit AML', Response::HTTP_BAD_REQUEST);
-            }
+            return $this->metaSuccess();
         }
         return $this->errorResponse('Fail submit AML', Response::HTTP_BAD_REQUEST);
     }
@@ -561,7 +558,7 @@ class UserController extends Controller
     {
         $user = auth()->user();
         $vote = $request->vote;
-        if(!$vote || ($vote != 'for' && $vote != 'against')) {
+        if (!$vote || ($vote != 'for' && $vote != 'against')) {
             return $this->errorResponse('Paramater invalid (vote is for or against)', Response::HTTP_BAD_REQUEST);
         }
         $ballot = Ballot::where('id', $id)->first();
@@ -604,5 +601,4 @@ class UserController extends Controller
         }
         return $this->metaSuccess();
     }
-
 }

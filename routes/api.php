@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\HelloSignController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\DiscussionController;
+use App\Http\Controllers\Api\V1\VerificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -30,38 +31,51 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
     Route::post('/auth/send-reset-password', [AuthController::class, 'sendResetLinkEmail']);
     Route::post('auth/reset-password', [AuthController::class, 'resetPassword']);
     Route::middleware(['auth:api'])->group(function () {
-        Route::post('/users/verify-email', [AuthController::class, 'verifyEmail']);
-        Route::post('/users/resend-verify-email', [AuthController::class, 'resendVerifyEmail']);
-        Route::post('/users/change-email', [UserController::class, 'changeEmail']);
-        Route::post('/users/change-password', [UserController::class, 'changePassword']);
-        Route::get('/users/profile', [UserController::class, 'getProfile']);
-        Route::post('/users/logout', [UserController::class, 'logout']);
-        Route::post('users/hellosign-request', [UserController::class, 'sendHellosignRequest']);
-        Route::post('users/submit-public-address', [UserController::class, 'submitPublicAddress']);
-        Route::post('users/verify-file-casper-signer', [UserController::class, 'verifyFileCasperSigner']);
-        Route::post('users/submit-kyc', [UserController::class, 'functionSubmitKYC']);
-        Route::post('users/verify-owner-node', [UserController::class, 'verifyOwnerNode']);
-        Route::post('users/owner-node', [UserController::class, 'addOwnerNode']);
-        Route::get('users/owner-node', [UserController::class, 'getOwnerNodes']);
-        Route::post('users/resend-invite-owner', [UserController::class, 'resendEmailOwnerNodes']);
-        Route::get('users/message-content', [UserController::class, 'getMessageContent']);
-        Route::post('users/shuftipro-temp',  [UserController::class, 'saveShuftiproTemp']);
-        Route::put('users/shuftipro-temp', [UserController::class, 'updateShuftiproTemp']);
-        Route::put('/users/type-owner-node',  [UserController::class, 'updateTypeOwnerNode']);
-        Route::post('users/verify-bypass',  [UserController::class, 'verifyBypass']);
-        Route::post('/users/upload-letter',  [UserController::class, 'uploadLetter']);
-        Route::get('users/votes', [UserController::class, 'getVotes']);
-        Route::get('users/votes/{id}', [UserController::class, 'getVoteDetail']);
-        Route::post('users/votes/{id}', [UserController::class, 'vote']);
+        Route::middleware(['user_banned'])->group(function () {
+            Route::post('/users/verify-email', [AuthController::class, 'verifyEmail']);
+            Route::post('/users/resend-verify-email', [AuthController::class, 'resendVerifyEmail']);
+            Route::post('/users/change-email', [UserController::class, 'changeEmail']);
+            Route::post('/users/change-password', [UserController::class, 'changePassword']);
+            Route::get('/users/profile', [UserController::class, 'getProfile']);
+            Route::post('/users/logout', [UserController::class, 'logout']);
+            Route::post('users/hellosign-request', [UserController::class, 'sendHellosignRequest']);
+            Route::post('users/submit-public-address', [UserController::class, 'submitPublicAddress']);
+            Route::post('users/verify-file-casper-signer', [UserController::class, 'verifyFileCasperSigner']);
+            Route::post('users/submit-kyc', [UserController::class, 'functionSubmitKYC']);
+            Route::post('users/verify-owner-node', [UserController::class, 'verifyOwnerNode']);
+            Route::post('users/owner-node', [UserController::class, 'addOwnerNode']);
+            Route::get('users/owner-node', [UserController::class, 'getOwnerNodes']);
+            Route::post('users/resend-invite-owner', [UserController::class, 'resendEmailOwnerNodes']);
+            Route::get('users/message-content', [UserController::class, 'getMessageContent']);
+            Route::post('users/shuftipro-temp',  [UserController::class, 'saveShuftiproTemp']);
+            Route::put('users/shuftipro-temp', [UserController::class, 'updateShuftiproTemp']);
+            Route::put('/users/type-owner-node',  [UserController::class, 'updateTypeOwnerNode']);
+            Route::post('users/verify-bypass',  [UserController::class, 'verifyBypass']);
+            Route::post('/users/upload-letter',  [UserController::class, 'uploadLetter']);
+            Route::get('users/votes', [UserController::class, 'getVotes']);
+            Route::get('users/votes/{id}', [UserController::class, 'getVoteDetail']);
+            Route::post('users/votes/{id}', [UserController::class, 'vote']);
+        });
         Route::prefix('admin')->middleware(['role_admin'])->group(function () {
             Route::get('/users', [AdminController::class, 'getUsers']);
             Route::get('/users/{id}', [AdminController::class, 'getUserDetail'])->where('id', '[0-9]+');
             Route::get('/dashboard', [AdminController::class, 'infoDashboard']);
             Route::get('/users/{id}/kyc', [AdminController::class, 'getKYC'])->where('id', '[0-9]+');
-            Route::post('/users/{id}/approve-kyc',  [AdminController::class, 'approveKYC'])->where('id', '[0-9]+');
-            Route::post('/users/{id}/deny-kyc',  [AdminController::class, 'denyKYC'])->where('id', '[0-9]+');
-            Route::post('/users/{id}/reset-kyc',  [AdminController::class, 'resetKYC'])->where('id', '[0-9]+');
+
             Route::get('/users/intakes', [AdminController::class, 'getIntakes']);
+            Route::post('/users/intakes/{id}/approve', [AdminController::class, 'approveIntakeUser'])->where('id', '[0-9]+');
+            Route::post('/users/intakes/{id}/reset', [AdminController::class, 'resetIntakeUser'])->where('id', '[0-9]+');
+            Route::post('/users/{id}/ban', [AdminController::class, 'banUser'])->where('id', '[0-9]+');
+
+            Route::get('/users/verification', [AdminController::class, 'getVerificationUsers']);
+            Route::get('/users/verification/{id}', [AdminController::class, 'getVerificationDetail'])->where('id', '[0-9]+');
+            Route::post('/users/{id}/approve-kyc', [AdminController::class, 'approveKYC'])->where('id', '[0-9]+');
+            Route::post('/users/{id}/reset-kyc', [AdminController::class, 'resetKYC'])->where('id', '[0-9]+');
+            Route::post('/users/{id}/approve-aml', [AdminController::class, 'approveAML'])->where('id', '[0-9]+');
+            Route::post('/users/{id}/reset-aml', [AdminController::class, 'resetAML'])->where('id', '[0-9]+');
+            Route::post('/users/{id}/deny-ban', [AdminController::class, 'banAndDenyUser'])->where('id', '[0-9]+');
+            Route::post('/users/{id}/approve-document', [AdminController::class, 'approveDocument'])->where('id', '[0-9]+');
+
             Route::post('/ballots', [AdminController::class, 'submitBallot']);
             Route::get('/ballots', [AdminController::class, 'getBallots']);
             Route::get('/ballots/{id}', [AdminController::class, 'getDetailBallot'])->where('id', '[0-9]+');
@@ -78,7 +92,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
                 Route::delete('/{id}/revoke', [AdminController::class, 'revokeSubAdmin']);
             });
         });
-        Route::prefix('discussions')->group(function() {
+        Route::prefix('discussions')->group(function () {
             Route::get('/trending', [DiscussionController::class, 'getTrending']);
             Route::get('/all', [DiscussionController::class, 'getDiscussions']);
             Route::get('/pin', [DiscussionController::class, 'getPinnedDiscussions']);
@@ -90,6 +104,13 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::put('/{id}/comment', [DiscussionController::class, 'updateComment']);
             Route::post('/{id}/vote', [DiscussionController::class, 'setVote']);
             Route::post('/{id}/pin', [DiscussionController::class, 'setPin']);
+        });
+
+        Route::prefix('users/verification')->group(function () {
+            Route::post('/submit-node', [VerificationController::class, 'submitNode']);
+            Route::post('/submit-detail', [VerificationController::class, 'submitDetail']);
+            Route::post('/upload-document', [VerificationController::class, 'uploadDocument']);
+            Route::delete('/remove-document/{id}', [VerificationController::class, 'removeDocument']);
         });
     });
 });

@@ -28,6 +28,10 @@ class Kernel extends ConsoleKernel
         $schedule->command('ballot:check')
             ->everyMinute()
             ->runInBackground();
+        $schedule->command('shuftipro:check')
+            ->everyFiveMinutes()
+            ->runInBackground();
+        // ->withoutOverlapping();
     }
 
     /**

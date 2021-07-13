@@ -11,12 +11,13 @@ use Laravel\Passport\HasApiTokens;
 use App\Models\Discussion;
 use App\Models\DiscussionRemoveNew;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
 {
     use HasFactory, Notifiable, HasApiTokens, SoftDeletes;
-    const TYPE_INDIVIDUAL = 'Individual';
-    const TYPE_ENTITY = 'Entity';
+    const TYPE_INDIVIDUAL = 'individual';
+    const TYPE_ENTITY = 'entity';
 
     const STATUS_INCOMPLETE = 'Incomplete';
     const STATUS_INTAKE = 'Intake';
@@ -55,6 +56,9 @@ class User extends Authenticatable
         'signed_file',
         'hellosign_form',
         'letter_file',
+        'banned',
+        'letter_verified_at',
+        'letter_rejected_at',
     ];
 
     /**
@@ -77,7 +81,8 @@ class User extends Authenticatable
         'full_name',
         'signed_file_url',
         'pinned',
-        'new_threads'
+        'new_threads',
+        'letter_file_url'
     ];
 
     /**
@@ -101,6 +106,21 @@ class User extends Authenticatable
     {
         return "{$this->first_name} {$this->last_name}";
     }
+
+    /**
+     * Get the user's full name.
+     *
+     * @return string
+     */
+    public function getLetterFileUrlAttribute()
+    {
+        if(!$this->letter_file) {
+            return null;
+        }
+        $url = Storage::disk('local')->url($this->letter_file);
+        return asset($url);
+    }
+
 
     public function getSignedFileUrlAttribute()
     {
@@ -143,6 +163,10 @@ class User extends Authenticatable
                 ->count();
         
         return $count;
+    }
+
+    public function documentFiles() {
+        return $this->hasMany('App\Models\DocumentFile');
     }
 
 }
