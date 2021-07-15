@@ -3,10 +3,14 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\EmailerHelper;
 use App\Mail\ResetKYC;
 use App\Models\Ballot;
 use App\Models\BallotFile;
 use App\Models\DocumentFile;
+use App\Models\EmailerAdmin;
+use App\Models\EmailerTriggerAdmin;
+use App\Models\EmailerTriggerUser;
 use App\Models\OwnerNode;
 use App\Models\Profile;
 use App\Models\Setting;
@@ -18,6 +22,7 @@ use App\Models\VoteResult;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -339,6 +344,11 @@ class AdminController extends Controller
         if ($user && $user->letter_file) {
             $user->letter_verified_at = now();
             $user->save();
+            $emailerData = EmailerHelper::getEmailerData();
+            EmailerHelper::triggerUserEmail($user->email, 'Your letter of motivation is APPROVED',$emailerData, $user);
+            if ($user->letter_verified_at && $user->signature_request_id && $user->node_verified_at) {
+                EmailerHelper::triggerUserEmail($user->email, 'Congratulations',$emailerData, $user);
+            }
             return $this->metaSuccess();
         }
         return $this->errorResponse('Fail approved User', Response::HTTP_BAD_REQUEST);
@@ -531,4 +541,97 @@ class AdminController extends Controller
         }
         return $this->errorResponse('Fail approve document', Response::HTTP_BAD_REQUEST);
     }
+
+    // Add Emailer Admin
+	public function addEmailerAdmin(Request $request) {
+		$user = Auth::user();
+
+        $email = $request->get('email');
+        if (!$email) {
+            return [
+                'success' => false,
+                'message' => 'Invalid email address'
+            ];
+        }
+
+        $record = EmailerAdmin::where('email', $email)->first();
+        if ($record) {
+            return [
+                'success' => false,
+                'message' => 'This emailer admin email address is already in use'
+            ];
+        }
+
+        $record = new EmailerAdmin;
+        $record->email = $email;
+        $record->save();
+
+        return ['success' => true];
+	
+    }
+    
+    	// Delete Emailer Admin
+	public function deleteEmailerAdmin($adminId, Request $request) {
+		$user = Auth::user();
+        EmailerAdmin::where('id', $adminId)->delete();
+        return ['success' => true];
+
+		return ['success' => false];
+    }
+    
+    	// Get Emailer Data
+	public function getEmailerData(Request $request) {
+		$user = Auth::user();
+		$data = [];
+
+        $admins = EmailerAdmin::where('id', '>', 0)->orderBy('email', 'asc')->get();
+        $triggerAdmin = EmailerTriggerAdmin::where('id', '>', 0)->orderBy('id', 'asc')->get();
+        $triggerUser = EmailerTriggerUser::where('id', '>', 0)->orderBy('id', 'asc')->get();
+        $data = [
+            'admins' => $admins,
+            'triggerAdmin' => $triggerAdmin,
+            'triggerUser' => $triggerUser,
+        ];
+
+		return [
+			'success' => true,
+			'data' => $data
+		];
+    }
+    
+    	// Update Emailer Trigger Admin
+	public function updateEmailerTriggerAdmin($recordId, Request $request) {
+		$user = Auth::user();
+        $record = EmailerTriggerAdmin::find($recordId);
+
+        if ($record) {
+            $enabled = (int) $request->get('enabled');
+            $record->enabled = $enabled;
+            $record->save();
+
+            return ['success' => true];
+        }
+
+		return ['success' => false];
+	}
+
+	// Update Emailer Trigger User
+	public function updateEmailerTriggerUser($recordId, Request $request) {
+		$user = Auth::user();
+        $record = EmailerTriggerUser::find($recordId);
+
+        if ($record) {
+            $enabled = (int) $request->get('enabled');
+            $content = $request->get('content');
+
+            $record->enabled = $enabled;
+            if ($content) $record->content = $content;
+
+            $record->save();
+
+            return ['success' => true];
+        }
+
+		return ['success' => false];
+	}
 }

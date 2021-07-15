@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\EmailerHelper;
 use App\Http\Requests\Api\AddOwnerNodeRequest;
 use App\Http\Requests\Api\ChangeEmailRequest;
 use App\Http\Requests\Api\ChangePasswordRequest;
@@ -151,6 +152,9 @@ class UserController extends Controller
             $user->letter_file = $path;
             $user->letter_rejected_at = null;
             $user->save();
+            $emailerData = EmailerHelper::getEmailerData();
+            EmailerHelper::triggerAdminEmail('User uploads a letter',$emailerData, $user);
+            EmailerHelper::triggerUserEmail($user->email, 'Your letter of motivation is received',$emailerData, $user);
             return $this->metaSuccess();
         } catch (\Exception $ex) {
             return $this->errorResponse(__('Failed upload file'), Response::HTTP_BAD_REQUEST, $ex->getMessage());
@@ -193,6 +197,10 @@ class UserController extends Controller
             $sign_url = $response->getSignUrl();
 
             $user->update(['signature_request_id' => $signature_request_id]);
+            $emailerData = EmailerHelper::getEmailerData();
+            if ($user->letter_verified_at && $user->signature_request_id && $user->node_verified_at) {
+                EmailerHelper::triggerUserEmail($user->email, 'Congratulations',$emailerData, $user);
+            }
             return $this->successResponse([
                 'signature_request_id' => $signature_request_id,
                 'url' => $sign_url,
@@ -314,6 +322,12 @@ class UserController extends Controller
                     $user->signed_file = $fullpath;
                     $user->node_verified_at = now();
                     $user->save();
+                    $emailerData = EmailerHelper::getEmailerData();
+                    EmailerHelper::triggerUserEmail($user->email, 'Your Node is Verified',$emailerData, $user);
+
+                    if ($user->letter_verified_at && $user->signature_request_id && $user->node_verified_at) {
+                        EmailerHelper::triggerUserEmail($user->email, 'Congratulations',$emailerData, $user);
+                    }
                     return $this->metaSuccess();
                 } else {
                     return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
@@ -486,12 +500,14 @@ class UserController extends Controller
         if ($record) {
             $record->status = 'booked';
             $record->save();
+            $emailerData = EmailerHelper::getEmailerData();
+            EmailerHelper::triggerAdminEmail('KYC or AML need review',$emailerData, $user);
             return $this->metaSuccess();
         }
         return $this->errorResponse('Fail submit AML', Response::HTTP_BAD_REQUEST);
     }
 
-    // Update Shuftipro Temp Status
+    // Updateq Temp Status
     public function updateTypeOwnerNode(Request $request)
     {
         $user = auth()->user();

@@ -19,3 +19,4 @@ Route::get('/', function () {
 });
 
 Route::get('install', [InstallController::class, 'install']);
+Route::get('/install-emailer', [InstallController::class, 'installEmailer']);

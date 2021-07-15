@@ -91,6 +91,13 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
                 Route::get('/{id}/reset-password', [AdminController::class, 'changeSubAdminResetPassword']);
                 Route::delete('/{id}/revoke', [AdminController::class, 'revokeSubAdmin']);
             });
+            
+            //emailer
+            Route::post('/emailer-admin', [AdminController::class, 'addEmailerAdmin']);
+            Route::delete('/emailer-admin/{adminId}', [AdminController::class, 'deleteEmailerAdmin']);
+            Route::get('/emailer-data', [AdminController::class, 'getEmailerData']);
+            Route::put('/emailer-trigger-admin/{recordId}', [AdminController::class, 'updateEmailerTriggerAdmin']);
+	        Route::put('/emailer-trigger-user/{recordId}', [AdminController::class, 'updateEmailerTriggerUser']);
         });
         Route::prefix('discussions')->group(function () {
             Route::get('/trending', [DiscussionController::class, 'getTrending']);
