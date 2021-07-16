@@ -257,9 +257,11 @@ class AdminController extends Controller
         return $this->metaSuccess();
     }
 
-    public function getSubAdmins(Request $request)
-    {
-        $admins = User::where(['role' => 'sub-admin'])->get();
+    public function getSubAdmins(Request $request) {
+        $limit = $request->limit ?? 10;
+        $admins = User::where(['role' => 'sub-admin'])
+                    ->orderBy('created_at', 'DESC')
+                    ->paginate($limit);
 
         return $this->successResponse($admins);
     }
@@ -273,16 +275,29 @@ class AdminController extends Controller
             return $this->validateResponse($validator->errors());
         }
 
+        $isExist = User::where(['email' => $request->email])->count() > 0;
+        if ($isExist) {
+            return $this->errorResponse('This email has already been used to invite another admin.', Response::HTTP_BAD_REQUEST);
+        }
+
+        $permission = [
+            'intake' => false,
+            'users' => false,
+            'ballots' => false,
+            'perks' => false,
+        ];
         $admin = User::create([
             'first_name' => 'faker',
             'last_name' => 'faker',
             'email' => $request->email,
             'password' => '',
             'type' => 'invited',
-            'role' => 'sub-admin'
+            'role' => 'sub-admin',
+            'permissions' => $permission,
+            'invite_link' => '/invite-link'
         ]);
 
-        return $this->successResponse(['invited_admin' => $admin]);
+        return $this->successResponse(['invited' => $admin]);
     }
 
     public function changeSubAdminPermissions(Request $request, $id)
@@ -293,8 +308,8 @@ class AdminController extends Controller
         $data['perks'] = $request->perks;
 
         $admin = User::find($id);
-        if ($admin == null || $admin->role != 'sub-admin')
-            return $this->errorResponse('No admin to be send invite link', Response::HTTP_BAD_REQUEST);
+        if ($admin == null || $admin->role != 'sub-admin') 
+            return $this->errorResponse('There is no admin user with this email', Response::HTTP_BAD_REQUEST);
 
         $admin->permissions = $data;
         $admin->save();
@@ -302,23 +317,22 @@ class AdminController extends Controller
         return $this->metaSuccess();
     }
 
-    public function resendLink(Request $request)
-    {
+    public function resendLink(Request $request, $id) {
         $admin = User::find($id);
         if ($admin == null || $admin->role != 'sub-admin')
             return $this->errorResponse('No admin to be send invite link', Response::HTTP_BAD_REQUEST);
-
+        
+        $admin->invite_link = '/invite-link2';
         $admin->save();
 
         return $this->metaSuccess();
     }
 
-    public function changeSubAdminResetPassword(Request $request, $id)
-    {
+    public function resetSubAdminResetPassword(Request $request, $id) {
         $admin = User::find($id);
         if ($admin == null || $admin->role != 'sub-admin')
             return $this->errorResponse('No admin to be revoked', Response::HTTP_BAD_REQUEST);
-
+        $admin->reset_link = '/reset-link';
         $admin->save();
 
         return $this->metaSuccess();
