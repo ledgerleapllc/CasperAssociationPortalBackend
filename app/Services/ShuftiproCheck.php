@@ -171,15 +171,14 @@ class ShuftiproCheck
         $temp->save();
 
         $user = User::find($user_id);
-
+        $user->kyc_verified_at = now();
+        $user->save();
         if ($status == "approved") {
             $profile = Profile::where('user_id', $user_id);
             if ($profile) {
                 $profile->status = 'approved';
                 $profile->save();
             }
-            $user->kyc_verified_at = now();
-            $user->save();
             return 'success';
         } else {
             return 'fail';

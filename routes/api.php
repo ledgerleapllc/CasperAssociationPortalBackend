@@ -55,6 +55,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('users/votes', [UserController::class, 'getVotes']);
             Route::get('users/votes/{id}', [UserController::class, 'getVoteDetail']);
             Route::post('users/votes/{id}', [UserController::class, 'vote']);
+            Route::post('/users/upload-avatar',  [UserController::class, 'uploadAvatar']);
         });
         Route::prefix('admin')->middleware(['role_admin'])->group(function () {
             Route::get('/users', [AdminController::class, 'getUsers']);

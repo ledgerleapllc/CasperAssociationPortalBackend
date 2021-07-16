@@ -618,4 +618,35 @@ class UserController extends Controller
         }
         return $this->metaSuccess();
     }
+
+    /**
+     * verify file casper singer
+     */
+    public function uploadAvatar(Request $request)
+    {
+        try {
+            // Validator
+            $validator = Validator::make($request->all(), [
+                'avatar' => 'sometimes|mimes:jpeg,jpg,png,gif|max:100000',
+            ]);
+            if ($validator->fails()) {
+                return $this->validateResponse($validator->errors());
+            }
+            $user = auth()->user();
+            $filenameWithExt = $request->file('avatar')->getClientOriginalName();
+            //Get just filename
+            $filename = pathinfo($filenameWithExt, PATHINFO_FILENAME);
+            // Get just ext
+            $extension = $request->file('avatar')->getClientOriginalExtension();
+            // Filename to store
+            $fileNameToStore = $filename . '_' . time() . '.' . $extension;
+            // Upload Image
+            $path = $request->file('avatar')->storeAs('users/avatar', $fileNameToStore);
+            $user->avatar = $path;
+            $user->save();
+            return $this->metaSuccess();
+        } catch (\Exception $ex) {
+            return $this->errorResponse(__('Failed upload avatar'), Response::HTTP_BAD_REQUEST, $ex->getMessage());
+        }
+    }
 }

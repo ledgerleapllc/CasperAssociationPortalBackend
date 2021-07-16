@@ -343,6 +343,7 @@ class AdminController extends Controller
         $user = User::where('id', $id)->where('banned', 0)->where('role', 'member')->first();
         if ($user && $user->letter_file) {
             $user->letter_verified_at = now();
+            $user->kyc_verified_at = now();
             $user->save();
             $emailerData = EmailerHelper::getEmailerData();
             EmailerHelper::triggerUserEmail($user->email, 'Your letter of motivation is APPROVED',$emailerData, $user);
@@ -359,7 +360,7 @@ class AdminController extends Controller
         $admin = auth()->user();
 
         $user = User::where('id', $id)->where('banned', 0)->where('role', 'member')->first();
-        if ($user && $user->letter_file && !$user->letter_verified_at) {
+        if ($user) {
             $user->letter_verified_at = null;
             $user->letter_file = null;
             $user->letter_rejected_at = now();
@@ -474,7 +475,8 @@ class AdminController extends Controller
                 $user->shuftipro->manual_reviewer = $admin->email;
                 $user->shuftipro->save();
             }
-
+            $user->kyc_verified_at = now();
+            $user->save();
             return $this->metaSuccess();
         }
         return $this->errorResponse('Fail approve KYC', Response::HTTP_BAD_REQUEST);
@@ -494,6 +496,8 @@ class AdminController extends Controller
                 $user->profile->status = 'approved';
                 $user->profile->save();
             }
+            $user->kyc_verified_at = now();
+            $user->save();
             return $this->metaSuccess();
         }
         return $this->errorResponse('Fail approve AML', Response::HTTP_BAD_REQUEST);

@@ -59,6 +59,7 @@ class User extends Authenticatable
         'banned',
         'letter_verified_at',
         'letter_rejected_at',
+        'avatar'
     ];
 
     /**
@@ -82,7 +83,8 @@ class User extends Authenticatable
         'signed_file_url',
         'pinned',
         'new_threads',
-        'letter_file_url'
+        'letter_file_url',
+        'avatar_url',
     ];
 
     /**
@@ -118,6 +120,15 @@ class User extends Authenticatable
             return null;
         }
         $url = Storage::disk('local')->url($this->letter_file);
+        return asset($url);
+    }
+
+    public function getAvatarUrlAttribute()
+    {
+        if(!$this->avatar) {
+            return null;
+        }
+        $url = Storage::disk('local')->url($this->avatar);
         return asset($url);
     }
 
