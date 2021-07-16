@@ -258,6 +258,7 @@ class UserController extends Controller
 
         if ($request->type == 'letter-upload') {
             $user->letter_file = 'letter_file.pdf';
+            $user->letter_verified_at = now();
             $user->save();
         }
 
