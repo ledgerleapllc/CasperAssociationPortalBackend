@@ -230,7 +230,7 @@ class DiscussionController extends Controller
 
     public function removeNewMark(Request $request, $id) {
         $user = auth()->user();
-        $this->discussionRemoveNewRepo->deleteConditions([['created_at', '=<',  Carbon::now()->subDays(3)]]);
+        $this->discussionRemoveNewRepo->deleteConditions([['created_at', '<=',  Carbon::now()->subDays(3)]]);
         $this->discussionRemoveNewRepo->create(['discussion_id' => $id, 'user_id' => $user->id]);        
 
         return $this->metaSuccess();

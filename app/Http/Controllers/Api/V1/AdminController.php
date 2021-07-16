@@ -111,7 +111,7 @@ class AdminController extends Controller
                 'time' => 'required',
                 'time_unit' => 'required',
                 'files' => 'array',
-                'files.*' => 'file|max:100000|mimes:pdf,docx',
+                'files.*' => 'file|max:100000|mimes:pdf,docx,doc,txt,rtf'
             ]);
             if ($validator->fails()) {
                 return $this->validateResponse($validator->errors());
