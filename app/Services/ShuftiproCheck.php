@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Profile;
 use App\Models\Shuftipro;
 use App\Models\ShuftiproTemp;
 use App\Models\User;
@@ -40,7 +41,7 @@ class ShuftiproCheck
         $user_id = (int) $item->user_id;
         $reference_id = $data['reference'];
         $event = $data['event'];
-
+    
         // Remove Other Temp Records
         ShuftiproTemp::where('user_id', $user_id)
             ->where('reference_id', '!=', $reference_id)
@@ -65,9 +66,9 @@ class ShuftiproCheck
         $data = json_encode([
             'declined_reason' => $declined_reason,
             'event' => $event,
-            'proofs' => $proofs,
+            // 'proofs' => $proofs,
             'verification_result' => $verification_result,
-            'verification_data' => $verification_data
+            // 'verification_data' => $verification_data
         ]);
 
         $document_proof = $address_proof = null;
@@ -170,10 +171,14 @@ class ShuftiproCheck
         $temp->save();
 
         $user = User::find($user_id);
-
+        $user->kyc_verified_at = now();
+        $user->save();
         if ($status == "approved") {
-            $user->kyc_verified_at = now();
-            $user->save();
+            $profile = Profile::where('user_id', $user_id);
+            if ($profile) {
+                $profile->status = 'approved';
+                $profile->save();
+            }
             return 'success';
         } else {
             return 'fail';

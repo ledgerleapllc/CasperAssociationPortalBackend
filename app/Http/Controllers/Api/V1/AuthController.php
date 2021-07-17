@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\EmailerHelper;
 use App\Http\Requests\Api\LoginRequest;
 use App\Http\Requests\Api\RegisterEntityRequest;
 use App\Http\Requests\Api\RegisterIndividualRequest;
@@ -52,6 +53,9 @@ class AuthController extends Controller
     {
         $user = $this->userRepo->first(['email' => $request->email]);
         if ($user && Hash::check($request->password, $user->password)) {
+            if($user->banned == 1) {
+                return $this->errorResponse('User banned', Response::HTTP_BAD_REQUEST);
+            }
             return $this->createTokenFromUser($user);
         }
 
@@ -153,6 +157,8 @@ class AuthController extends Controller
             if ($this->checCode($verifyUser)) {
                 $user->update(['email_verified_at' => now()]);
                 $verifyUser->delete();
+                $emailerData = EmailerHelper::getEmailerData();
+                EmailerHelper::triggerUserEmail($user->email, 'Welcome to the Casper',$emailerData, $user);
                 return $this->metaSuccess();
             }
             return $this->errorResponse(__('api.error.code_not_found'), Response::HTTP_BAD_REQUEST);

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\EmailerHelper;
 use App\Http\Requests\Api\AddOwnerNodeRequest;
 use App\Http\Requests\Api\ChangeEmailRequest;
 use App\Http\Requests\Api\ChangePasswordRequest;
@@ -133,7 +134,7 @@ class UserController extends Controller
         try {
             // Validator
             $validator = Validator::make($request->all(), [
-                'file' => 'required|mimes:pdf|max:20000',
+                'file' => 'required|mimes:pdf,docx,doc,txt,rtf|max:20000',
             ]);
             if ($validator->fails()) {
                 return $this->validateResponse($validator->errors());
@@ -149,7 +150,11 @@ class UserController extends Controller
             // Upload Image
             $path = $request->file('file')->storeAs('users', $fileNameToStore);
             $user->letter_file = $path;
+            $user->letter_rejected_at = null;
             $user->save();
+            $emailerData = EmailerHelper::getEmailerData();
+            EmailerHelper::triggerAdminEmail('User uploads a letter',$emailerData, $user);
+            EmailerHelper::triggerUserEmail($user->email, 'Your letter of motivation is received',$emailerData, $user);
             return $this->metaSuccess();
         } catch (\Exception $ex) {
             return $this->errorResponse(__('Failed upload file'), Response::HTTP_BAD_REQUEST, $ex->getMessage());
@@ -192,6 +197,10 @@ class UserController extends Controller
             $sign_url = $response->getSignUrl();
 
             $user->update(['signature_request_id' => $signature_request_id]);
+            $emailerData = EmailerHelper::getEmailerData();
+            if ($user->letter_verified_at && $user->signature_request_id && $user->node_verified_at) {
+                EmailerHelper::triggerUserEmail($user->email, 'Congratulations',$emailerData, $user);
+            }
             return $this->successResponse([
                 'signature_request_id' => $signature_request_id,
                 'url' => $sign_url,
@@ -205,8 +214,8 @@ class UserController extends Controller
     public function verifyBypass(Request $request)
     {
         $user = auth()->user();
-         // Validator
-         $validator = Validator::make($request->all(), [
+        // Validator
+        $validator = Validator::make($request->all(), [
             'type' => 'required'
         ]);
         if ($validator->fails()) {
@@ -215,12 +224,12 @@ class UserController extends Controller
         if ($request->type == 'hellosign') {
             $user->signature_request_id = 'signature_'  . $user->id . '._id';
             $user->hellosign_form = 'hellosign_form_' . $user->id;
-            $user->letter_file = 'leteter_file.pdf';
+            // $user->letter_file = 'leteter_file.pdf';
             $user->save();
         }
 
         if ($request->type == 'verify-node') {
-            $user->public_address_node = 'public_address_node'  . $user->id ;
+            $user->public_address_node = 'public_address_node'  . $user->id;
             $user->node_verified_at = now();
             $user->message_content = 'message_content';
             $user->signed_file = 'signture';
@@ -230,13 +239,13 @@ class UserController extends Controller
         if ($request->type == 'submit-kyc') {
             $user->kyc_verified_at = now();
             $user->save();
-            if(!$user->profile) {
+            if (!$user->profile) {
                 $profile = new Profile();
                 $profile->user_id = $user->id;
                 $profile->first_name = $user->first_name;
                 $profile->last_name = $user->last_name;
                 $profile->dob = '1990-01-01';
-                $profile->country_citizenship ='United States';
+                $profile->country_citizenship = 'United States';
                 $profile->country_residence = 'United States';
                 $profile->address = 'New York';
                 $profile->city = 'New York';
@@ -245,7 +254,12 @@ class UserController extends Controller
                 $profile->type = $user->type;
                 $profile->save();
             }
+        }
 
+        if ($request->type == 'letter-upload') {
+            $user->letter_file = 'letter_file.pdf';
+            $user->letter_verified_at = now();
+            $user->save();
         }
 
         return $this->metaSuccess();
@@ -309,6 +323,12 @@ class UserController extends Controller
                     $user->signed_file = $fullpath;
                     $user->node_verified_at = now();
                     $user->save();
+                    $emailerData = EmailerHelper::getEmailerData();
+                    EmailerHelper::triggerUserEmail($user->email, 'Your Node is Verified',$emailerData, $user);
+
+                    if ($user->letter_verified_at && $user->signature_request_id && $user->node_verified_at) {
+                        EmailerHelper::triggerUserEmail($user->email, 'Congratulations',$emailerData, $user);
+                    }
                     return $this->metaSuccess();
                 } else {
                     return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
@@ -470,26 +490,25 @@ class UserController extends Controller
 
         $user_id = $user->id;
         $reference_id = $request->reference_id;
-
+        $profile = Profile::where('user_id', $user_id)->first();
+        if ($profile) {
+            $profile->status = 'pending';
+            $profile->save();
+        }
         $record = ShuftiproTemp::where('user_id', $user_id)
             ->where('reference_id', $reference_id)
             ->first();
         if ($record) {
             $record->status = 'booked';
             $record->save();
-            // check shuftipro
-            $shuftiproCheck = new ShuftiproCheck();
-            $status = $shuftiproCheck->handle($record);
-            if($status == 'success') {
-                return $this->metaSuccess();
-            } else {
-                return $this->errorResponse('Fail submit AML', Response::HTTP_BAD_REQUEST);
-            }
+            $emailerData = EmailerHelper::getEmailerData();
+            EmailerHelper::triggerAdminEmail('KYC or AML need review',$emailerData, $user);
+            return $this->metaSuccess();
         }
         return $this->errorResponse('Fail submit AML', Response::HTTP_BAD_REQUEST);
     }
 
-    // Update Shuftipro Temp Status
+    // Updateq Temp Status
     public function updateTypeOwnerNode(Request $request)
     {
         $user = auth()->user();
@@ -519,8 +538,11 @@ class UserController extends Controller
     public function getVotes(Request $request)
     {
         $status = $request->status ?? 'active';
-
         $limit = $request->limit ?? 15;
+        $sort_key = $request->sort_key ?? '';
+        $sort_direction = $request->sort_direction ?? '';
+        if (!$sort_key) $sort_key = 'ballot.id';
+        if (!$sort_direction) $sort_direction = 'desc';
 
         if ($status != 'active' && $status != 'finish') {
             return $this->errorResponse('Paramater invalid (status is active or finish)', Response::HTTP_BAD_REQUEST);
@@ -531,7 +553,7 @@ class UserController extends Controller
         } else {
             $query = Ballot::where('status', '<>', 'active');
         }
-        $data = $query->with('vote')->orderBy('created_at', 'ASC')->paginate($limit);
+        $data = $query->with('vote')->orderBy($sort_key, $sort_direction)->paginate($limit);
 
         return $this->successResponse($data);
     }
@@ -553,7 +575,7 @@ class UserController extends Controller
     {
         $user = auth()->user();
         $vote = $request->vote;
-        if(!$vote || ($vote != 'for' && $vote != 'against')) {
+        if (!$vote || ($vote != 'for' && $vote != 'against')) {
             return $this->errorResponse('Paramater invalid (vote is for or against)', Response::HTTP_BAD_REQUEST);
         }
         $ballot = Ballot::where('id', $id)->first();
@@ -597,4 +619,34 @@ class UserController extends Controller
         return $this->metaSuccess();
     }
 
+    /**
+     * verify file casper singer
+     */
+    public function uploadAvatar(Request $request)
+    {
+        try {
+            // Validator
+            $validator = Validator::make($request->all(), [
+                'avatar' => 'sometimes|mimes:jpeg,jpg,png,gif|max:100000',
+            ]);
+            if ($validator->fails()) {
+                return $this->validateResponse($validator->errors());
+            }
+            $user = auth()->user();
+            $filenameWithExt = $request->file('avatar')->getClientOriginalName();
+            //Get just filename
+            $filename = pathinfo($filenameWithExt, PATHINFO_FILENAME);
+            // Get just ext
+            $extension = $request->file('avatar')->getClientOriginalExtension();
+            // Filename to store
+            $fileNameToStore = $filename . '_' . time() . '.' . $extension;
+            // Upload Image
+            $path = $request->file('avatar')->storeAs('users/avatar', $fileNameToStore);
+            $user->avatar = $path;
+            $user->save();
+            return $this->metaSuccess();
+        } catch (\Exception $ex) {
+            return $this->errorResponse(__('Failed upload avatar'), Response::HTTP_BAD_REQUEST, $ex->getMessage());
+        }
+    }
 }
