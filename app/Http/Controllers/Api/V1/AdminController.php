@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\EmailerHelper;
+use App\Mail\AdminAlert;
 use App\Mail\ResetKYC;
 use App\Models\Ballot;
 use App\Models\BallotFile;
@@ -109,7 +110,7 @@ class AdminController extends Controller
                 'title' => 'required',
                 'description' => 'required',
                 'time' => 'required',
-                'time_unit' => 'required',
+                'time_unit' => 'required|in:minutes,hours,days',
                 'files' => 'array',
                 'files.*' => 'file|max:100000|mimes:pdf,docx,doc,txt,rtf'
             ]);
@@ -120,7 +121,7 @@ class AdminController extends Controller
             $time = $request->time;
             $timeUnit = $request->time_unit;
             $mins = 0;
-            if ($timeUnit == 'mins') {
+            if ($timeUnit == 'minutes') {
                 $mins = $time;
             } else if ($timeUnit == 'hours') {
                 $mins = $time * 60;
@@ -369,7 +370,7 @@ class AdminController extends Controller
             if (!$message) {
                 return $this->errorResponse('please input message', Response::HTTP_BAD_REQUEST);
             }
-            Mail::to($user->email)->send(new ResetKYC($message));
+            Mail::to($user->email)->send(new AdminAlert('You need to submit letter again', $message));
             return $this->metaSuccess();
         }
         return $this->errorResponse('Fail reset User', Response::HTTP_BAD_REQUEST);
@@ -426,7 +427,7 @@ class AdminController extends Controller
             ShuftiproTemp::where('user_id', $user->id)->delete();
             DocumentFile::where('user_id', $user->id)->delete();
 
-            Mail::to($user->email)->send(new ResetKYC($message));
+            Mail::to($user->email)->send(new AdminAlert('You need to submit KYC again', $message));
             return $this->metaSuccess();
         }
 
@@ -450,7 +451,7 @@ class AdminController extends Controller
             ShuftiproTemp::where('user_id', $user->id)->delete();
             DocumentFile::where('user_id', $user->id)->delete();
 
-            Mail::to($user->email)->send(new ResetKYC($message));
+            Mail::to($user->email)->send(new AdminAlert('You need to submit AML again', $message));
             return $this->metaSuccess();
         }
 

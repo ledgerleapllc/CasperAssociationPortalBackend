@@ -112,6 +112,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::put('/{id}/comment', [DiscussionController::class, 'updateComment']);
             Route::post('/{id}/vote', [DiscussionController::class, 'setVote']);
             Route::post('/{id}/pin', [DiscussionController::class, 'setPin']);
+            Route::get('/{id}/comment', [DiscussionController::class, 'getComment']);
         });
 
         Route::prefix('users/verification')->group(function () {

@@ -12,9 +12,12 @@ use App\Repositories\DiscussionVoteRepository;
 use App\Repositories\DiscussionRemoveNewRepository;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Discussion;
+use App\Models\DiscussionComment;
 use App\Models\DiscussionPin;
 use App\Models\DiscussionRemoveNew;
 use Carbon\Carbon;
+use Illuminate\Http\Response;
+use App\Facades\Paginator;
 
 class DiscussionController extends Controller
 {
@@ -24,7 +27,7 @@ class DiscussionController extends Controller
     private $discussionVoteRepo;
     private $discussionCommentRepo;
     private $discussionRemoveNewRepo;
-    
+
 
     public function __construct(
         UserRepository $userRepo,
@@ -42,66 +45,123 @@ class DiscussionController extends Controller
         $this->discussionRemoveNewRepo = $discussionRemoveNewRepo;
     }
 
-    public function getTrending() {
-        $data = array();
+    public function getTrending(Request $request)
+    {
+        $limit = $request->limit ?? 15;
         $user = auth()->user();
-        $trendings = Discussion::where('likes', '!=', 0)->take(9)->orderBy('likes', 'desc')->get();
-        $remains = 9 - count($trendings);
-        if ($remains > 0) {
+        $trendings = Discussion::where('likes', '!=', 0)->take(9)->orderBy('likes', 'desc')->paginate($limit);
+        $count = Discussion::where('likes', '!=', 0)->orderBy('likes', 'desc')->count();
+        if ($count >= 9) {
+            return $this->successResponse($trendings);
+        } else {
+            $remains = 9 - $count;
             $trending_ids = $trendings->pluck('id');
             $removed_ids = DiscussionRemoveNew::where(['user_id' => $user->id])->pluck('discussion_id');
             $news = Discussion::whereNotIn('id', $trending_ids)
-                            ->whereNotIn('id', $removed_ids)
-                            ->take($remains)->orderBy('id', 'desc')->get();
-            $trendings = array_merge($trendings->toArray(), $news->toArray());
+                ->whereNotIn('id', $removed_ids)
+                ->take($remains)->orderBy('id', 'desc')->get();
+            $trendingArray = $trendings->toArray() ;
+            $trendingArray['data'] = array_merge($trendingArray['data'], $news->toArray());
+            
+            return $this->successResponse( [
+                'data' => $trendingArray['data']
+            ]);
         }
-        $data['trendings'] = $trendings;
-
-        return $this->successResponse($data);        
     }
 
-    public function getDiscussions() {
+    public function getDiscussions(Request $request)
+    {
         $data = array();
         $limit = $request->limit ?? 15;
-        $user = auth()->user()->load(['pinnedDiscussionsList', 'myDiscussionsList']);
-        $data = Discussion::where([])->orderBy('created_at', 'DESC')->paginate($limit);
-        
+        $user = auth()->user();
+        $data = Discussion::with(['user'])
+            ->leftJoin('discussion_pins', function ($query) use ($user) {
+                $query->on('discussion_pins.discussion_id', '=', 'discussions.id')
+                    ->where('discussion_pins.user_id', $user->id);
+            })
+            ->leftJoin('discussion_votes', function ($query) use ($user) {
+                $query->on('discussion_votes.discussion_id', '=', 'discussions.id')
+                    ->where('discussion_votes.user_id', $user->id);;
+            })
+            ->select([
+                'discussions.*',
+                'discussion_pins.id as is_pin',
+                'discussion_votes.id as is_vote',
+                'discussion_votes.is_like as is_like',
+            ])->orderBy('discussions.created_at', 'DESC')->paginate($limit);
+
         return $this->successResponse($data);
     }
 
-    public function getPinnedDiscussions() {
-        $data = array();
-        $user = auth()->user()->load(['pinnedDiscussionsList']);
-        $data['pinned_discussions'] = $user->pinnedDiscussionsList->pluck('discussion');
-
-        $removedNews = DiscussionRemoveNew::where(['user_id' => $user->id])->pluck('discussion_id');
-        $data['new_discussions'] = Discussion::whereNotIn('id', $removedNews)
-                ->whereDate('created_at', '>',  Carbon::now()->subDays(3))
-                ->get();
-        
+    public function getPinnedDiscussions(Request $request)
+    {
+        $limit = $request->limit ?? 15;
+        $user = auth()->user();
+        $data = DiscussionPin::where('discussion_pins.user_id', $user->id)->with('user')
+            ->join('discussions', 'discussions.id', '=', 'discussion_pins.discussion_id')
+            ->leftJoin('discussion_votes', function ($query) use ($user) {
+                $query->on('discussion_votes.discussion_id', '=', 'discussions.id')
+                    ->where('discussion_votes.user_id', $user->id);;
+            })
+            ->select([
+                'discussions.*',
+                'discussion_votes.id as is_vote',
+                'discussion_pins.discussion_id',
+                'discussion_votes.is_like as is_like',
+            ])->orderBy('discussion_pins.created_at', 'DESC')->paginate($limit);
         return $this->successResponse($data);
     }
 
-    public function getMyDiscussions() {
-        $data = array();
-        $user = auth()->user()->load(['myDiscussionsList']);
-        $data = $user->myDiscussionsList;
-        
+    public function getMyDiscussions(Request $request)
+    {
+        $limit = $request->limit ?? 15;
+        $user = auth()->user();
+        $data = Discussion::with(['user'])
+            ->where('discussions.user_id', $user->id)
+            ->leftJoin('discussion_pins', function ($query) use ($user) {
+                $query->on('discussion_pins.discussion_id', '=', 'discussions.id')
+                    ->where('discussion_pins.user_id', $user->id);
+            })
+            ->leftJoin('discussion_votes', function ($query) use ($user) {
+                $query->on('discussion_votes.discussion_id', '=', 'discussions.id')
+                    ->where('discussion_votes.user_id', $user->id);;
+            })
+            ->select([
+                'discussions.*',
+                'discussion_pins.id as is_pin',
+                'discussion_votes.id as is_vote',
+                'discussion_votes.is_like as is_like',
+            ])->orderBy('discussions.created_at', 'DESC')->paginate($limit);
+
         return $this->successResponse($data);
     }
 
-    public function getDiscussion(Request $request, $id) {
-        $data = array();
-        $discussion = $this->discussionRepo->find($id);
-        $discussion->load('commentsList');
+    public function getDiscussion(Request $request, $id)
+    {
+        $user = auth()->user();
+        $discussion = Discussion::with(['user'])
+            ->where('discussions.id', $id)
+            ->leftJoin('discussion_pins', function ($query) use ($user) {
+                $query->on('discussion_pins.discussion_id', '=', 'discussions.id')
+                    ->where('discussion_pins.user_id', $user->id);
+            })
+            ->leftJoin('discussion_votes', function ($query) use ($user) {
+                $query->on('discussion_votes.discussion_id', '=', 'discussions.id')
+                    ->where('discussion_votes.user_id', $user->id);;
+            })
+            ->select([
+                'discussions.*',
+                'discussion_pins.id as is_pin',
+                'discussion_votes.id as is_vote',
+                'discussion_votes.is_like as is_like',
+            ])->first();
         $discussion->read = $discussion->read + 1;
-        $data['discussion'] = $discussion;
         $discussion->save();
-
-        return $this->successResponse($data);
+        return $this->successResponse($discussion);
     }
 
-    public function postDiscussion(Request $request) {
+    public function postDiscussion(Request $request)
+    {
         $validator = Validator::make($request->all(), [
             'title' => 'required',
             'description' => 'required',
@@ -120,7 +180,8 @@ class DiscussionController extends Controller
         return $this->successResponse($discussion);
     }
 
-    public function createComment(Request $request, $id) {
+    public function createComment(Request $request, $id)
+    {
         $data = array();
         $user = auth()->user();
         $validator = Validator::make($request->all(), [
@@ -129,24 +190,25 @@ class DiscussionController extends Controller
         if ($validator->fails()) {
             return $this->validateResponse($validator->errors());
         }
-        
+
         $model_data = [
             "user_id" => $user->id,
             "discussion_id" => $id,
             "description" => $request->description
         ];
-        
+
         $data['comment'] = $this->discussionCommentRepo->create($model_data);
         $discussion = $this->discussionRepo->find($id);
         $discussion->comments = $discussion->comments + 1;
         $discussion->save();
-        
+
         $data['comment']['user'] = $user;
 
         return $this->successResponse($data);
     }
 
-    public function updateComment(Request $request, $id) {
+    public function updateComment(Request $request, $id)
+    {
         $data = array();
         $user = auth()->user();
         $validator = Validator::make($request->all(), [
@@ -156,20 +218,17 @@ class DiscussionController extends Controller
         if ($validator->fails()) {
             return $this->validateResponse($validator->errors());
         }
-        
-        $model_data = [
-            "user_id" => $user->id,
-            "discussion_id" => $id,
-            "description" => $request->description
-        ];
-        
-        $data['comment'] = $this->discussionCommentRepo->update($request->comment_id, $model_data);
-        $data['comment']['user'] = $user;
-
-        return $this->successResponse($data);
+        $comment = DiscussionComment::where('discussion_id', $request->comment_id)->where('user_id', $user->id)->first();
+        if ($comment) {
+            $comment->description = $request->description;
+            $comment->save();
+            return $this->successResponse($comment);
+        }
+        return $this->errorResponse('Invalid discussion id', Response::HTTP_BAD_REQUEST);
     }
 
-    public function setVote(Request $request, $id) {
+    public function setVote(Request $request, $id)
+    {
         $data = array();
         $user = auth()->user();
         $validator = Validator::make($request->all(), [
@@ -180,26 +239,27 @@ class DiscussionController extends Controller
         }
 
         $discussion = $this->discussionRepo->find($id);
-        if ($discussion == null)
+        if ($discussion == null) {
             return $this->errorResponse('Invalid discussion id', Response::HTTP_BAD_REQUEST);
-        $discussion->load('commentsList');
+        }
         $is_like = $request->is_like;
         $vote = $this->discussionVoteRepo->first(['discussion_id' => $id, 'user_id' => $user->id]);
-        if ($discussion->user_id != $user->id)
+        if ($discussion->user_id != $user->id) {
             if ($vote == null) {
-                $this->discussionVoteRepo->create([
+                $vote = $this->discussionVoteRepo->create([
                     'discussion_id' => $id,
-                    'user_id' => $user -> id,
+                    'user_id' => $user->id,
                     "is_like" => $is_like
                 ]);
-
-                if ($is_like) 
+                if ($is_like) {
                     $discussion->likes = $discussion->likes  + 1;
-                else $discussion->dislikes = $discussion->dislikes  + 1;
+                } else {
+                    $discussion->dislikes = $discussion->dislikes  + 1;
+                }
                 $discussion->save();
             } else {
                 if ($vote->is_like != $is_like) {
-                    $this->discussionVoteRepo->update($vote->id, [
+                    $vote = $this->discussionVoteRepo->update($vote->id, [
                         'is_like' => $is_like
                     ]);
                     if ($is_like) {
@@ -208,15 +268,20 @@ class DiscussionController extends Controller
                     } else {
                         $discussion->dislikes = $discussion->dislikes + 1;
                         $discussion->likes = $discussion->likes - 1;
-                    }                    
+                    }
                 }
                 $discussion->save();
-            }       
-
-        return $this->successResponse(["discussion" => $discussion]);    
+            }
+            return $this->successResponse([
+                'discussion' => $discussion,
+                'vote' => $vote
+            ]);
+        }
+        return $this->errorResponse('Can not vote for my discussion', Response::HTTP_BAD_REQUEST);
     }
 
-    public function setPin(Request $request, $id) {
+    public function setPin(Request $request, $id)
+    {
         $data = array();
         $user = auth()->user();
         $pinned = $this->discussionPinRepo->first(['discussion_id' => $id, 'user_id' => $user->id]);
@@ -228,11 +293,25 @@ class DiscussionController extends Controller
         return $this->metaSuccess();
     }
 
-    public function removeNewMark(Request $request, $id) {
+    public function removeNewMark(Request $request, $id)
+    {
         $user = auth()->user();
         $this->discussionRemoveNewRepo->deleteConditions([['created_at', '<=',  Carbon::now()->subDays(3)]]);
-        $this->discussionRemoveNewRepo->create(['discussion_id' => $id, 'user_id' => $user->id]);        
+        $this->discussionRemoveNewRepo->create(['discussion_id' => $id, 'user_id' => $user->id]);
 
         return $this->metaSuccess();
+    }
+
+    public function getComment(Request $request, $id)
+    {
+        $limit = $request->limit ?? 15;
+        $user = auth()->user();
+        $data = DiscussionComment::with(['user'])
+            ->where('discussion_comments.discussion_id', $id)
+            ->select([
+                'discussion_comments.*',
+            ])->orderBy('discussion_comments.created_at', 'DESC')->paginate($limit);
+
+        return $this->successResponse($data);
     }
 }
