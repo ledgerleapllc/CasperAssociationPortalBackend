@@ -30,6 +30,8 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
     Route::post('/auth/register-individual', [AuthController::class, 'registerIndividual']);
     Route::post('/auth/send-reset-password', [AuthController::class, 'sendResetLinkEmail']);
     Route::post('auth/reset-password', [AuthController::class, 'resetPassword']);
+    Route::get('/members', [UserController::class, 'getMembers']);
+    Route::get('/members/{id}', [UserController::class, 'getMemberDetail'])->where('id', '[0-9]+');
     Route::middleware(['auth:api'])->group(function () {
         Route::middleware(['user_banned'])->group(function () {
             Route::post('/users/verify-email', [AuthController::class, 'verifyEmail']);

@@ -649,4 +649,26 @@ class UserController extends Controller
             return $this->errorResponse(__('Failed upload avatar'), Response::HTTP_BAD_REQUEST, $ex->getMessage());
         }
     }
+
+    public function getMembers(Request $request)
+    {
+        $limit = $request->limit ?? 15;
+        $sort_key = $request->sort_key ?? '';
+        $sort_direction = $request->sort_direction ?? '';
+        if (!$sort_key) $sort_key = 'created_at';
+        if (!$sort_direction) $sort_direction = 'desc';
+        $users = User::where('role', 'member')->orderBy($sort_key, $sort_direction)
+        ->orderBy($sort_key, $sort_direction)->paginate($limit);
+        return $this->successResponse($users);
+    }
+
+    public function getMemberDetail($id)
+    {
+        $user = User::where('id', $id)->first();
+        if (!$user || $user->role == 'admin') {
+            return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
+        }
+        $response = $user->load(['profile', 'shuftipro', 'shuftiproTemp']);
+        return $this->successResponse($response);
+    }
 }
