@@ -421,8 +421,9 @@ class AdminController extends Controller
 
         $user = User::with(['profile'])->where('id', $id)->first();
         if ($user && $user->profile) {
-            $user->profile->status = 'pending';
-            $user->profile->save();
+            // $user->profile->status = 'pending';
+            // $user->profile->save();
+            Profile::where('user_id', $user->id)->delete();
             Shuftipro::where('user_id', $user->id)->delete();
             ShuftiproTemp::where('user_id', $user->id)->delete();
             DocumentFile::where('user_id', $user->id)->delete();
@@ -477,6 +478,7 @@ class AdminController extends Controller
                 $user->shuftipro->save();
             }
             $user->kyc_verified_at = now();
+            $user->approve_at = now();
             $user->save();
             return $this->metaSuccess();
         }
