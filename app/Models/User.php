@@ -178,4 +178,12 @@ class User extends Authenticatable
         return $this->hasMany('App\Models\DocumentFile');
     }
 
+    protected static function booted() {
+		static::creating(function ($user) {
+			if ($user->permissions === null && $user->role === 'sub-admin') {
+				$user->permissions = '{"intake":false,"users":false,"ballots":false,"perks":false}'; 
+			}
+		});
+	}
+
 }

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\EmailerHelper;
 use App\Mail\ResetKYC;
+use App\Mail\ResetPasswordMail;
+use App\Mail\InvitationMail;
 use App\Models\Ballot;
 use App\Models\BallotFile;
 use App\Models\DocumentFile;
@@ -27,6 +29,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
@@ -286,6 +289,10 @@ class AdminController extends Controller
             'ballots' => false,
             'perks' => false,
         ];
+        $code = Str::random(60);
+        $url = $request->header('origin') ?? $request->root();
+        $inviteUrl = $url . '/invitation?code=' . $code . '&email=' . urlencode($request->email);
+        
         $admin = User::create([
             'first_name' => 'faker',
             'last_name' => 'faker',
@@ -294,24 +301,20 @@ class AdminController extends Controller
             'type' => 'invited',
             'role' => 'sub-admin',
             'permissions' => $permission,
-            'invite_link' => '/invite-link'
+            'invite_link' => $code
         ]);
+        Mail::to($admin->email)->send(new InvitationMail($inviteUrl));
 
         return $this->successResponse(['invited' => $admin]);
     }
 
     public function changeSubAdminPermissions(Request $request, $id)
-    {
-        $data['intake'] = $request->intake;
-        $data['users'] = $request->users;
-        $data['ballots'] = $request->ballots;
-        $data['perks'] = $request->perks;
-
+    {        
         $admin = User::find($id);
         if ($admin == null || $admin->role != 'sub-admin') 
             return $this->errorResponse('There is no admin user with this email', Response::HTTP_BAD_REQUEST);
 
-        $admin->permissions = $data;
+        $admin->permissions = $request->permissions;
         $admin->save();
 
         return $this->metaSuccess();
@@ -322,8 +325,13 @@ class AdminController extends Controller
         if ($admin == null || $admin->role != 'sub-admin')
             return $this->errorResponse('No admin to be send invite link', Response::HTTP_BAD_REQUEST);
         
-        $admin->invite_link = '/invite-link2';
+        $code = Str::random(60);
+        $url = $request->header('origin') ?? $request->root();
+        $resetUrl = $url . '/invitation?code=' . $code . '&email=' . urlencode($admin->email);
+        $admin->invite_link = $code;
         $admin->save();
+
+        Mail::to($request->email)->send(new ResetPasswordMail($resetUrl));
 
         return $this->metaSuccess();
     }
@@ -332,8 +340,14 @@ class AdminController extends Controller
         $admin = User::find($id);
         if ($admin == null || $admin->role != 'sub-admin')
             return $this->errorResponse('No admin to be revoked', Response::HTTP_BAD_REQUEST);
-        $admin->reset_link = '/reset-link';
+        
+        $code = Str::random(60);
+        $url = $request->header('origin') ?? $request->root();
+        $resetUrl = $url . '/update-password?code=' . $code . '&email=' . urlencode($admin->email);
+        $admin->reset_link = $code;
         $admin->save();
+
+        Mail::to($admin->email)->send(new ResetPasswordMail($resetUrl));
 
         return $this->metaSuccess();
     }
