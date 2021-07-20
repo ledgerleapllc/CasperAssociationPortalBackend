@@ -38,8 +38,9 @@ class AdminController extends Controller
         $sort_direction = $request->sort_direction ?? '';
         if (!$sort_key) $sort_key = 'created_at';
         if (!$sort_direction) $sort_direction = 'desc';
-        $users = User::where('role', 'member')->orderBy($sort_key, $sort_direction)
-        ->orderBy($sort_key, $sort_direction)->paginate($limit);
+        $users = User::where('role', 'member')->whereNotNull('letter_verified_at')
+            ->whereNotNull('node_verified_at')->whereNotNull('signature_request_id')
+            ->orderBy($sort_key, $sort_direction)->paginate($limit);
         return $this->successResponse($users);
     }
 
@@ -176,14 +177,14 @@ class AdminController extends Controller
         $sort_direction = $request->sort_direction ?? '';
         if (!$sort_key) $sort_key = 'ballot.id';
         if (!$sort_direction) $sort_direction = 'desc';
-        
+
         if ($status == 'active') {
             $ballots = Ballot::with(['user', 'vote'])->where('ballot.status', 'active')
-            ->orderBy($sort_key, $sort_direction)->paginate($limit);
+                ->orderBy($sort_key, $sort_direction)->paginate($limit);
         } else if ($status && $status != 'active') {
             $ballots = Ballot::with(['user', 'vote'])->where('ballot.status', '!=', 'active')
-            ->orderBy($sort_key, $sort_direction)
-            ->paginate($limit);
+                ->orderBy($sort_key, $sort_direction)
+                ->paginate($limit);
         } else {
             $ballots = Ballot::with(['user', 'vote'])->orderBy($sort_key, $sort_direction)->paginate($limit);
         }
@@ -202,11 +203,13 @@ class AdminController extends Controller
     public function cancelBallot($id)
     {
         $ballot = Ballot::where('id', $id)->first();
-        if ($ballot->status != 'active') {
+        if ( !$ballot || $ballot->status != 'active') {
             return $this->errorResponse('Cannot cancle ballot', Response::HTTP_BAD_REQUEST);
         }
+        $ballot->time_end = now();
         $ballot->status = 'cancelled';
         $ballot->save();
+        return $this->metaSuccess();
     }
 
     public function getBallotVotes($id, Request $request)
@@ -347,9 +350,9 @@ class AdminController extends Controller
             $user->kyc_verified_at = now();
             $user->save();
             $emailerData = EmailerHelper::getEmailerData();
-            EmailerHelper::triggerUserEmail($user->email, 'Your letter of motivation is APPROVED',$emailerData, $user);
+            EmailerHelper::triggerUserEmail($user->email, 'Your letter of motivation is APPROVED', $emailerData, $user);
             if ($user->letter_verified_at && $user->signature_request_id && $user->node_verified_at) {
-                EmailerHelper::triggerUserEmail($user->email, 'Congratulations',$emailerData, $user);
+                EmailerHelper::triggerUserEmail($user->email, 'Congratulations', $emailerData, $user);
             }
             return $this->metaSuccess();
         }
@@ -550,8 +553,9 @@ class AdminController extends Controller
     }
 
     // Add Emailer Admin
-	public function addEmailerAdmin(Request $request) {
-		$user = Auth::user();
+    public function addEmailerAdmin(Request $request)
+    {
+        $user = Auth::user();
 
         $email = $request->get('email');
         if (!$email) {
@@ -574,22 +578,23 @@ class AdminController extends Controller
         $record->save();
 
         return ['success' => true];
-	
     }
-    
-    	// Delete Emailer Admin
-	public function deleteEmailerAdmin($adminId, Request $request) {
-		$user = Auth::user();
+
+    // Delete Emailer Admin
+    public function deleteEmailerAdmin($adminId, Request $request)
+    {
+        $user = Auth::user();
         EmailerAdmin::where('id', $adminId)->delete();
         return ['success' => true];
 
-		return ['success' => false];
+        return ['success' => false];
     }
-    
-    	// Get Emailer Data
-	public function getEmailerData(Request $request) {
-		$user = Auth::user();
-		$data = [];
+
+    // Get Emailer Data
+    public function getEmailerData(Request $request)
+    {
+        $user = Auth::user();
+        $data = [];
 
         $admins = EmailerAdmin::where('id', '>', 0)->orderBy('email', 'asc')->get();
         $triggerAdmin = EmailerTriggerAdmin::where('id', '>', 0)->orderBy('id', 'asc')->get();
@@ -600,15 +605,16 @@ class AdminController extends Controller
             'triggerUser' => $triggerUser,
         ];
 
-		return [
-			'success' => true,
-			'data' => $data
-		];
+        return [
+            'success' => true,
+            'data' => $data
+        ];
     }
-    
-    	// Update Emailer Trigger Admin
-	public function updateEmailerTriggerAdmin($recordId, Request $request) {
-		$user = Auth::user();
+
+    // Update Emailer Trigger Admin
+    public function updateEmailerTriggerAdmin($recordId, Request $request)
+    {
+        $user = Auth::user();
         $record = EmailerTriggerAdmin::find($recordId);
 
         if ($record) {
@@ -619,12 +625,13 @@ class AdminController extends Controller
             return ['success' => true];
         }
 
-		return ['success' => false];
-	}
+        return ['success' => false];
+    }
 
-	// Update Emailer Trigger User
-	public function updateEmailerTriggerUser($recordId, Request $request) {
-		$user = Auth::user();
+    // Update Emailer Trigger User
+    public function updateEmailerTriggerUser($recordId, Request $request)
+    {
+        $user = Auth::user();
         $record = EmailerTriggerUser::find($recordId);
 
         if ($record) {
@@ -639,6 +646,6 @@ class AdminController extends Controller
             return ['success' => true];
         }
 
-		return ['success' => false];
-	}
+        return ['success' => false];
+    }
 }

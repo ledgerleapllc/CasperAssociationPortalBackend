@@ -59,7 +59,11 @@ class User extends Authenticatable
         'banned',
         'letter_verified_at',
         'letter_rejected_at',
-        'avatar'
+        'avatar',
+        'average_peers',
+        'validator_fee',
+        'cspr_delegated',
+        'cspr_self_staked',
     ];
 
     /**
@@ -178,6 +182,24 @@ class User extends Authenticatable
 
     public function documentFiles() {
         return $this->hasMany('App\Models\DocumentFile');
+    }
+
+    // dummy data remove latter
+    public function getAveragePeersAttribute($value)
+    {
+        return 18;
+    }
+    public function getValidatorFeeAttribute($value)
+    {
+        return 5;
+    }
+    public function getCsprDelegatedAttribute($value)
+    {
+        return 15000000;
+    }
+    public function getCsprSelfStakedAttribute($value)
+    {
+        return 1200000;
     }
 
 }
