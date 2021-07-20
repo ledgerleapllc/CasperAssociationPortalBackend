@@ -137,13 +137,13 @@
 			<div id="top-logo">
 				<img src="{{ url('logo/logo.png') }}" alt="logo"/>
 			</div>
-			<h2 id="title">{!! $title !!}</h2>
+			<h2 id="title">You are allowed to register your account into Casper.</h2>
 			<div class="divider"></div>
 			<div id="content-html">
-				{!! $content !!}
+				You have been invited by the casper administration. 
 			</div>
 			<div id="button-link">
-				<a class="button-link" href="{{ config('app.site_url') }}">
+				<a class="button-link" href="{{ $url }}">
 					Go to Member's Portal
 				</a>
 			</div>
