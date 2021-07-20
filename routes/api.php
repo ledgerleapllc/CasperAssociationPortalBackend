@@ -55,6 +55,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::post('users/verify-bypass',  [UserController::class, 'verifyBypass']);
             Route::post('/users/upload-letter',  [UserController::class, 'uploadLetter']);
             Route::get('users/votes', [UserController::class, 'getVotes']);
+            Route::get('users/my-votes', [UserController::class, 'getMyVotes']);
             Route::get('users/votes/{id}', [UserController::class, 'getVoteDetail']);
             Route::post('users/votes/{id}', [UserController::class, 'vote']);
             Route::post('/users/upload-avatar',  [UserController::class, 'uploadAvatar']);

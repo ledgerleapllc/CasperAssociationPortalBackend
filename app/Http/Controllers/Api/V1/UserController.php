@@ -671,4 +671,24 @@ class UserController extends Controller
         $response = $user->load(['profile', 'shuftipro', 'shuftiproTemp']);
         return $this->successResponse($response);
     }
+
+    public function getMyVotes(Request $request)
+    {
+        $limit = $request->limit ?? 15;
+        $user = auth()->user();
+        $data = VoteResult::where('vote_result.user_id', $user->id)
+            ->join('ballot', function ($query) use ($user) {
+                $query->on('vote_result.ballot_id', '=', 'ballot.id');
+            })
+            ->join('vote', function ($query) use ($user) {
+                $query->on('vote.ballot_id', '=', 'vote_result.ballot_id');
+            })
+            ->select([
+                'vote.*',
+                'ballot.*',
+                'vote_result.created_at as date_placed',
+                'vote_result.type as voteType',
+            ])->orderBy('vote_result.created_at', 'DESC')->paginate($limit);
+        return $this->successResponse($data);
+    }
 }
