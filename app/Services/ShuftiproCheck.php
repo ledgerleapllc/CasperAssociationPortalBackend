@@ -41,7 +41,7 @@ class ShuftiproCheck
         $user_id = (int) $item->user_id;
         $reference_id = $data['reference'];
         $event = $data['event'];
-    
+
         // Remove Other Temp Records
         ShuftiproTemp::where('user_id', $user_id)
             ->where('reference_id', '!=', $reference_id)
@@ -62,14 +62,31 @@ class ShuftiproCheck
 
         $is_successful = $event == 'verification.accepted' ? 1 : 0;
         $status = $is_successful ? 'approved' : 'denied';
+        //Aml check
+        $aml_declined_reason  = null;
 
+        if (
+            isset($verification_data['background_checks']) &&
+            $verification_data['background_checks']['aml_data'] &&
+            $verification_data['background_checks']['aml_data']['hits']
+        ) {
+            $hits =  $verification_data['background_checks']['aml_data']['hits'];
+            if (count($hits) > 0 && isset($hits[0]['fields']['Enforcement Type'])) {
+                $type = $hits[0]['fields']['Enforcement Type'];
+                if (count($type) > 0 && isset($type[0]['value'])) {
+                    $aml_declined_reason = $type[0]['value'];
+                }
+            }
+        }
         $data = json_encode([
             'declined_reason' => $declined_reason,
             'event' => $event,
             // 'proofs' => $proofs,
             'verification_result' => $verification_result,
+            'aml_declined_reason' => $aml_declined_reason,
             // 'verification_data' => $verification_data
         ]);
+
 
         $document_proof = $address_proof = null;
         $document_result =

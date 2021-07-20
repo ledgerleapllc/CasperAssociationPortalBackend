@@ -80,6 +80,7 @@ class EmailerHelper {
         $content = str_replace('[name]', $name, $content);
         $subject = str_replace('[name]', $name, $subject);
         $content = str_replace('[email]', $user->email, $content);
+        $content = str_replace('[node address]', $user->public_address_node, $content);
         $subject = str_replace('[email]', $user->email, $subject);
       }
       Mail::to($to)->send(new UserAlert($subject, $content));

@@ -56,7 +56,15 @@ class User extends Authenticatable
         'signed_file',
         'hellosign_form',
         'letter_file',
-        'permissions'
+        'banned',
+        'letter_verified_at',
+        'letter_rejected_at',
+        'avatar',
+        'average_peers',
+        'validator_fee',
+        'cspr_delegated',
+        'cspr_self_staked',
+        'permissions',
     ];
 
     /**
@@ -178,12 +186,22 @@ class User extends Authenticatable
         return $this->hasMany('App\Models\DocumentFile');
     }
 
-    protected static function booted() {
-		static::creating(function ($user) {
-			if ($user->permissions === null && $user->role === 'sub-admin') {
-				$user->permissions = '{"intake":false,"users":false,"ballots":false,"perks":false}'; 
-			}
-		});
-	}
+    // dummy data remove latter
+    public function getAveragePeersAttribute($value)
+    {
+        return 18;
+    }
+    public function getValidatorFeeAttribute($value)
+    {
+        return 5;
+    }
+    public function getCsprDelegatedAttribute($value)
+    {
+        return 15000000;
+    }
+    public function getCsprSelfStakedAttribute($value)
+    {
+        return 1200000;
+    }
 
 }

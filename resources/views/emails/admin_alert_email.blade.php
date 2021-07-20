@@ -22,8 +22,9 @@
 			max-width: 100%;
 		}
 		#top-logo {
-			width: 90px;
+			width: 200px;
 			margin: 0 auto;
+			padding-bottom: 30px;
 		}
 		#content-section {
 			width: 100%;
@@ -49,13 +50,16 @@
 		#content-html {
 			font-size: 12px;
 			line-height: 21px;
+			margin-top: 30px;
+			margin-bottom: 30px;
 		}
 		#title {
-			text-align: center;
+			text-align: left;
 		}
 		#content-sectionFooter {
 			font-size: 12px;
 			text-align: center;
+			margin-top: 20px;
 		}
 		#content-sectionFooter label {
 			display: block;
@@ -97,9 +101,9 @@
 		}
 		.divider {
 			width: 100%;
-			height: 2px;
+			height: 1px;
 			background-color: #FF473E;
-			margin: 30px 0;
+			margin: 5px 0;
 		}
 		#content-footer {
 			text-align: center;
@@ -123,6 +127,7 @@
 			text-decoration: none;
 			margin-top: 30px;
 			font-size: 12px;
+			margin-bottom: 30px;
 		}
 		.button-link {
 			margin: auto;
@@ -135,7 +140,7 @@
 	<div id="wrapper">
 		<div id="content-section">
 			<div id="top-logo">
-				<img src="{{ url('logo/logo.png') }}" alt="logo"/>
+				<img src="{{ url('logo/casper-logo.png') }}" alt="logo"/>
 			</div>
 			<h2 id="title">{!! $title !!}</h2>
 			<div class="divider"></div>

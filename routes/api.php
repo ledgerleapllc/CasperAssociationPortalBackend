@@ -30,6 +30,8 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
     Route::post('/auth/register-individual', [AuthController::class, 'registerIndividual']);
     Route::post('/auth/send-reset-password', [AuthController::class, 'sendResetLinkEmail']);
     Route::post('auth/reset-password', [AuthController::class, 'resetPassword']);
+    Route::get('/members', [UserController::class, 'getMembers']);
+    Route::get('/members/{id}', [UserController::class, 'getMemberDetail'])->where('id', '[0-9]+');
     Route::middleware(['auth:api'])->group(function () {
         Route::middleware(['user_banned'])->group(function () {
             Route::post('/users/verify-email', [AuthController::class, 'verifyEmail']);
@@ -53,6 +55,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::post('users/verify-bypass',  [UserController::class, 'verifyBypass']);
             Route::post('/users/upload-letter',  [UserController::class, 'uploadLetter']);
             Route::get('users/votes', [UserController::class, 'getVotes']);
+            Route::get('users/my-votes', [UserController::class, 'getMyVotes']);
             Route::get('users/votes/{id}', [UserController::class, 'getVoteDetail']);
             Route::post('users/votes/{id}', [UserController::class, 'vote']);
             Route::post('/users/upload-avatar',  [UserController::class, 'uploadAvatar']);
@@ -112,6 +115,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::put('/{id}/comment', [DiscussionController::class, 'updateComment']);
             Route::post('/{id}/vote', [DiscussionController::class, 'setVote']);
             Route::post('/{id}/pin', [DiscussionController::class, 'setPin']);
+            Route::get('/{id}/comment', [DiscussionController::class, 'getComment']);
         });
 
         Route::prefix('users/verification')->group(function () {
