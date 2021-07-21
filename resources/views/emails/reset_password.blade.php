@@ -11,11 +11,11 @@
 			box-sizing: border-box;
 		}
 		#wrapper {
-			width: 700px;
+			width: 500px;
 			max-width: 100%;
 			margin: 0 auto;
-			padding: 50px 100px;
-			background: #f6fafd 0% 0% no-repeat padding-box;
+			padding-bottom: 20px;
+			padding-top: 20px;
 		}
 		img {
 			width: 100%;
@@ -136,7 +136,7 @@
 		}
 	</style>
 </head>
-<body>
+<body style="background: #f6fafd 0% 0% no-repeat padding-box;">
 	<div id="wrapper">
 		<div id="content-section">
 			<div id="top-logo">
