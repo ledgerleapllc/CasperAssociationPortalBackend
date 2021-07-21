@@ -137,10 +137,10 @@
 			<div id="top-logo">
 				<img src="{{ url('logo/logo.png') }}" alt="logo"/>
 			</div>
-			<h2 id="title">You are allowed to register your account into Casper.</h2>
+			<h2 id="title">You've been given admin privliges</h2>
 			<div class="divider"></div>
 			<div id="content-html">
-				You have been invited by the casper administration. 
+				You have been invited as admin by the casper administration. 
 			</div>
 			<div id="button-link">
 				<a class="button-link" href="{{ $url }}">

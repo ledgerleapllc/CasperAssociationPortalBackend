@@ -7,7 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class InviationMail extends Mailable
+class InvitationMail extends Mailable
 {
     use Queueable, SerializesModels;
     protected $url = '';
