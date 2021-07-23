@@ -9,6 +9,7 @@ use App\Http\Requests\Api\RegisterEntityRequest;
 use App\Http\Requests\Api\RegisterIndividualRequest;
 use App\Http\Requests\Api\ResetPasswordRequest;
 use App\Http\Requests\Api\SendResetPasswordMailRequeslRequest;
+use App\Mail\LoginTwoFA;
 use App\Mail\ResetPasswordMail;
 use App\Mail\UserVerifyMail;
 use App\Models\User;
@@ -53,8 +54,21 @@ class AuthController extends Controller
     {
         $user = $this->userRepo->first(['email' => $request->email]);
         if ($user && Hash::check($request->password, $user->password)) {
-            if($user->banned == 1) {
+            if ($user->banned == 1) {
                 return $this->errorResponse('User banned', Response::HTTP_BAD_REQUEST);
+            }
+            if ($user->twoFA_login) {
+                $code = Str::random(6);
+                $user->twoFA_login_active = 1;
+                $user->save();
+                VerifyUser::where('email', $user->email)->where('type', VerifyUser::TYPE_LOGIN_TWO_FA)->delete();
+                $verify = new VerifyUser();
+                $verify->email = $user->email;
+                $verify->type = VerifyUser::TYPE_LOGIN_TWO_FA;
+                $verify->code = $code;
+                $verify->created_at = now();
+                $verify->save();
+                Mail::to($user)->send(new LoginTwoFA($code));
             }
             return $this->createTokenFromUser($user);
         }
@@ -158,7 +172,7 @@ class AuthController extends Controller
                 $user->update(['email_verified_at' => now()]);
                 $verifyUser->delete();
                 $emailerData = EmailerHelper::getEmailerData();
-                EmailerHelper::triggerUserEmail($user->email, 'Welcome to the Casper',$emailerData, $user);
+                EmailerHelper::triggerUserEmail($user->email, 'Welcome to the Casper', $emailerData, $user);
                 return $this->metaSuccess();
             }
             return $this->errorResponse(__('api.error.code_not_found'), Response::HTTP_BAD_REQUEST);

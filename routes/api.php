@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\HelloSignController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\DiscussionController;
+use App\Http\Controllers\Api\V1\MetricController;
 use App\Http\Controllers\Api\V1\VerificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +33,8 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
     Route::post('auth/reset-password', [AuthController::class, 'resetPassword']);
     Route::get('/members', [UserController::class, 'getMembers']);
     Route::get('/members/{id}', [UserController::class, 'getMemberDetail'])->where('id', '[0-9]+');
+    Route::post('/users/cancel-change-email', [UserController::class, 'cancelChangeEmail']);
+    Route::post('/users/confirm-change-email', [UserController::class, 'confirmChangeEmail']);
     Route::middleware(['auth:api'])->group(function () {
         Route::middleware(['user_banned'])->group(function () {
             Route::post('/users/verify-email', [AuthController::class, 'verifyEmail']);
@@ -59,6 +62,12 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('users/votes/{id}', [UserController::class, 'getVoteDetail']);
             Route::post('users/votes/{id}', [UserController::class, 'vote']);
             Route::post('/users/upload-avatar',  [UserController::class, 'uploadAvatar']);
+            Route::post('/users/check-password',  [UserController::class, 'checkCurrentPassword']);
+            Route::post('/users/settings',  [UserController::class, 'settingUser']);
+
+            Route::get('/users/metrics',  [MetricController::class, 'getMetric']);
+            Route::post('/users/check-login-2fa',  [UserController::class, 'checkLogin2FA']);
+            Route::post('/users/resend-2fa',  [UserController::class, 'resend2FA']);
         });
         Route::prefix('admin')->middleware(['role_admin'])->group(function () {
             Route::get('/users', [AdminController::class, 'getUsers']);
@@ -102,6 +111,10 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('/emailer-data', [AdminController::class, 'getEmailerData']);
             Route::put('/emailer-trigger-admin/{recordId}', [AdminController::class, 'updateEmailerTriggerAdmin']);
 	        Route::put('/emailer-trigger-user/{recordId}', [AdminController::class, 'updateEmailerTriggerUser']);
+            // metrics
+            
+            Route::get('/metrics/{id}',  [MetricController::class, 'getMetricUser']);
+            Route::put('/metrics/{id}',  [MetricController::class, 'updateMetric']);
         });
         Route::prefix('discussions')->group(function () {
             Route::get('/trending', [DiscussionController::class, 'getTrending']);

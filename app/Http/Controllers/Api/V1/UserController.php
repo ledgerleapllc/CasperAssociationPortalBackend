@@ -12,6 +12,8 @@ use App\Http\Requests\Api\SubmitKYCRequest;
 use App\Http\Requests\Api\SubmitPublicAddressRequest;
 use App\Http\Requests\Api\VerifyFileCasperSignerRequest;
 use App\Mail\AddNodeMail;
+use App\Mail\LoginTwoFA;
+use App\Mail\UserConfirmEmail;
 use App\Mail\UserVerifyMail;
 use App\Models\Ballot;
 use App\Models\OwnerNode;
@@ -39,6 +41,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -153,8 +156,8 @@ class UserController extends Controller
             $user->letter_rejected_at = null;
             $user->save();
             $emailerData = EmailerHelper::getEmailerData();
-            EmailerHelper::triggerAdminEmail('User uploads a letter',$emailerData, $user);
-            EmailerHelper::triggerUserEmail($user->email, 'Your letter of motivation is received',$emailerData, $user);
+            EmailerHelper::triggerAdminEmail('User uploads a letter', $emailerData, $user);
+            EmailerHelper::triggerUserEmail($user->email, 'Your letter of motivation is received', $emailerData, $user);
             return $this->metaSuccess();
         } catch (\Exception $ex) {
             return $this->errorResponse(__('Failed upload file'), Response::HTTP_BAD_REQUEST, $ex->getMessage());
@@ -199,7 +202,7 @@ class UserController extends Controller
             $user->update(['signature_request_id' => $signature_request_id]);
             $emailerData = EmailerHelper::getEmailerData();
             if ($user->letter_verified_at && $user->signature_request_id && $user->node_verified_at) {
-                EmailerHelper::triggerUserEmail($user->email, 'Congratulations',$emailerData, $user);
+                EmailerHelper::triggerUserEmail($user->email, 'Congratulations', $emailerData, $user);
             }
             return $this->successResponse([
                 'signature_request_id' => $signature_request_id,
@@ -324,10 +327,10 @@ class UserController extends Controller
                     $user->node_verified_at = now();
                     $user->save();
                     $emailerData = EmailerHelper::getEmailerData();
-                    EmailerHelper::triggerUserEmail($user->email, 'Your Node is Verified',$emailerData, $user);
+                    EmailerHelper::triggerUserEmail($user->email, 'Your Node is Verified', $emailerData, $user);
 
                     if ($user->letter_verified_at && $user->signature_request_id && $user->node_verified_at) {
-                        EmailerHelper::triggerUserEmail($user->email, 'Congratulations',$emailerData, $user);
+                        EmailerHelper::triggerUserEmail($user->email, 'Congratulations', $emailerData, $user);
                     }
                     return $this->metaSuccess();
                 } else {
@@ -502,7 +505,7 @@ class UserController extends Controller
             $record->status = 'booked';
             $record->save();
             $emailerData = EmailerHelper::getEmailerData();
-            EmailerHelper::triggerAdminEmail('KYC or AML need review',$emailerData, $user);
+            EmailerHelper::triggerAdminEmail('KYC or AML need review', $emailerData, $user);
             return $this->metaSuccess();
         }
         return $this->errorResponse('Fail submit AML', Response::HTTP_BAD_REQUEST);
@@ -658,7 +661,7 @@ class UserController extends Controller
         if (!$sort_key) $sort_key = 'created_at';
         if (!$sort_direction) $sort_direction = 'desc';
         $users = User::where('role', 'member')->orderBy($sort_key, $sort_direction)
-        ->orderBy($sort_key, $sort_direction)->paginate($limit);
+            ->orderBy($sort_key, $sort_direction)->paginate($limit);
         return $this->successResponse($users);
     }
 
@@ -690,5 +693,150 @@ class UserController extends Controller
                 'vote_result.type as voteType',
             ])->orderBy('vote_result.created_at', 'DESC')->paginate($limit);
         return $this->successResponse($data);
+    }
+
+    public function checkCurrentPassword(Request $request)
+    {
+        $user = auth()->user();
+        if (Hash::check($request->current_password, $user->password)) {
+            return $this->metaSuccess();
+        } else {
+            return $this->errorResponse(__('Invalid password'), Response::HTTP_BAD_REQUEST);
+        }
+    }
+
+    public function settingUser(Request $request)
+    {
+        $user = auth()->user();
+        if ($request->new_password) {
+            $user->password = bcrypt($request->new_password);
+        }
+        if ($request->username) {
+            $checkUsername = User::where('username', $request->username)->where('username', '!=', $request->username)->first();
+            if ($checkUsername) {
+                return $this->errorResponse(__('this username has already been taken'), Response::HTTP_BAD_REQUEST);
+            }
+            $user->username = $request->username;
+        }
+        if (isset($request->twoFA_login)) {
+            $user->twoFA_login = $request->twoFA_login;
+        }
+        if ($request->email) {
+            $checkEmail = User::where('email', $request->email)->orWhere('new_email',  $request->email)->first();
+            $currentEmail = $user->email;
+            $newEmail = $request->email;
+            if ($checkEmail) {
+                return $this->errorResponse(__('this email has already been taken'), Response::HTTP_BAD_REQUEST);
+            }
+            $user->new_email = $newEmail;
+
+            // curent email 
+            $codeCurrentEmail = Str::random(6);
+            $url = $request->header('origin') ?? $request->root();
+            $urlCurrentEmail = $url . '/change-email/cancel-changes?code=' . $codeCurrentEmail . '&email=' . urlencode($currentEmail);
+            $newMemberData = [
+                'title' => 'Are you trying to update your email?',
+                'content' => 'You recently requested to update your email address with the Casper Association Portal. If this is correct, click the link sent to your new email address to activate it. <br> If you did not initiate this update, your account could be compromised. Click the button to cancel the change',
+                'url' => $urlCurrentEmail,
+                'action' => 'cancel'
+            ];
+            Mail::to($currentEmail)->send(new UserConfirmEmail($newMemberData['title'], $newMemberData['content'], $newMemberData['url'], $newMemberData['action']));
+            VerifyUser::where('email', $currentEmail)->where('type', VerifyUser::TYPE_CANCEL_EMAIL)->delete();
+            $verify = new VerifyUser();
+            $verify->code = $codeCurrentEmail;
+            $verify->email = $currentEmail;
+            $verify->type = VerifyUser::TYPE_CANCEL_EMAIL;
+            $verify->created_at = now();
+            $verify->save();
+
+            // new email
+            $codeNewEmail = Str::random(6);
+            $urlNewEmail = $url . '/change-email/confirm?code=' . $codeNewEmail . '&email=' . urlencode($newEmail);
+            $newMemberData = [
+                'title' => 'You recently updated your email',
+                'content' => 'You recently requested to update your email address with the Casper Association Portal. If this is correct, click the button below to confirm the change. <br> If you received this email in error, you can simply delete it',
+                'url' => $urlNewEmail,
+                'action' => 'confirm'
+            ];
+            Mail::to($newEmail)->send(new UserConfirmEmail($newMemberData['title'], $newMemberData['content'], $newMemberData['url'], $newMemberData['action']));
+            VerifyUser::where('email', $newEmail)->where('type', VerifyUser::TYPE_CONFIRM_EMAIL)->delete();
+            $verify = new VerifyUser();
+            $verify->email = $newEmail;
+            $verify->code = $codeNewEmail;
+            $verify->type = VerifyUser::TYPE_CONFIRM_EMAIL;
+            $verify->created_at = now();
+            $verify->save();
+        }
+        $user->save();
+
+        return $this->successResponse($user);
+    }
+
+    public function cancelChangeEmail(Request $request)
+    {
+        $verify = VerifyUser::where('email', $request->email)->where('type', VerifyUser::TYPE_CANCEL_EMAIL)
+            ->where('code', $request->code)->first();
+        if ($verify) {
+            $user = User::where('email', $request->email)->first();
+            if ($user) {
+                $user->new_email = null;
+                $user->save();
+                $verify->delete();
+                VerifyUser::where('email', $user->new_email)->where('type', VerifyUser::TYPE_CONFIRM_EMAIL)->delete();
+                return $this->successResponse($user);
+            }
+            return $this->errorResponse(__('Fail cancel change email'), Response::HTTP_BAD_REQUEST);
+        }
+        return $this->errorResponse(__('Fail cancel change email'), Response::HTTP_BAD_REQUEST);
+    }
+
+    public function confirmChangeEmail(Request $request)
+    {
+        $verify = VerifyUser::where('email', $request->email)->where('type', VerifyUser::TYPE_CONFIRM_EMAIL)
+            ->where('code', $request->code)->first();
+        if ($verify) {
+            $user = User::where('new_email', $request->email)->first();
+            if ($user) {
+                VerifyUser::where('email',  $user->email)->where('type', VerifyUser::TYPE_CANCEL_EMAIL)->delete();
+                $user->new_email = null;
+                $user->email = $request->email;
+                $user->save();
+                $verify->delete();
+                return $this->successResponse($user);
+            }
+            return $this->errorResponse(__('Fail confirm change email'), Response::HTTP_BAD_REQUEST);
+        }
+        return $this->errorResponse(__('Fail confirm change email'), Response::HTTP_BAD_REQUEST);
+    }
+
+    public function checkLogin2FA(Request $request) {
+        $user = auth()->user();
+        $verify = VerifyUser::where('email', $user->email)->where('type', VerifyUser::TYPE_LOGIN_TWO_FA)
+            ->where('code', $request->code)->first();
+        if($verify) {
+            $verify->delete();
+            $user->twoFA_login_active = 0;
+            $user->save();
+            return $this->metaSuccess();
+        }
+        return $this->errorResponse(__('Fail check twoFA code'), Response::HTTP_BAD_REQUEST);
+    }
+
+    public function resend2FA()
+    {
+        $user = auth()->user();
+        if($user->twoFA_login == 1) {
+            VerifyUser::where('email', $user->email)->where('type', VerifyUser::TYPE_LOGIN_TWO_FA)->delete();
+            $code = Str::random(6);
+            $verify = new VerifyUser();
+            $verify->email = $user->email;
+            $verify->type = VerifyUser::TYPE_LOGIN_TWO_FA;
+            $verify->code = $code;
+            $verify->created_at = now();
+            $verify->save();
+            Mail::to($user)->send(new LoginTwoFA($code));
+            return $this->metaSuccess();
+        }
+        return $this->errorResponse(__('Please enable 2Fa setting'), Response::HTTP_BAD_REQUEST);
     }
 }
