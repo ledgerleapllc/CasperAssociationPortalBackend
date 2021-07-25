@@ -115,6 +115,9 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             
             Route::get('/metrics/{id}',  [MetricController::class, 'getMetricUser']);
             Route::put('/metrics/{id}',  [MetricController::class, 'updateMetric']);
+            Route::get('/monitoring-criteria',  [AdminController::class, 'getMonitoringCriteria']);
+            Route::put('/monitoring-criteria/{type}',  [AdminController::class, 'updateMonitoringCriteria']);
+
         });
         Route::prefix('discussions')->group(function () {
             Route::get('/trending', [DiscussionController::class, 'getTrending']);

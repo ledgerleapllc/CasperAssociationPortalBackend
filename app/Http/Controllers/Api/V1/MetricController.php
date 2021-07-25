@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Metric;
+use App\Models\MonitoringCriteria;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -16,6 +17,15 @@ class MetricController extends Controller
     {
         $user = auth()->user();
         $metric = Metric::where('user_id', $user->id)->first();
+        if (!$metric) {
+            $metric = [];
+        }
+        $monitoringCriteria = MonitoringCriteria::select([
+            'type',
+            "warning_level",
+            "probation_start"
+        ])->get();
+        $metric['monitoring_criteria'] = $monitoringCriteria;
         return $this->successResponse($metric);
     }
 

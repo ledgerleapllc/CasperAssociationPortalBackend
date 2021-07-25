@@ -12,6 +12,7 @@ use App\Models\DocumentFile;
 use App\Models\EmailerAdmin;
 use App\Models\EmailerTriggerAdmin;
 use App\Models\EmailerTriggerUser;
+use App\Models\MonitoringCriteria;
 use App\Models\OwnerNode;
 use App\Models\Profile;
 use App\Models\Setting;
@@ -640,6 +641,50 @@ class AdminController extends Controller
 
             $record->enabled = $enabled;
             if ($content) $record->content = $content;
+
+            $record->save();
+
+            return ['success' => true];
+        }
+
+        return ['success' => false];
+    }
+
+    public function getMonitoringCriteria(Request $request)
+    {
+        $data = MonitoringCriteria::get();
+
+        return $this->successResponse($data);
+    }
+
+    public function updateMonitoringCriteria($type, Request $request)
+    {
+        $record = MonitoringCriteria::where('type', $type)->first();
+
+        if ($record) {
+            $validator = Validator::make($request->all(), [
+                'warning_level' => 'required|integer',
+                'probation_start' => 'required',
+                'frame_calculate_unit' => 'required|in:Weeks,Days,Hours',
+                'frame_calculate_value' => 'required|integer',
+                'given_to_correct_unit' => 'required|in:Weeks,Days,Hours',
+                'given_to_correct_value' => 'required|integer',
+                'system_check_unit' => 'required|in:Weeks,Days,Hours',
+                'system_check_value' => 'required|integer',
+            ]);
+
+            if ($validator->fails()) {
+                return $this->validateResponse($validator->errors());
+            }
+
+            $record->warning_level = $request->warning_level;
+            $record->probation_start = $request->probation_start;
+            $record->frame_calculate_unit = $request->frame_calculate_unit;
+            $record->frame_calculate_value = $request->frame_calculate_value;
+            $record->given_to_correct_unit = $request->given_to_correct_unit;
+            $record->given_to_correct_value = $request->given_to_correct_value;
+            $record->system_check_unit = $request->system_check_unit;
+            $record->system_check_value = $request->system_check_value;
 
             $record->save();
 
