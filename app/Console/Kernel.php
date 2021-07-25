@@ -32,6 +32,10 @@ class Kernel extends ConsoleKernel
             ->everyFiveMinutes()
             ->runInBackground();
         // ->withoutOverlapping();
+        $schedule->command('perk:check')
+            ->dailyAt('00:01')
+            ->runInBackground();
+        // ->withoutOverlapping();
     }
 
     /**

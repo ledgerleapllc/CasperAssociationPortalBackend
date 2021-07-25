@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\HelloSignController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\DiscussionController;
 use App\Http\Controllers\Api\V1\MetricController;
+use App\Http\Controllers\Api\V1\PerkController;
 use App\Http\Controllers\Api\V1\VerificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -104,17 +105,26 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
                 Route::get('/{id}/reset-password', [AdminController::class, 'changeSubAdminResetPassword']);
                 Route::delete('/{id}/revoke', [AdminController::class, 'revokeSubAdmin']);
             });
-            
+
             //emailer
             Route::post('/emailer-admin', [AdminController::class, 'addEmailerAdmin']);
             Route::delete('/emailer-admin/{adminId}', [AdminController::class, 'deleteEmailerAdmin']);
             Route::get('/emailer-data', [AdminController::class, 'getEmailerData']);
             Route::put('/emailer-trigger-admin/{recordId}', [AdminController::class, 'updateEmailerTriggerAdmin']);
 	        Route::put('/emailer-trigger-user/{recordId}', [AdminController::class, 'updateEmailerTriggerUser']);
+
             // metrics
-            
             Route::get('/metrics/{id}',  [MetricController::class, 'getMetricUser']);
             Route::put('/metrics/{id}',  [MetricController::class, 'updateMetric']);
+
+            //perk
+            Route::get('/perks',  [PerkController::class, 'getPerksAdmin']);
+            Route::post('/perks/update/{id}',  [PerkController::class, 'updatePerk']);
+            Route::get('/perks/{id}',  [PerkController::class, 'getPerkDetailAdmin']);
+            Route::get('/perks/{id}/result',  [PerkController::class, 'getPerkResultAdmin']);
+            Route::delete('/perks/{id}',  [PerkController::class, 'deletePerk']);
+            Route::post('/perks',  [PerkController::class, 'createPerk']);
+
             Route::get('/monitoring-criteria',  [AdminController::class, 'getMonitoringCriteria']);
             Route::put('/monitoring-criteria/{type}',  [AdminController::class, 'updateMonitoringCriteria']);
 
@@ -139,6 +149,11 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::post('/submit-detail', [VerificationController::class, 'submitDetail']);
             Route::post('/upload-document', [VerificationController::class, 'uploadDocument']);
             Route::delete('/remove-document/{id}', [VerificationController::class, 'removeDocument']);
+        });
+
+        Route::prefix('perks')->group(function () {
+            Route::get('/',  [PerkController::class, 'getPerksUser']);
+            Route::get('/{id}',  [PerkController::class, 'getPerkDetailUser']);
         });
     });
 });
