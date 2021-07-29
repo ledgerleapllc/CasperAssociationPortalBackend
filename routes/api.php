@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\HelloSignController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\DiscussionController;
 use App\Http\Controllers\Api\V1\MetricController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PerkController;
 use App\Http\Controllers\Api\V1\VerificationController;
 use Illuminate\Http\Request;
@@ -69,6 +70,10 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('/users/metrics',  [MetricController::class, 'getMetric']);
             Route::post('/users/check-login-2fa',  [UserController::class, 'checkLogin2FA']);
             Route::post('/users/resend-2fa',  [UserController::class, 'resend2FA']);
+            Route::get('/users/notification',  [NotificationController::class, 'getNotificationUser']);
+            Route::put('/users/notification/{id}/view',  [NotificationController::class, 'updateView'])->where('id', '[0-9]+');
+            Route::put('/users/notification/{id}/dismiss',  [NotificationController::class, 'dismiss'])->where('id', '[0-9]+');
+            Route::put('/users/notification/{id}/click-cta',  [NotificationController::class, 'clickCTA'])->where('id', '[0-9]+');
         });
         Route::prefix('admin')->middleware(['role_admin'])->group(function () {
             Route::get('/users', [AdminController::class, 'getUsers']);
@@ -127,6 +132,13 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
 
             Route::get('/monitoring-criteria',  [AdminController::class, 'getMonitoringCriteria']);
             Route::put('/monitoring-criteria/{type}',  [AdminController::class, 'updateMonitoringCriteria']);
+
+            Route::get('/notification/{id}',  [NotificationController::class, 'getNotificationDetail'])->where('id', '[0-9]+');
+            Route::put('/notification/{id}',  [NotificationController::class, 'updateNotification'])->where('id', '[0-9]+');
+            Route::post('/notification',  [NotificationController::class, 'createNotification']);
+            Route::get('/notification',  [NotificationController::class, 'getNotification']);
+            Route::get('/notification/{id}/view-logs',  [NotificationController::class, 'getUserViewLogs']);
+            Route::get('/notification/high-priority',  [NotificationController::class, 'getHighPriority']);
 
         });
         Route::prefix('discussions')->group(function () {
