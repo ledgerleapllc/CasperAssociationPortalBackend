@@ -132,6 +132,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
                 Route::post('/{id}/reset-password', [AdminController::class, 'resetSubAdminResetPassword']);
                 Route::post('/{id}/revoke', [AdminController::class, 'revokeSubAdmin']);
                 Route::get('/{id}/ip-histories', [AdminController::class, 'getIpHistories']);
+                Route::post('/{id}/undo-revoke', [AdminController::class, 'undoRevokeSubAdmin']);
             });
 
             //emailer

@@ -431,6 +431,22 @@ class AdminController extends Controller
         return $this->metaSuccess();
     }
 
+    public function undoRevokeSubAdmin(Request $request, $id)
+    {
+        $admin = User::find($id);
+        if ($admin == null || $admin->role != 'sub-admin')
+            return $this->errorResponse('No admin to be revoked', Response::HTTP_BAD_REQUEST);
+        if($admin->password) {
+            $admin->member_status = 'active';
+        } else {
+            $admin->member_status = 'invited';
+        }
+        $admin->banned = 0;
+        $admin->save();
+
+        return $this->successResponse($admin);
+    }
+    
     public function getIpHistories(Request $request, $id) {
         $admin = User::find($id);
         if ($admin == null || $admin->role != 'sub-admin')  {
