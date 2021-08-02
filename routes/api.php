@@ -31,6 +31,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
     Route::post('/auth/login', [AuthController::class, 'login'])->name('login');;
     Route::post('/auth/register-entity', [AuthController::class, 'registerEntity']);
     Route::post('/auth/register-individual', [AuthController::class, 'registerIndividual']);
+    Route::post('/auth/register-sub-admin', [AuthController::class, 'registerSubAdmin']);
     Route::post('/auth/send-reset-password', [AuthController::class, 'sendResetLinkEmail']);
     Route::post('auth/reset-password', [AuthController::class, 'resetPassword']);
     Route::get('/members', [UserController::class, 'getMembers']);
@@ -81,34 +82,56 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('/dashboard', [AdminController::class, 'infoDashboard']);
             Route::get('/users/{id}/kyc', [AdminController::class, 'getKYC'])->where('id', '[0-9]+');
 
-            Route::get('/users/intakes', [AdminController::class, 'getIntakes']);
-            Route::post('/users/intakes/{id}/approve', [AdminController::class, 'approveIntakeUser'])->where('id', '[0-9]+');
-            Route::post('/users/intakes/{id}/reset', [AdminController::class, 'resetIntakeUser'])->where('id', '[0-9]+');
-            Route::post('/users/{id}/ban', [AdminController::class, 'banUser'])->where('id', '[0-9]+');
+            // intakes
+            Route::middleware([])->group(function () {
+                Route::get('/users/intakes', [AdminController::class, 'getIntakes']);
+                Route::post('/users/intakes/{id}/approve', [AdminController::class, 'approveIntakeUser'])->where('id', '[0-9]+');
+                Route::post('/users/intakes/{id}/reset', [AdminController::class, 'resetIntakeUser'])->where('id', '[0-9]+');
+                Route::post('/users/{id}/ban', [AdminController::class, 'banUser'])->where('id', '[0-9]+');
+            });
+            
+            // user
+            Route::middleware([])->group(function () {
+                Route::get('/users/verification', [AdminController::class, 'getVerificationUsers']);
+                Route::get('/users/verification/{id}', [AdminController::class, 'getVerificationDetail'])->where('id', '[0-9]+');
+                Route::post('/users/{id}/approve-kyc', [AdminController::class, 'approveKYC'])->where('id', '[0-9]+');
+                Route::post('/users/{id}/reset-kyc', [AdminController::class, 'resetKYC'])->where('id', '[0-9]+');
+                Route::post('/users/{id}/approve-aml', [AdminController::class, 'approveAML'])->where('id', '[0-9]+');
+                Route::post('/users/{id}/reset-aml', [AdminController::class, 'resetAML'])->where('id', '[0-9]+');
+                Route::post('/users/{id}/deny-ban', [AdminController::class, 'banAndDenyUser'])->where('id', '[0-9]+');
+                Route::post('/users/{id}/approve-document', [AdminController::class, 'approveDocument'])->where('id', '[0-9]+');
+            });
 
-            Route::get('/users/verification', [AdminController::class, 'getVerificationUsers']);
-            Route::get('/users/verification/{id}', [AdminController::class, 'getVerificationDetail'])->where('id', '[0-9]+');
-            Route::post('/users/{id}/approve-kyc', [AdminController::class, 'approveKYC'])->where('id', '[0-9]+');
-            Route::post('/users/{id}/reset-kyc', [AdminController::class, 'resetKYC'])->where('id', '[0-9]+');
-            Route::post('/users/{id}/approve-aml', [AdminController::class, 'approveAML'])->where('id', '[0-9]+');
-            Route::post('/users/{id}/reset-aml', [AdminController::class, 'resetAML'])->where('id', '[0-9]+');
-            Route::post('/users/{id}/deny-ban', [AdminController::class, 'banAndDenyUser'])->where('id', '[0-9]+');
-            Route::post('/users/{id}/approve-document', [AdminController::class, 'approveDocument'])->where('id', '[0-9]+');
+            // ballots
+            Route::middleware([])->group(function () {
+                Route::post('/ballots', [AdminController::class, 'submitBallot']);
+                Route::get('/ballots', [AdminController::class, 'getBallots']);
+                Route::get('/ballots/{id}', [AdminController::class, 'getDetailBallot'])->where('id', '[0-9]+');
+                Route::get('/ballots/{id}/votes', [AdminController::class, 'getBallotVotes'])->where('id', '[0-9]+');
+                Route::post('/ballots/{id}/cancel', [AdminController::class, 'cancelBallot'])->where('id', '[0-9]+');
+            });
 
-            Route::post('/ballots', [AdminController::class, 'submitBallot']);
-            Route::get('/ballots', [AdminController::class, 'getBallots']);
-            Route::get('/ballots/{id}', [AdminController::class, 'getDetailBallot'])->where('id', '[0-9]+');
-            Route::get('/ballots/{id}/votes', [AdminController::class, 'getBallotVotes'])->where('id', '[0-9]+');
-            Route::post('/ballots/{id}/cancel', [AdminController::class, 'cancelBallot'])->where('id', '[0-9]+');
+             //perk
+             Route::middleware([])->group(function () {
+                Route::get('/perks',  [PerkController::class, 'getPerksAdmin']);
+                Route::post('/perks/update/{id}',  [PerkController::class, 'updatePerk']);
+                Route::get('/perks/{id}',  [PerkController::class, 'getPerkDetailAdmin']);
+                Route::get('/perks/{id}/result',  [PerkController::class, 'getPerkResultAdmin']);
+                Route::delete('/perks/{id}',  [PerkController::class, 'deletePerk']);
+                Route::post('/perks',  [PerkController::class, 'createPerk']);
+            });
+
             Route::get('/global-settings', [AdminController::class, 'getGlobalSettings']);
             Route::put('/global-settings', [AdminController::class, 'updateGlobalSettings']);
+
             Route::prefix('/teams')->group(function () {
                 Route::get('/', [AdminController::class, 'getSubAdmins']);
                 Route::post('/invite', [AdminController::class, 'inviteSubAdmin']);
-                Route::post('/reinvite', [AdminController::class, 'resendLink']);
-                Route::get('/{id}/change-permissions', [AdminController::class, 'changeSubAdminPermissions']);
-                Route::get('/{id}/reset-password', [AdminController::class, 'changeSubAdminResetPassword']);
-                Route::delete('/{id}/revoke', [AdminController::class, 'revokeSubAdmin']);
+                Route::post('/{id}/re-invite', [AdminController::class, 'resendLink']);
+                Route::put('/{id}/change-permissions', [AdminController::class, 'changeSubAdminPermissions']);
+                Route::post('/{id}/reset-password', [AdminController::class, 'resetSubAdminResetPassword']);
+                Route::post('/{id}/revoke', [AdminController::class, 'revokeSubAdmin']);
+                Route::get('/{id}/ip-histories', [AdminController::class, 'getIpHistories']);
             });
 
             //emailer
@@ -116,19 +139,11 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::delete('/emailer-admin/{adminId}', [AdminController::class, 'deleteEmailerAdmin']);
             Route::get('/emailer-data', [AdminController::class, 'getEmailerData']);
             Route::put('/emailer-trigger-admin/{recordId}', [AdminController::class, 'updateEmailerTriggerAdmin']);
-	        Route::put('/emailer-trigger-user/{recordId}', [AdminController::class, 'updateEmailerTriggerUser']);
+            Route::put('/emailer-trigger-user/{recordId}', [AdminController::class, 'updateEmailerTriggerUser']);
 
             // metrics
             Route::get('/metrics/{id}',  [MetricController::class, 'getMetricUser']);
             Route::put('/metrics/{id}',  [MetricController::class, 'updateMetric']);
-
-            //perk
-            Route::get('/perks',  [PerkController::class, 'getPerksAdmin']);
-            Route::post('/perks/update/{id}',  [PerkController::class, 'updatePerk']);
-            Route::get('/perks/{id}',  [PerkController::class, 'getPerkDetailAdmin']);
-            Route::get('/perks/{id}/result',  [PerkController::class, 'getPerkResultAdmin']);
-            Route::delete('/perks/{id}',  [PerkController::class, 'deletePerk']);
-            Route::post('/perks',  [PerkController::class, 'createPerk']);
 
             Route::get('/monitoring-criteria',  [AdminController::class, 'getMonitoringCriteria']);
             Route::put('/monitoring-criteria/{type}',  [AdminController::class, 'updateMonitoringCriteria']);
@@ -139,7 +154,6 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('/notification',  [NotificationController::class, 'getNotification']);
             Route::get('/notification/{id}/view-logs',  [NotificationController::class, 'getUserViewLogs']);
             Route::get('/notification/high-priority',  [NotificationController::class, 'getHighPriority']);
-
         });
         Route::prefix('discussions')->group(function () {
             Route::get('/trending', [DiscussionController::class, 'getTrending']);

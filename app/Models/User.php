@@ -101,6 +101,7 @@ class User extends Authenticatable
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'node_verified_at' => 'datetime',
+        'permissions' => 'array'
     ];
 
     /**
@@ -169,6 +170,14 @@ class User extends Authenticatable
 
     public function getPinnedAttribute() {
         return $this->pinnedDiscussionsList()->count();
+    }
+
+    public function permissions() {
+        return $this->hasMany('App\Models\Permission', 'user_id');
+    }
+
+    public function ipHistories() {
+        return $this->hasMany('App\Models\IpHistory', 'user_id');
     }
 
     public function getNewThreadsAttribute() {

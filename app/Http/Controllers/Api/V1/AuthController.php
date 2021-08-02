@@ -12,6 +12,7 @@ use App\Http\Requests\Api\SendResetPasswordMailRequeslRequest;
 use App\Mail\LoginTwoFA;
 use App\Mail\ResetPasswordMail;
 use App\Mail\UserVerifyMail;
+use App\Models\IpHistory;
 use App\Models\User;
 use App\Models\VerifyUser;
 use App\Repositories\UserRepository;
@@ -21,6 +22,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 class AuthController extends Controller
@@ -70,6 +72,13 @@ class AuthController extends Controller
                 $verify->save();
                 Mail::to($user)->send(new LoginTwoFA($code));
             }
+            $user->last_login_at = now();
+            $user->last_login_ip_address = request()->ip();
+            $user->save();
+            $ipHistory = new IpHistory();
+            $ipHistory->user_id = $user->id;
+            $ipHistory->ip_address =  request()->ip();
+            $ipHistory->save();
             return $this->createTokenFromUser($user);
         }
 
@@ -91,7 +100,6 @@ class AuthController extends Controller
             $data['password'] = bcrypt($request->password);
             $data['last_login_at'] = now();
             $data['type'] = User::TYPE_ENTITY;
-            $data['member_status'] = User::STATUS_INCOMPLETE;
             $user = $this->userRepo->create($data);
             $code = generateString(7);
             $userVerify = $this->verifyUserRepo->updateOrCreate(
@@ -108,6 +116,13 @@ class AuthController extends Controller
                 Mail::to($user->email)->send(new UserVerifyMail($code));
             }
             DB::commit();
+            $user->last_login_at = now();
+            $user->last_login_ip_address = request()->ip();
+            $user->save();
+            $ipHistory = new IpHistory();
+            $ipHistory->user_id = $user->id;
+            $ipHistory->ip_address =  request()->ip();
+            $ipHistory->save();
             return $this->createTokenFromUser($user);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -130,7 +145,6 @@ class AuthController extends Controller
             $data['password'] = bcrypt($request->password);
             $data['last_login_at'] = now();
             $data['type'] = User::TYPE_INDIVIDUAL;
-            $data['member_status'] = User::STATUS_INCOMPLETE;
             $user = $this->userRepo->create($data);
             $code = generateString(7);
             $userVerify = $this->verifyUserRepo->updateOrCreate(
@@ -147,6 +161,13 @@ class AuthController extends Controller
                 Mail::to($user->email)->send(new UserVerifyMail($code));
             }
             DB::commit();
+            $user->last_login_at = now();
+            $user->last_login_ip_address = request()->ip();
+            $user->save();
+            $ipHistory = new IpHistory();
+            $ipHistory->user_id = $user->id;
+            $ipHistory->ip_address =  request()->ip();
+            $ipHistory->save();
             return $this->createTokenFromUser($user);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -282,6 +303,44 @@ class AuthController extends Controller
             throw $e;
         }
     }
+
+    public function registerSubAdmin(Request $request) {
+               
+        $validator = Validator::make($request->all(), [
+            'first_name' => 'required|regex:/^[A-Za-z. ]{1,255}$/',
+            'last_name' => 'required|regex:/^[A-Za-z. ]{1,255}$/',
+            'email' => 'required|email|max:256',
+            'code' => 'required',
+            'password' => 'required|min:8|max:80',
+        ]);
+        
+        if ($validator->fails()) {
+            return $this->validateResponse($validator->errors());
+        }
+        $user = User::where('email', $request->email)->where('member_status', 'invited')->where('role', 'sub-admin')->first();
+        if(!$user) {
+            return $this->errorResponse('There is no admin user with this email', Response::HTTP_BAD_REQUEST);
+        }
+        $verify =  VerifyUser::where('email', $request->email)->where('type', VerifyUser::TYPE_INVITE_ADMIN)->where('code', $request->code)->first();
+        if(!$verify) {
+            return $this->errorResponse('Fail register sub-amdin', Response::HTTP_BAD_REQUEST);
+        }
+        $user->first_name = $request->first_name;
+        $user->last_name = $request->last_name;
+        $user->password = bcrypt($request->password);
+        $user->last_login_at = now();
+        $user->last_login_ip_address = request()->ip();
+        $user->member_status = 'active';
+        $user->save();
+        $ipHistory = new IpHistory();
+        $ipHistory->user_id = $user->id;
+        $ipHistory->ip_address = request()->ip();
+        $ipHistory->save();
+        $verify->delete();
+        return $this->createTokenFromUser($user);
+
+    }
+
     public function createTokenFromUser($user, $info = [])
     {
         $token = $user->createToken(config('auth.secret_code'));

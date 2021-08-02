@@ -15,6 +15,7 @@ class VerifyUser extends Model
     const TYPE_CANCEL_EMAIL= 'cancel_email';
     const TYPE_CONFIRM_EMAIL= 'confirm_email';
     const TYPE_LOGIN_TWO_FA= 'login_twoFA';
+    const TYPE_INVITE_ADMIN= 'invite_admin';
 
     public $timestamps = false;
     public $primaryKey = 'email';

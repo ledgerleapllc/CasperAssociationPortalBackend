@@ -6,19 +6,24 @@ use App\Http\Controllers\Controller;
 use App\Http\EmailerHelper;
 use App\Mail\AdminAlert;
 use App\Mail\ResetKYC;
+use App\Mail\ResetPasswordMail;
+use App\Mail\InvitationMail;
 use App\Models\Ballot;
 use App\Models\BallotFile;
 use App\Models\DocumentFile;
 use App\Models\EmailerAdmin;
 use App\Models\EmailerTriggerAdmin;
 use App\Models\EmailerTriggerUser;
+use App\Models\IpHistory;
 use App\Models\MonitoringCriteria;
 use App\Models\OwnerNode;
+use App\Models\Permission;
 use App\Models\Profile;
 use App\Models\Setting;
 use App\Models\Shuftipro;
 use App\Models\ShuftiproTemp;
 use App\Models\User;
+use App\Models\VerifyUser;
 use App\Models\Vote;
 use App\Models\VoteResult;
 use Carbon\Carbon;
@@ -29,6 +34,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
@@ -262,9 +268,11 @@ class AdminController extends Controller
         return $this->metaSuccess();
     }
 
-    public function getSubAdmins(Request $request)
-    {
-        $admins = User::where(['role' => 'sub-admin'])->get();
+    public function getSubAdmins(Request $request) {
+        $limit = $request->limit ?? 10;
+        $admins = User::with(['permissions'])->where(['role' => 'sub-admin'])
+                    ->orderBy('created_at', 'DESC')
+                    ->paginate($limit);
 
         return $this->successResponse($admins);
     }
@@ -278,53 +286,134 @@ class AdminController extends Controller
             return $this->validateResponse($validator->errors());
         }
 
+        $isExist = User::where(['email' => $request->email])->count() > 0;
+        if ($isExist) {
+            return $this->errorResponse('This email has already been used to invite another admin.', Response::HTTP_BAD_REQUEST);
+        }
+
+        $code = Str::random(6);
+        $url = $request->header('origin') ?? $request->root();
+        $inviteUrl = $url . '/register-sub-admin?code=' . $code . '&email=' . urlencode($request->email);
+        VerifyUser::where('email', $request->email)->where('type', VerifyUser::TYPE_INVITE_ADMIN)->delete();
+        $verify = new VerifyUser();
+        $verify->email = $request->email;
+        $verify->type = VerifyUser::TYPE_INVITE_ADMIN;
+        $verify->code = $code;
+        $verify->created_at = now();
+        $verify->save();
         $admin = User::create([
             'first_name' => 'faker',
             'last_name' => 'faker',
             'email' => $request->email,
             'password' => '',
-            'type' => 'invited',
+            'type' => '',
+            'member_status' => 'invited',
             'role' => 'sub-admin'
         ]);
 
-        return $this->successResponse(['invited_admin' => $admin]);
+        $data = [
+            ['name' => 'intake', 'is_permission' => 0, 'user_id' => $admin->id],
+            ['name' => 'users', 'is_permission' => 0, 'user_id' => $admin->id],
+            ['name' => 'ballots', 'is_permission' => 0, 'user_id' => $admin->id],
+            ['name' => 'perks', 'is_permission' => 0, 'user_id' => $admin->id],
+          ];
+        
+        Permission::insert($data);
+        Mail::to($request->email)->send(new InvitationMail($inviteUrl));
+
+        return $this->successResponse($admin);
     }
 
     public function changeSubAdminPermissions(Request $request, $id)
-    {
-        $data['intake'] = $request->intake;
-        $data['users'] = $request->users;
-        $data['ballots'] = $request->ballots;
-        $data['perks'] = $request->perks;
-
+    {        
+        $validator = Validator::make($request->all(), [
+            'intake' => 'nullable|in:0,1',
+            'users' => 'nullable|in:0,1',
+            'ballots' => 'nullable|in:0,1',
+            'perks' => 'nullable|in:0,1',
+        ]);
+        
+        if ($validator->fails()) {
+            return $this->validateResponse($validator->errors());
+        }
         $admin = User::find($id);
-        if ($admin == null || $admin->role != 'sub-admin')
-            return $this->errorResponse('No admin to be send invite link', Response::HTTP_BAD_REQUEST);
+        if ($admin == null || $admin->role != 'sub-admin') {
+            return $this->errorResponse('There is no admin user with this email', Response::HTTP_BAD_REQUEST);
+        }
+        if(isset($request->intake)) {
+            $permisstion = Permission::where('user_id', $id)->where('name', 'intake')->first();
+            if($permisstion) {
+                $permisstion->is_permission = $request->intake;
+                $permisstion->save();
+            }
+        }
+        if(isset($request->users)) {
+            $permisstion = Permission::where('user_id', $id)->where('name', 'users')->first();
+            if($permisstion) {
+                $permisstion->is_permission = $request->users;
+                $permisstion->save();
+            }
+        }
 
-        $admin->permissions = $data;
-        $admin->save();
+        if(isset($request->ballots)) {
+            $permisstion = Permission::where('user_id', $id)->where('name', 'ballots')->first();
+            if($permisstion) {
+                $permisstion->is_permission = $request->ballots;
+                $permisstion->save();
+            }
+        }
+
+        if(isset($request->perks)) {
+            $permisstion = Permission::where('user_id', $id)->where('name', 'perks')->first();
+            if($permisstion) {
+                $permisstion->is_permission = $request->perks;
+                $permisstion->save();
+            }
+        }
 
         return $this->metaSuccess();
     }
 
-    public function resendLink(Request $request)
+    public function resendLink(Request $request, $id)
     {
         $admin = User::find($id);
         if ($admin == null || $admin->role != 'sub-admin')
-            return $this->errorResponse('No admin to be send invite link', Response::HTTP_BAD_REQUEST);
+        return $this->errorResponse('No admin to be send invite link', Response::HTTP_BAD_REQUEST);
 
-        $admin->save();
+        $code = Str::random(6);
+        $url = $request->header('origin') ?? $request->root();
+        $inviteUrl = $url . '/register-sub-admin?code=' . $code . '&email=' . urlencode($admin->email);
+        VerifyUser::where('email', $admin->email)->where('type', VerifyUser::TYPE_INVITE_ADMIN)->delete();
+        $verify = new VerifyUser();
+        $verify->email = $admin->email;
+        $verify->type = VerifyUser::TYPE_INVITE_ADMIN;
+        $verify->code = $code;
+        $verify->created_at = now();
+        $verify->save();
+
+        Mail::to($admin->email)->send(new InvitationMail($inviteUrl));
 
         return $this->metaSuccess();
     }
 
-    public function changeSubAdminResetPassword(Request $request, $id)
+    public function resetSubAdminResetPassword(Request $request, $id)
     {
         $admin = User::find($id);
         if ($admin == null || $admin->role != 'sub-admin')
-            return $this->errorResponse('No admin to be revoked', Response::HTTP_BAD_REQUEST);
+        return $this->errorResponse('No admin to be revoked', Response::HTTP_BAD_REQUEST);
 
-        $admin->save();
+        $code = Str::random(6);
+        $url = $request->header('origin') ?? $request->root();
+        $resetUrl = $url . '/update-password?code=' . $code . '&email=' . urlencode($admin->email);
+        VerifyUser::where('email', $admin->email)->where('type', VerifyUser::TYPE_RESET_PASSWORD)->delete();
+        $verify = new VerifyUser();
+        $verify->email = $admin->email;
+        $verify->type = VerifyUser::TYPE_RESET_PASSWORD;
+        $verify->code = $code;
+        $verify->created_at = now();
+        $verify->save();
+
+        Mail::to($admin->email)->send(new ResetPasswordMail($resetUrl));
 
         return $this->metaSuccess();
     }
@@ -335,12 +424,25 @@ class AdminController extends Controller
         if ($admin == null || $admin->role != 'sub-admin')
             return $this->errorResponse('No admin to be revoked', Response::HTTP_BAD_REQUEST);
 
-        $admin->type = 'revoked';
+        $admin->member_status = 'revoked';
+        $admin->banned = 1;
         $admin->save();
 
-        return $this->successResponse(['revoked' => $admin]);
+        return $this->metaSuccess();
     }
 
+    public function getIpHistories(Request $request, $id) {
+        $admin = User::find($id);
+        if ($admin == null || $admin->role != 'sub-admin')  {
+            return $this->errorResponse('Not found admin', Response::HTTP_BAD_REQUEST);
+        }
+        $limit = $request->limit ?? 10;
+        $ipAddress = IpHistory::where(['user_id' => $admin->id])
+                    ->orderBy('created_at', 'DESC')
+                    ->paginate($limit);
+
+        return $this->successResponse($ipAddress);
+    }
     public function approveIntakeUser($id)
     {
         $admin = auth()->user();

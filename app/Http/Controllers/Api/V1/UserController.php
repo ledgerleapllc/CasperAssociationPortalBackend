@@ -116,7 +116,7 @@ class UserController extends Controller
      */
     public function getProfile()
     {
-        $user = auth()->user()->load('profile');
+        $user = auth()->user()->load(['profile', 'permissions']);
         return $this->successResponse($user);
     }
 
