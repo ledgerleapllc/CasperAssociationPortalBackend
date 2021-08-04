@@ -671,6 +671,20 @@ class AdminController extends Controller
         return $this->errorResponse('Fail approve document', Response::HTTP_BAD_REQUEST);
     }
 
+    public function activeUser($id)
+    {
+        $user = User::with(['profile'])->where('id', $id)
+            ->where('users.role', 'member')->where('banned', 0)->first();
+        if ($user && $user->profile) {
+            $user->profile->status = 'approved';
+            $user->profile->save();
+            $user->approve_at = now();
+            $user->save();
+            return $this->metaSuccess();
+        }
+        return $this->errorResponse('Fail active document', Response::HTTP_BAD_REQUEST);
+    }
+
     // Add Emailer Admin
     public function addEmailerAdmin(Request $request)
     {

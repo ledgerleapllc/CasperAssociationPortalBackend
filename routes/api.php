@@ -100,6 +100,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
                 Route::post('/users/{id}/reset-aml', [AdminController::class, 'resetAML'])->where('id', '[0-9]+');
                 Route::post('/users/{id}/deny-ban', [AdminController::class, 'banAndDenyUser'])->where('id', '[0-9]+');
                 Route::post('/users/{id}/approve-document', [AdminController::class, 'approveDocument'])->where('id', '[0-9]+');
+                Route::post('/users/{id}/active', [AdminController::class, 'activeUser'])->where('id', '[0-9]+');
             });
 
             // ballots

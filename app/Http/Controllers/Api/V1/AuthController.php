@@ -112,9 +112,7 @@ class AuthController extends Controller
                     'created_at' => now()
                 ]
             );
-            if ($userVerify) {
-                Mail::to($user->email)->send(new UserVerifyMail($code));
-            }
+            Mail::to($user->email)->send(new UserVerifyMail($code));
             DB::commit();
             $user->last_login_at = now();
             $user->last_login_ip_address = request()->ip();
@@ -157,9 +155,7 @@ class AuthController extends Controller
                     'created_at' => now()
                 ]
             );
-            if ($userVerify) {
-                Mail::to($user->email)->send(new UserVerifyMail($code));
-            }
+            Mail::to($user->email)->send(new UserVerifyMail($code));
             DB::commit();
             $user->last_login_at = now();
             $user->last_login_ip_address = request()->ip();
@@ -304,8 +300,9 @@ class AuthController extends Controller
         }
     }
 
-    public function registerSubAdmin(Request $request) {
-               
+    public function registerSubAdmin(Request $request)
+    {
+
         $validator = Validator::make($request->all(), [
             'first_name' => 'required|regex:/^[A-Za-z. ]{1,255}$/',
             'last_name' => 'required|regex:/^[A-Za-z. ]{1,255}$/',
@@ -313,16 +310,16 @@ class AuthController extends Controller
             'code' => 'required',
             'password' => 'required|min:8|max:80',
         ]);
-        
+
         if ($validator->fails()) {
             return $this->validateResponse($validator->errors());
         }
         $user = User::where('email', $request->email)->where('member_status', 'invited')->where('role', 'sub-admin')->first();
-        if(!$user) {
+        if (!$user) {
             return $this->errorResponse('There is no admin user with this email', Response::HTTP_BAD_REQUEST);
         }
         $verify =  VerifyUser::where('email', $request->email)->where('type', VerifyUser::TYPE_INVITE_ADMIN)->where('code', $request->code)->first();
-        if(!$verify) {
+        if (!$verify) {
             return $this->errorResponse('Fail register sub-amdin', Response::HTTP_BAD_REQUEST);
         }
         $user->first_name = $request->first_name;
@@ -338,7 +335,6 @@ class AuthController extends Controller
         $ipHistory->save();
         $verify->delete();
         return $this->createTokenFromUser($user);
-
     }
 
     public function createTokenFromUser($user, $info = [])
