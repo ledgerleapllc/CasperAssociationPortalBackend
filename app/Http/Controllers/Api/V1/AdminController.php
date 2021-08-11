@@ -45,9 +45,21 @@ class AdminController extends Controller
         $sort_direction = $request->sort_direction ?? '';
         if (!$sort_key) $sort_key = 'created_at';
         if (!$sort_direction) $sort_direction = 'desc';
-        $users = User::where('role', 'member')->whereNotNull('letter_verified_at')
-            ->whereNotNull('node_verified_at')->whereNotNull('signature_request_id')
+        $users = User::where('role', 'member')->with(['profile'])
             ->orderBy($sort_key, $sort_direction)->paginate($limit);
+        foreach($users as $user) {
+            $status = 'Onboarding';
+            if($user->profile && $user->profile->status == 'pending') {
+                $status = 'Not verified';
+            } else if($user->profile && $user->profile->status == 'approved') {
+                $status = 'Verified';
+            } else if (!$user->node_verified_at || !$user->letter_verified_at || !$user->signature_request_id) {
+                $status = 'Onboarding';
+            } else if($user->node_verified_at && $user->letter_verified_at && $user->signature_request_id && !$user->profile) {
+                $status = 'Onboarding';
+            }
+            $user->membership_status = $status;
+        }  
         return $this->successResponse($users);
     }
 
@@ -57,8 +69,19 @@ class AdminController extends Controller
         if (!$user || $user->role == 'admin') {
             return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
         }
-        $response = $user->load(['profile', 'shuftipro', 'shuftiproTemp']);
-        return $this->successResponse($response);
+        $user = $user->load(['profile', 'shuftipro', 'shuftiproTemp']);
+        $status = 'Onboarding';
+        if($user->profile && $user->profile->status == 'pending') {
+            $status = 'Not verified';
+        } else if($user->profile && $user->profile->status == 'approved') {
+            $status = 'Verified';
+        } else if (!$user->node_verified_at || !$user->letter_verified_at || !$user->signature_request_id) {
+            $status = 'Onboarding';
+        } else if($user->node_verified_at && $user->letter_verified_at && $user->signature_request_id && !$user->profile) {
+            $status = 'Onboarding';
+        }
+        $user->membership_status = $status;
+        return $this->successResponse($user);
     }
 
     public function infoDashboard()
@@ -66,9 +89,27 @@ class AdminController extends Controller
         $totalUser = User::where('role', 'member')->count();
         $toTalStake = 0;
         $totalDelagateer = 0;
+        $totalNewUserReady =  User::where('banned', 0)
+        ->where('role', 'member')
+        ->where(function ($q) {
+            $q->where('users.node_verified_at', null)
+                ->orWhere('users.letter_verified_at', null)
+                ->orWhere('users.signature_request_id', null);
+        })->count();
+        $totalUserVerification = User::where('users.role', 'member')->where('banned', 0)
+        ->join('profile', function ($query) {
+            $query->on('profile.user_id', '=', 'users.id')
+            ->where('profile.status', 'pending');
+        })
+            ->join('shuftipro', 'shuftipro.user_id', '=', 'users.id')
+            ->count();
+        $totalFailNode = User::where('banned', 0)->whereNotNull('public_address_node')->where('is_fail_node', 1)->count();
         $response['totalUser'] = $totalUser;
         $response['toTalStake'] = $toTalStake;
         $response['totalDelagateer'] = $totalDelagateer;
+        $response['totalNewUserReady'] = $totalNewUserReady;
+        $response['totalUserVerification'] = $totalUserVerification;
+        $response['totalFailNode'] = $totalFailNode;
         return $this->successResponse($response);
     }
 
@@ -824,5 +865,27 @@ class AdminController extends Controller
         }
 
         return ['success' => false];
+    }
+
+    public function getListNodes(Request $request)
+    {
+        $limit = $request->limit ?? 15;
+        $node_failing  = $request->node_failing  ?? '';
+        $nodes =  User::select([
+           'id as user_id',
+           'public_address_node',
+           'is_fail_node'
+        ])
+            ->where('banned', 0)
+            ->whereNotNull('public_address_node')
+            ->where(function ($query) use ($node_failing ) {
+                if ($node_failing == 1 ) {
+                    $query->where('is_fail_node', 1);
+                }
+            })
+            ->orderBy('id', 'desc')
+            ->paginate($limit);
+
+        return $this->successResponse($nodes);
     }
 }

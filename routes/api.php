@@ -75,13 +75,16 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::put('/users/notification/{id}/view',  [NotificationController::class, 'updateView'])->where('id', '[0-9]+');
             Route::put('/users/notification/{id}/dismiss',  [NotificationController::class, 'dismiss'])->where('id', '[0-9]+');
             Route::put('/users/notification/{id}/click-cta',  [NotificationController::class, 'clickCTA'])->where('id', '[0-9]+');
+
+            Route::get('users/list-node', [UserController::class, 'getListNodes']);
+            Route::get('users/dashboard', [UserController::class, 'infoDashboard']);
         });
         Route::prefix('admin')->middleware(['role_admin'])->group(function () {
             Route::get('/users', [AdminController::class, 'getUsers']);
             Route::get('/users/{id}', [AdminController::class, 'getUserDetail'])->where('id', '[0-9]+');
             Route::get('/dashboard', [AdminController::class, 'infoDashboard']);
             Route::get('/users/{id}/kyc', [AdminController::class, 'getKYC'])->where('id', '[0-9]+');
-
+            Route::get('/list-node', [AdminController::class, 'getListNodes']);
             // intakes
             Route::middleware([])->group(function () {
                 Route::get('/users/intakes', [AdminController::class, 'getIntakes']);

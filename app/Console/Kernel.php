@@ -38,6 +38,9 @@ class Kernel extends ConsoleKernel
         $schedule->command('notif:check')
             ->dailyAt('00:01')
             ->runInBackground();
+        $schedule->command('node-status:check')
+            ->everyFiveMinutes()
+            ->runInBackground();
     }
 
     /**

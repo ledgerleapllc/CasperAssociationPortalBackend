@@ -16,6 +16,7 @@ use App\Mail\LoginTwoFA;
 use App\Mail\UserConfirmEmail;
 use App\Mail\UserVerifyMail;
 use App\Models\Ballot;
+use App\Models\DiscussionPin;
 use App\Models\OwnerNode;
 use App\Models\Profile;
 use App\Models\ShuftiproTemp;
@@ -838,5 +839,30 @@ class UserController extends Controller
             return $this->metaSuccess();
         }
         return $this->errorResponse(__('Please enable 2Fa setting'), Response::HTTP_BAD_REQUEST);
+    }
+
+    public function getListNodes(Request $request)
+    {
+        $limit = $request->limit ?? 15;
+        $nodes =  User::select([
+            'id as user_id',
+            'public_address_node',
+            'is_fail_node'
+        ])
+            ->where('banned', 0)
+            ->whereNotNull('public_address_node')
+            ->orderBy('id', 'desc')
+            ->paginate($limit);
+
+        return $this->successResponse($nodes);
+    }
+
+    public function infoDashboard()
+    {
+        $user = auth()->user();
+        $totalPin = DiscussionPin::where('user_id', $user->id)->count();
+        $response['totalNewDiscusstion'] = $user->new_threads;
+        $response['totalPinDiscusstion'] = $totalPin;
+        return $this->successResponse($response);
     }
 }

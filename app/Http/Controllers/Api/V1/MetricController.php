@@ -20,11 +20,8 @@ class MetricController extends Controller
         if (!$metric) {
             $metric = [];
         }
-        $monitoringCriteria = MonitoringCriteria::select([
-            'type',
-            "warning_level",
-            "probation_start"
-        ])->get();
+        $monitoringCriteria = MonitoringCriteria::get();
+        $metric['node_status'] = $user->node_status;
         $metric['monitoring_criteria'] = $monitoringCriteria;
         return $this->successResponse($metric);
     }

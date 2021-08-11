@@ -180,6 +180,10 @@ class User extends Authenticatable
         return $this->hasMany('App\Models\IpHistory', 'user_id');
     }
 
+    public function metric() {
+        return $this->hasOne('App\Models\Metric', 'user_id');
+    }
+
     public function getNewThreadsAttribute() {
         $removedNews = DiscussionRemoveNew::where(['user_id' => $this->id])->pluck('discussion_id');
         $count = Discussion::whereNotIn('id', $removedNews)
