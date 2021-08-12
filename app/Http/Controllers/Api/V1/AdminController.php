@@ -15,6 +15,7 @@ use App\Models\EmailerAdmin;
 use App\Models\EmailerTriggerAdmin;
 use App\Models\EmailerTriggerUser;
 use App\Models\IpHistory;
+use App\Models\LockRules;
 use App\Models\MonitoringCriteria;
 use App\Models\OwnerNode;
 use App\Models\Permission;
@@ -865,6 +866,33 @@ class AdminController extends Controller
         }
 
         return ['success' => false];
+    }
+
+    public function updateLockRules(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'is_lock' => 'required|boolean'
+        ]);
+
+        if ($validator->fails()) {
+            return $this->validateResponse($validator->errors());
+        }
+
+        $rule = LockRules::where('id', $id)->first();
+
+        $rule->is_lock = $request->is_lock;
+        $rule->save();
+        return ['success' => true];
+    }
+
+    public function getLockRules() {
+        $ruleKycNotVerify = LockRules::where('type', 'kyc_not_verify')
+            ->orderBy('id', 'ASC')->select(['id', 'screen', 'is_lock'])->get();
+        $ruleStatusIsPoor = LockRules::where('type', 'status_is_poor')
+        ->orderBy('id', 'ASC')->select(['id', 'screen', 'is_lock'])->get();
+        
+        $data = ['kyc_not_verify' => $ruleKycNotVerify, 'status_is_poor' => $ruleStatusIsPoor];
+        return $this->successResponse($data); 
     }
 
     public function getListNodes(Request $request)

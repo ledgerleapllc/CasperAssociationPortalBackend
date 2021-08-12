@@ -75,7 +75,8 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::put('/users/notification/{id}/view',  [NotificationController::class, 'updateView'])->where('id', '[0-9]+');
             Route::put('/users/notification/{id}/dismiss',  [NotificationController::class, 'dismiss'])->where('id', '[0-9]+');
             Route::put('/users/notification/{id}/click-cta',  [NotificationController::class, 'clickCTA'])->where('id', '[0-9]+');
-
+            // rules lock
+            Route::get('/users/lock-rules',  [UserController::class, 'getLockRules']);
             Route::get('users/list-node', [UserController::class, 'getListNodes']);
             Route::get('users/dashboard', [UserController::class, 'infoDashboard']);
         });
@@ -159,6 +160,10 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('/notification',  [NotificationController::class, 'getNotification']);
             Route::get('/notification/{id}/view-logs',  [NotificationController::class, 'getUserViewLogs']);
             Route::get('/notification/high-priority',  [NotificationController::class, 'getHighPriority']);
+
+            // rules lock
+            Route::get('/lock-rules',  [AdminController::class, 'getLockRules']);
+            Route::put('/lock-rules/{id}',  [AdminController::class, 'updateLockRules'])->where('id', '[0-9]+');
         });
         Route::prefix('discussions')->group(function () {
             Route::get('/trending', [DiscussionController::class, 'getTrending']);

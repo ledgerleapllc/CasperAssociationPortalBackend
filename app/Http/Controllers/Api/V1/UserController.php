@@ -16,6 +16,9 @@ use App\Mail\LoginTwoFA;
 use App\Mail\UserConfirmEmail;
 use App\Mail\UserVerifyMail;
 use App\Models\Ballot;
+use App\Models\LockRules;
+use App\Models\Metric;
+use App\Models\MonitoringCriteria;
 use App\Models\DiscussionPin;
 use App\Models\OwnerNode;
 use App\Models\Profile;
@@ -839,6 +842,24 @@ class UserController extends Controller
             return $this->metaSuccess();
         }
         return $this->errorResponse(__('Please enable 2Fa setting'), Response::HTTP_BAD_REQUEST);
+    }
+    
+    public function getLockRules() {
+        $user = auth()->user();
+
+        $ruleKycNotVerify = LockRules::where('type', 'kyc_not_verify')->where('is_lock', 1)
+            ->orderBy('id', 'ASC')->select(['id', 'screen'])->get();
+        $ruleKycNotVerify1 = array_map(function ($object) { return $object->screen; }, $ruleKycNotVerify->all());
+        $ruleStatusIsPoor = LockRules::where('type', 'status_is_poor')->where('is_lock', 1)
+            ->orderBy('id', 'ASC')->select(['id', 'screen'])->get();
+        $ruleStatusIsPoor1 = array_map(function ($object) { return $object->screen; }, $ruleStatusIsPoor->all());
+
+        $data = [
+            'kyc_not_verify' => $ruleKycNotVerify1,
+            'status_is_poor' => $ruleStatusIsPoor1,
+            'node_status' => $user->node_status
+        ];
+        return $this->successResponse($data); 
     }
 
     public function getListNodes(Request $request)
