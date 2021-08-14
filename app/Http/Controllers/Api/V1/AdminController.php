@@ -10,14 +10,18 @@ use App\Mail\ResetPasswordMail;
 use App\Mail\InvitationMail;
 use App\Models\Ballot;
 use App\Models\BallotFile;
+use App\Models\Discussion;
+use App\Models\DiscussionComment;
 use App\Models\DocumentFile;
 use App\Models\EmailerAdmin;
 use App\Models\EmailerTriggerAdmin;
 use App\Models\EmailerTriggerUser;
 use App\Models\IpHistory;
 use App\Models\LockRules;
+use App\Models\Metric;
 use App\Models\MonitoringCriteria;
 use App\Models\OwnerNode;
+use App\Models\Perk;
 use App\Models\Permission;
 use App\Models\Profile;
 use App\Models\Setting;
@@ -85,8 +89,42 @@ class AdminController extends Controller
         return $this->successResponse($user);
     }
 
-    public function infoDashboard()
+    public function infoDashboard(Request $request)
     {
+        $timeframe_perk = $request->timeframe_perk ?? 'last_7days';
+        $timeframe_comments = $request->timeframe_comments ?? 'last_7days';
+        $timeframe_discussions = $request->timeframe_discussions ?? 'last_7days';
+        // last_24hs, last_7days, last_30days, last_year
+        if ($timeframe_perk == 'last_24hs') {
+            $timeframe_perk =  Carbon::now('UTC')->subHours(24);
+        } else if ($timeframe_perk == 'last_30days') {
+            $timeframe_perk =  Carbon::now('UTC')->subDays(30);
+        } else if ($timeframe_perk == 'last_year') {
+            $timeframe_perk =  Carbon::now('UTC')->subYear();
+        } else {
+            $timeframe_perk =  Carbon::now('UTC')->subDays(7);
+        }
+
+        if ($timeframe_comments == 'last_24hs') {
+            $timeframe_comments =  Carbon::now('UTC')->subHours(24);
+        } else if ($timeframe_comments == 'last_30days') {
+            $timeframe_comments =  Carbon::now('UTC')->subDays(30);
+        } else if ($timeframe_comments == 'last_year') {
+            $timeframe_comments =  Carbon::now('UTC')->subYear();
+        } else {
+            $timeframe_comments =  Carbon::now('UTC')->subDays(7);
+        }
+
+        if ($timeframe_discussions == 'last_24hs') {
+            $timeframe_discussions =  Carbon::now('UTC')->subHours(24);
+        } else if ($timeframe_discussions == 'last_30days') {
+            $timeframe_discussions =  Carbon::now('UTC')->subDays(30);
+        } else if ($timeframe_discussions == 'last_year') {
+            $timeframe_discussions =  Carbon::now('UTC')->subYear();
+        } else {
+            $timeframe_discussions =  Carbon::now('UTC')->subDays(7);
+        }
+
         $totalUser = User::where('role', 'member')->count();
         $toTalStake = 0;
         $totalDelagateer = 0;
@@ -97,6 +135,7 @@ class AdminController extends Controller
                 ->orWhere('users.letter_verified_at', null)
                 ->orWhere('users.signature_request_id', null);
         })->count();
+
         $totalUserVerification = User::where('users.role', 'member')->where('banned', 0)
         ->join('profile', function ($query) {
             $query->on('profile.user_id', '=', 'users.id')
@@ -105,12 +144,24 @@ class AdminController extends Controller
             ->join('shuftipro', 'shuftipro.user_id', '=', 'users.id')
             ->count();
         $totalFailNode = User::where('banned', 0)->whereNotNull('public_address_node')->where('is_fail_node', 1)->count();
+
+        $totalPerksActive = Perk::where('status', 'active')->where('created_at', '>=', $timeframe_perk)->count();
+        $totalNewComments = DiscussionComment::where('created_at', '>=', $timeframe_comments)->count();
+        $totalNewDiscussions = Discussion::where('created_at', '>=', $timeframe_discussions)->count();
+        $metric = Metric::select(DB::raw('avg(uptime) avg_uptime, avg(block_height_average) avg_block_height_average, avg(update_responsiveness) avg_update_responsiveness'))->first();
         $response['totalUser'] = $totalUser;
-        $response['toTalStake'] = $toTalStake;
-        $response['totalDelagateer'] = $totalDelagateer;
+        $response['totalStake'] = $toTalStake;
+        $response['totalDelegators'] = $totalDelagateer;
         $response['totalNewUserReady'] = $totalNewUserReady;
         $response['totalUserVerification'] = $totalUserVerification;
         $response['totalFailNode'] = $totalFailNode;
+        $response['totalPerksActive'] = $totalPerksActive;
+        $response['totalNewComments'] = $totalNewComments;
+        $response['totalNewDiscussions'] = $totalNewDiscussions;
+        $response['avgUptime'] = $metric->avg_uptime;
+        $response['avgUptime'] = $metric->avg_uptime;
+        $response['avgBlockHeightAverage'] = $metric->avg_block_height_average;
+        $response['avgUpdateResponsiveness'] = $metric->avg_update_responsiveness;
         return $this->successResponse($response);
     }
 
