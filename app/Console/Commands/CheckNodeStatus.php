@@ -83,7 +83,7 @@ class CheckNodeStatus extends Command
                 $user->metric->uptime >= $uptimeProbationStart && $user->metric->block_height_average >= $blockHeightProbationStart
                 && $user->metric->update_responsiveness >= $updateResponsivenessProbationStart
             ) {
-                $user->node_status = 'Ok';
+                $user->node_status = 'Online';
                 $user->save();
                 $user->metric->uptime_time_end = null;
                 $user->metric->block_height_average_time_end = null;

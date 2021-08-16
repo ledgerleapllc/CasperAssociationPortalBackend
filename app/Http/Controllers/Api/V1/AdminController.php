@@ -62,7 +62,7 @@ class AdminController extends Controller
             } else if (!$user->node_verified_at || !$user->letter_verified_at || !$user->signature_request_id) {
                 $status = 'Onboarding';
             } else if($user->node_verified_at && $user->letter_verified_at && $user->signature_request_id && !$user->profile) {
-                $status = 'Onboarding';
+                $status = 'Not verified';
             }
             $user->membership_status = $status;
         }  
@@ -84,7 +84,7 @@ class AdminController extends Controller
         } else if (!$user->node_verified_at || !$user->letter_verified_at || !$user->signature_request_id) {
             $status = 'Onboarding';
         } else if($user->node_verified_at && $user->letter_verified_at && $user->signature_request_id && !$user->profile) {
-            $status = 'Onboarding';
+            $status = 'Not verified';
         }
         $user->membership_status = $status;
         return $this->successResponse($user);
