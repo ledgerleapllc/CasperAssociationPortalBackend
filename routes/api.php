@@ -38,6 +38,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
     Route::get('/members/{id}', [UserController::class, 'getMemberDetail'])->where('id', '[0-9]+');
     Route::post('/users/cancel-change-email', [UserController::class, 'cancelChangeEmail']);
     Route::post('/users/confirm-change-email', [UserController::class, 'confirmChangeEmail']);
+    Route::get('/graph-info', [AdminController::class, 'getGraphInfo']);
     Route::middleware(['auth:api'])->group(function () {
         Route::middleware(['user_banned'])->group(function () {
             Route::post('/users/verify-email', [AuthController::class, 'verifyEmail']);
@@ -86,6 +87,8 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('/dashboard', [AdminController::class, 'infoDashboard']);
             Route::get('/users/{id}/kyc', [AdminController::class, 'getKYC'])->where('id', '[0-9]+');
             Route::get('/list-node', [AdminController::class, 'getListNodes']);
+            
+
             // intakes
             Route::middleware([])->group(function () {
                 Route::get('/users/intakes', [AdminController::class, 'getIntakes']);
@@ -150,6 +153,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             // metrics
             Route::get('/metrics/{id}',  [MetricController::class, 'getMetricUser']);
             Route::put('/metrics/{id}',  [MetricController::class, 'updateMetric']);
+            Route::get('/node/{node}',  [MetricController::class, 'getMetricUserByNodeName']);
 
             Route::get('/monitoring-criteria',  [AdminController::class, 'getMonitoringCriteria']);
             Route::put('/monitoring-criteria/{type}',  [AdminController::class, 'updateMonitoringCriteria']);

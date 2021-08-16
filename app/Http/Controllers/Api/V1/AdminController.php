@@ -27,6 +27,7 @@ use App\Models\Profile;
 use App\Models\Setting;
 use App\Models\Shuftipro;
 use App\Models\ShuftiproTemp;
+use App\Models\TokenPrice;
 use App\Models\User;
 use App\Models\VerifyUser;
 use App\Models\Vote;
@@ -967,4 +968,24 @@ class AdminController extends Controller
 
         return $this->successResponse($nodes);
     }
+
+        	// Get GraphInfo
+	public function getGraphInfo(Request $request) {
+		$user = Auth::user();
+		$graphData = [];
+
+        $items = TokenPrice::orderBy('created_at', 'asc')->get();
+        if ($items && count($items)) {
+            foreach ($items as $item) {
+                $name = Carbon::parse($item->created_at)->format("Y-m-d H:i");
+                $graphData[] = [
+                    'name' => $name,
+                    'Price' => $item->price
+                ];
+            }
+        }
+
+        return $this->successResponse($graphData);
+
+	}
 }

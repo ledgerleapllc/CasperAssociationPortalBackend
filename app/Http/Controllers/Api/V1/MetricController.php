@@ -68,4 +68,16 @@ class MetricController extends Controller
         }
         return $this->successResponse($metric);
     }
+
+    public function getMetricUserByNodeName($node)
+    {
+        $user = User::where('public_address_node', $node)->first();
+        if ($user) {
+            $metric = Metric::where('user_id', $user->id)->first();
+            if($metric) {
+               return $this->successResponse($metric);
+            }
+        }
+        return $this->successResponse([]);
+    }
 }
