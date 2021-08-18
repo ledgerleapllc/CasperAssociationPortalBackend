@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use  App\Models\NodeInfo;
 use App\Http\Controllers\Controller;
 use App\Http\EmailerHelper;
 use App\Mail\AdminAlert;
@@ -20,6 +21,7 @@ use App\Models\IpHistory;
 use App\Models\LockRules;
 use App\Models\Metric;
 use App\Models\MonitoringCriteria;
+use App\Models\Node;
 use App\Models\OwnerNode;
 use App\Models\Perk;
 use App\Models\Permission;
@@ -53,19 +55,19 @@ class AdminController extends Controller
         if (!$sort_direction) $sort_direction = 'desc';
         $users = User::where('role', 'member')->with(['profile'])
             ->orderBy($sort_key, $sort_direction)->paginate($limit);
-        foreach($users as $user) {
+        foreach ($users as $user) {
             $status = 'Onboarding';
-            if($user->profile && $user->profile->status == 'pending') {
+            if ($user->profile && $user->profile->status == 'pending') {
                 $status = 'Not verified';
-            } else if($user->profile && $user->profile->status == 'approved') {
+            } else if ($user->profile && $user->profile->status == 'approved') {
                 $status = 'Verified';
             } else if (!$user->node_verified_at || !$user->letter_verified_at || !$user->signature_request_id) {
                 $status = 'Onboarding';
-            } else if($user->node_verified_at && $user->letter_verified_at && $user->signature_request_id && !$user->profile) {
+            } else if ($user->node_verified_at && $user->letter_verified_at && $user->signature_request_id && !$user->profile) {
                 $status = 'Not verified';
             }
             $user->membership_status = $status;
-        }  
+        }
         return $this->successResponse($users);
     }
 
@@ -77,13 +79,13 @@ class AdminController extends Controller
         }
         $user = $user->load(['profile', 'shuftipro', 'shuftiproTemp']);
         $status = 'Onboarding';
-        if($user->profile && $user->profile->status == 'pending') {
+        if ($user->profile && $user->profile->status == 'pending') {
             $status = 'Not verified';
-        } else if($user->profile && $user->profile->status == 'approved') {
+        } else if ($user->profile && $user->profile->status == 'approved') {
             $status = 'Verified';
         } else if (!$user->node_verified_at || !$user->letter_verified_at || !$user->signature_request_id) {
             $status = 'Onboarding';
-        } else if($user->node_verified_at && $user->letter_verified_at && $user->signature_request_id && !$user->profile) {
+        } else if ($user->node_verified_at && $user->letter_verified_at && $user->signature_request_id && !$user->profile) {
             $status = 'Not verified';
         }
         $user->membership_status = $status;
@@ -127,21 +129,21 @@ class AdminController extends Controller
         }
 
         $totalUser = User::where('role', 'member')->count();
-        $toTalStake = 0;
-        $totalDelagateer = 0;
+        $toTalStake = NodeInfo::sum('total_staked_amount');
+        $totalDelagateer = NodeInfo::sum('delegators_count');;
         $totalNewUserReady =  User::where('banned', 0)
-        ->where('role', 'member')
-        ->where(function ($q) {
-            $q->where('users.node_verified_at', null)
-                ->orWhere('users.letter_verified_at', null)
-                ->orWhere('users.signature_request_id', null);
-        })->count();
+            ->where('role', 'member')
+            ->where(function ($q) {
+                $q->where('users.node_verified_at', null)
+                    ->orWhere('users.letter_verified_at', null)
+                    ->orWhere('users.signature_request_id', null);
+            })->count();
 
         $totalUserVerification = User::where('users.role', 'member')->where('banned', 0)
-        ->join('profile', function ($query) {
-            $query->on('profile.user_id', '=', 'users.id')
-            ->where('profile.status', 'pending');
-        })
+            ->join('profile', function ($query) {
+                $query->on('profile.user_id', '=', 'users.id')
+                    ->where('profile.status', 'pending');
+            })
             ->join('shuftipro', 'shuftipro.user_id', '=', 'users.id')
             ->count();
         $totalFailNode = User::where('banned', 0)->whereNotNull('public_address_node')->where('is_fail_node', 1)->count();
@@ -150,6 +152,21 @@ class AdminController extends Controller
         $totalNewComments = DiscussionComment::where('created_at', '>=', $timeframe_comments)->count();
         $totalNewDiscussions = Discussion::where('created_at', '>=', $timeframe_discussions)->count();
         $metric = Metric::select(DB::raw('avg(uptime) avg_uptime, avg(block_height_average) avg_block_height_average, avg(update_responsiveness) avg_update_responsiveness'))->first();
+
+        $blocks_hight_nodes = NodeInfo::whereNotNull('block_height_average')->pluck('block_height_average');
+        $blocks_hight_metrics = Metric::whereNotNull('block_height_average')->pluck('block_height_average');
+        $total_blocks_hight_metrics = 0;
+        $base_block = 10;
+        foreach($blocks_hight_metrics as $value) {
+            $avg = ($base_block - $value) * 10;
+            if($avg > 0) {
+                $total_blocks_hight_metrics += $avg;
+            }
+        }
+
+        $responsiveness_nodes = NodeInfo::whereNotNull('update_responsiveness')->pluck('update_responsiveness');
+        $responsiveness_metrics = Metric::whereNotNull('update_responsiveness')->pluck('update_responsiveness');
+
         $response['totalUser'] = $totalUser;
         $response['totalStake'] = $toTalStake;
         $response['totalDelegators'] = $totalDelagateer;
@@ -160,9 +177,8 @@ class AdminController extends Controller
         $response['totalNewComments'] = $totalNewComments;
         $response['totalNewDiscussions'] = $totalNewDiscussions;
         $response['avgUptime'] = $metric->avg_uptime;
-        $response['avgUptime'] = $metric->avg_uptime;
-        $response['avgBlockHeightAverage'] = $metric->avg_block_height_average;
-        $response['avgUpdateResponsiveness'] = $metric->avg_update_responsiveness;
+        $response['avgBlockHeightAverage'] =($blocks_hight_nodes->sum() + $total_blocks_hight_metrics) / (count($blocks_hight_nodes) + count($blocks_hight_metrics));
+        $response['avgUpdateResponsiveness'] =( $responsiveness_nodes->sum() + $responsiveness_metrics->sum()) / (count($responsiveness_nodes) + count($responsiveness_metrics) );
         return $this->successResponse($response);
     }
 
@@ -304,7 +320,7 @@ class AdminController extends Controller
     public function cancelBallot($id)
     {
         $ballot = Ballot::where('id', $id)->first();
-        if ( !$ballot || $ballot->status != 'active') {
+        if (!$ballot || $ballot->status != 'active') {
             return $this->errorResponse('Cannot cancle ballot', Response::HTTP_BAD_REQUEST);
         }
         $ballot->time_end = now();
@@ -362,11 +378,12 @@ class AdminController extends Controller
         return $this->metaSuccess();
     }
 
-    public function getSubAdmins(Request $request) {
+    public function getSubAdmins(Request $request)
+    {
         $limit = $request->limit ?? 10;
         $admins = User::with(['permissions'])->where(['role' => 'sub-admin'])
-                    ->orderBy('created_at', 'DESC')
-                    ->paginate($limit);
+            ->orderBy('created_at', 'DESC')
+            ->paginate($limit);
 
         return $this->successResponse($admins);
     }
@@ -410,8 +427,8 @@ class AdminController extends Controller
             ['name' => 'users', 'is_permission' => 0, 'user_id' => $admin->id],
             ['name' => 'ballots', 'is_permission' => 0, 'user_id' => $admin->id],
             ['name' => 'perks', 'is_permission' => 0, 'user_id' => $admin->id],
-          ];
-        
+        ];
+
         Permission::insert($data);
         Mail::to($request->email)->send(new InvitationMail($inviteUrl));
 
@@ -419,14 +436,14 @@ class AdminController extends Controller
     }
 
     public function changeSubAdminPermissions(Request $request, $id)
-    {        
+    {
         $validator = Validator::make($request->all(), [
             'intake' => 'nullable|in:0,1',
             'users' => 'nullable|in:0,1',
             'ballots' => 'nullable|in:0,1',
             'perks' => 'nullable|in:0,1',
         ]);
-        
+
         if ($validator->fails()) {
             return $this->validateResponse($validator->errors());
         }
@@ -434,32 +451,32 @@ class AdminController extends Controller
         if ($admin == null || $admin->role != 'sub-admin') {
             return $this->errorResponse('There is no admin user with this email', Response::HTTP_BAD_REQUEST);
         }
-        if(isset($request->intake)) {
+        if (isset($request->intake)) {
             $permisstion = Permission::where('user_id', $id)->where('name', 'intake')->first();
-            if($permisstion) {
+            if ($permisstion) {
                 $permisstion->is_permission = $request->intake;
                 $permisstion->save();
             }
         }
-        if(isset($request->users)) {
+        if (isset($request->users)) {
             $permisstion = Permission::where('user_id', $id)->where('name', 'users')->first();
-            if($permisstion) {
+            if ($permisstion) {
                 $permisstion->is_permission = $request->users;
                 $permisstion->save();
             }
         }
 
-        if(isset($request->ballots)) {
+        if (isset($request->ballots)) {
             $permisstion = Permission::where('user_id', $id)->where('name', 'ballots')->first();
-            if($permisstion) {
+            if ($permisstion) {
                 $permisstion->is_permission = $request->ballots;
                 $permisstion->save();
             }
         }
 
-        if(isset($request->perks)) {
+        if (isset($request->perks)) {
             $permisstion = Permission::where('user_id', $id)->where('name', 'perks')->first();
-            if($permisstion) {
+            if ($permisstion) {
                 $permisstion->is_permission = $request->perks;
                 $permisstion->save();
             }
@@ -472,7 +489,7 @@ class AdminController extends Controller
     {
         $admin = User::find($id);
         if ($admin == null || $admin->role != 'sub-admin')
-        return $this->errorResponse('No admin to be send invite link', Response::HTTP_BAD_REQUEST);
+            return $this->errorResponse('No admin to be send invite link', Response::HTTP_BAD_REQUEST);
 
         $code = Str::random(6);
         $url = $request->header('origin') ?? $request->root();
@@ -494,7 +511,7 @@ class AdminController extends Controller
     {
         $admin = User::find($id);
         if ($admin == null || $admin->role != 'sub-admin')
-        return $this->errorResponse('No admin to be revoked', Response::HTTP_BAD_REQUEST);
+            return $this->errorResponse('No admin to be revoked', Response::HTTP_BAD_REQUEST);
 
         $code = Str::random(6);
         $url = $request->header('origin') ?? $request->root();
@@ -530,7 +547,7 @@ class AdminController extends Controller
         $admin = User::find($id);
         if ($admin == null || $admin->role != 'sub-admin')
             return $this->errorResponse('No admin to be revoked', Response::HTTP_BAD_REQUEST);
-        if($admin->password) {
+        if ($admin->password) {
             $admin->member_status = 'active';
         } else {
             $admin->member_status = 'invited';
@@ -540,16 +557,17 @@ class AdminController extends Controller
 
         return $this->successResponse($admin);
     }
-    
-    public function getIpHistories(Request $request, $id) {
+
+    public function getIpHistories(Request $request, $id)
+    {
         $admin = User::find($id);
-        if ($admin == null || $admin->role != 'sub-admin')  {
+        if ($admin == null || $admin->role != 'sub-admin') {
             return $this->errorResponse('Not found admin', Response::HTTP_BAD_REQUEST);
         }
         $limit = $request->limit ?? 10;
         $ipAddress = IpHistory::where(['user_id' => $admin->id])
-                    ->orderBy('created_at', 'DESC')
-                    ->paginate($limit);
+            ->orderBy('created_at', 'DESC')
+            ->paginate($limit);
 
         return $this->successResponse($ipAddress);
     }
@@ -937,14 +955,15 @@ class AdminController extends Controller
         return ['success' => true];
     }
 
-    public function getLockRules() {
+    public function getLockRules()
+    {
         $ruleKycNotVerify = LockRules::where('type', 'kyc_not_verify')
             ->orderBy('id', 'ASC')->select(['id', 'screen', 'is_lock'])->get();
         $ruleStatusIsPoor = LockRules::where('type', 'status_is_poor')
-        ->orderBy('id', 'ASC')->select(['id', 'screen', 'is_lock'])->get();
-        
+            ->orderBy('id', 'ASC')->select(['id', 'screen', 'is_lock'])->get();
+
         $data = ['kyc_not_verify' => $ruleKycNotVerify, 'status_is_poor' => $ruleStatusIsPoor];
-        return $this->successResponse($data); 
+        return $this->successResponse($data);
     }
 
     public function getListNodes(Request $request)
@@ -952,14 +971,14 @@ class AdminController extends Controller
         $limit = $request->limit ?? 15;
         $node_failing  = $request->node_failing  ?? '';
         $nodes =  User::select([
-           'id as user_id',
-           'public_address_node',
-           'is_fail_node'
+            'id as user_id',
+            'public_address_node',
+            'is_fail_node'
         ])
             ->where('banned', 0)
             ->whereNotNull('public_address_node')
-            ->where(function ($query) use ($node_failing ) {
-                if ($node_failing == 1 ) {
+            ->where(function ($query) use ($node_failing) {
+                if ($node_failing == 1) {
                     $query->where('is_fail_node', 1);
                 }
             })
@@ -969,10 +988,11 @@ class AdminController extends Controller
         return $this->successResponse($nodes);
     }
 
-        	// Get GraphInfo
-	public function getGraphInfo(Request $request) {
-		$user = Auth::user();
-		$graphData = [];
+    // Get GraphInfo
+    public function getGraphInfo(Request $request)
+    {
+        $user = Auth::user();
+        $graphData = [];
 
         $items = TokenPrice::orderBy('created_at', 'asc')->get();
         if ($items && count($items)) {
@@ -986,6 +1006,5 @@ class AdminController extends Controller
         }
 
         return $this->successResponse($graphData);
-
-	}
+    }
 }

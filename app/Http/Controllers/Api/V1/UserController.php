@@ -20,6 +20,7 @@ use App\Models\LockRules;
 use App\Models\Metric;
 use App\Models\MonitoringCriteria;
 use App\Models\DiscussionPin;
+use App\Models\NodeInfo;
 use App\Models\OwnerNode;
 use App\Models\Profile;
 use App\Models\ShuftiproTemp;
@@ -288,8 +289,7 @@ class UserController extends Controller
     public function getMessageContent()
     {
         $user = auth()->user();
-        $timestamp = date('m/d/Y');
-        $message = "Please use the Casper Signature python tool to sign this message! " . $timestamp;
+        $message = '$message = "Please use the Casper Signature python tool to sign this message! " . $timestamp;';
         $user->update(['message_content' => $message]);
         $filename = 'message.txt';
         return response()->streamDownload(function () use ($message) {
@@ -716,7 +716,7 @@ class UserController extends Controller
             $user->password = bcrypt($request->new_password);
         }
         if ($request->username) {
-            $checkUsername = User::where('username', $request->username)->where('username', '!=', $request->username)->first();
+            $checkUsername = User::where('username', $request->username)->where('username', '!=', $user->username)->first();
             if ($checkUsername) {
                 return $this->errorResponse(__('this username has already been taken'), Response::HTTP_BAD_REQUEST);
             }
@@ -881,9 +881,20 @@ class UserController extends Controller
     public function infoDashboard()
     {
         $user = auth()->user();
+        $rank = 5 ;// dummy
+        $delegators = 0;
+        $stake_amount = 0;
+        $nodeInfo = NodeInfo::where('node_address', $user->public_address_node)->first();
+        if($nodeInfo) {
+            $delegators = $nodeInfo->delegators_count;
+            $stake_amount = $nodeInfo->total_staked_amount;
+        }
         $totalPin = DiscussionPin::where('user_id', $user->id)->count();
         $response['totalNewDiscusstion'] = $user->new_threads;
         $response['totalPinDiscusstion'] = $totalPin;
+        $response['rank'] = $rank;
+        $response['delegators'] = $delegators;
+        $response['stake_amount'] = $stake_amount;
         return $this->successResponse($response);
     }
 }
