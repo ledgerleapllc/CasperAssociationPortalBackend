@@ -289,6 +289,7 @@ class UserController extends Controller
     public function getMessageContent()
     {
         $user = auth()->user();
+        $timestamp = date('m/d/Y');
         $message = '$message = "Please use the Casper Signature python tool to sign this message! " . $timestamp;';
         $user->update(['message_content' => $message]);
         $filename = 'message.txt';

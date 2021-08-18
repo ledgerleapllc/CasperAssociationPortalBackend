@@ -6,7 +6,9 @@ use App\Models\Profile;
 use App\Models\Shuftipro;
 use App\Models\ShuftiproTemp;
 use App\Models\User;
+use Exception;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 class ShuftiproCheck
 {
@@ -176,11 +178,30 @@ class ShuftiproCheck
         $record->status = $status;
         $record->reviewed = $is_successful ? 1 : 0; // No need to review successful ones
 
-        if ($document_proof)
-            $record->document_proof = $document_proof;
-        if ($address_proof)
-            $record->address_proof = $address_proof;
-
+        if ($document_proof) {
+            try {
+                $url = strtok($document_proof, '?');
+                $pathinfo = pathinfo($url);
+                $contents = file_get_contents($url);
+                $name = 'document_proof/document_' . time() . '.' . $pathinfo['extension'];
+                Storage::put($name, $contents);
+                $record->document_proof = $name;
+            } catch (Exception $e) {
+                $record->document_proof = $document_proof;
+            }
+        }
+        if ($address_proof) {
+            try {
+                $url = strtok($document_proof, '?');
+                $pathinfo = pathinfo($url);
+                $contents = file_get_contents($url);
+                $name = 'address_proof/address_' . time() . '.' . $pathinfo['extension'];
+                Storage::put($name, $contents);
+                $record->address_proof = $name;
+            } catch (Exception $e) {
+                $record->address_proof = $address_proof;
+            }
+        }
         $record->save();
 
         // Update Temp Record
