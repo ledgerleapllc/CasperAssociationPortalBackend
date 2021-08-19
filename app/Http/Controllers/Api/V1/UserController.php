@@ -290,7 +290,7 @@ class UserController extends Controller
     {
         $user = auth()->user();
         $timestamp = date('m/d/Y');
-        $message = '$message = "Please use the Casper Signature python tool to sign this message! " . $timestamp;';
+        $message = "Please use the Casper Signature python tool to sign this message! " . $timestamp;
         $user->update(['message_content' => $message]);
         $filename = 'message.txt';
         return response()->streamDownload(function () use ($message) {
