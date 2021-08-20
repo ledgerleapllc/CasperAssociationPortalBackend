@@ -6,6 +6,7 @@ use App\Models\KeyPeer;
 use App\Models\Node;
 use App\Models\NodeInfo;
 use App\Models\User;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -229,7 +230,17 @@ class NodeHelper
 			$json = json_decode($result);
 		} catch (Exception $e) {
 			array_push($this->fail_peers, $ip);
-			throw ($e);
+			$uptime = array_key_exists($validatorid, $this->keyed_peers) ? 1 : 0;
+			$user = User::where('public_address_node', $validatorid)->first();
+			if($user) {
+				Node::create(
+					[
+						'node_address' => $validatorid,
+						'uptime' => $uptime,
+					]
+				);
+			}
+			return;
 		}
 
 		// Log::info(print_r($json,true));
@@ -317,6 +328,7 @@ class NodeHelper
 						'era_id' => $era_id,
 						'update_responsiveness' => $time_remaining,
 						'peers' => $peercount,
+						'uptime' => 1,
 					]
 				);
 			}

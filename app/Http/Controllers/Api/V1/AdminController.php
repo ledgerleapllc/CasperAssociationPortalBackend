@@ -152,7 +152,9 @@ class AdminController extends Controller
         $totalPerksActive = Perk::where('status', 'active')->where('created_at', '>=', $timeframe_perk)->count();
         $totalNewComments = DiscussionComment::where('created_at', '>=', $timeframe_comments)->count();
         $totalNewDiscussions = Discussion::where('created_at', '>=', $timeframe_discussions)->count();
-        $metric = Metric::select(DB::raw('avg(uptime) avg_uptime, avg(block_height_average) avg_block_height_average, avg(update_responsiveness) avg_update_responsiveness'))->first();
+
+        $uptime_nodes = NodeInfo::whereNotNull('uptime')->pluck('uptime');
+        $uptime_metrics = Metric::whereNotNull('uptime')->pluck('uptime');
 
         $blocks_hight_nodes = NodeInfo::whereNotNull('block_height_average')->pluck('block_height_average');
         $blocks_hight_metrics = Metric::whereNotNull('block_height_average')->pluck('block_height_average');
@@ -168,6 +170,9 @@ class AdminController extends Controller
         $responsiveness_nodes = NodeInfo::whereNotNull('update_responsiveness')->pluck('update_responsiveness');
         $responsiveness_metrics = Metric::whereNotNull('update_responsiveness')->pluck('update_responsiveness');
 
+        $countUptime = count($uptime_nodes) + count($uptime_metrics) > 0 ?  count($uptime_nodes) + count($uptime_metrics) : 1;
+        $count_responsiveness_nodes =  (count($responsiveness_nodes) > 0 + count($responsiveness_metrics) ) ? (count($responsiveness_nodes) + count($responsiveness_metrics) ) : 1;
+        $count_blocks_hight = (count($blocks_hight_nodes) + count($blocks_hight_metrics)) > 0 ? (count($blocks_hight_nodes) + count($blocks_hight_metrics)) : 1;
         $response['totalUser'] = $totalUser;
         $response['totalStake'] = $toTalStake;
         $response['totalDelegators'] = $totalDelagateer;
@@ -177,9 +182,9 @@ class AdminController extends Controller
         $response['totalPerksActive'] = $totalPerksActive;
         $response['totalNewComments'] = $totalNewComments;
         $response['totalNewDiscussions'] = $totalNewDiscussions;
-        $response['avgUptime'] = $metric->avg_uptime;
-        $response['avgBlockHeightAverage'] =($blocks_hight_nodes->sum() + $total_blocks_hight_metrics) / (count($blocks_hight_nodes) + count($blocks_hight_metrics));
-        $response['avgUpdateResponsiveness'] =( $responsiveness_nodes->sum() + $responsiveness_metrics->sum()) / (count($responsiveness_nodes) + count($responsiveness_metrics) );
+        $response['avgUptime'] = ($uptime_nodes->sum() + $uptime_metrics->sum()) /  $countUptime;
+        $response['avgBlockHeightAverage'] =($blocks_hight_nodes->sum() + $total_blocks_hight_metrics) / $count_blocks_hight ;
+        $response['avgUpdateResponsiveness'] =( $responsiveness_nodes->sum() + $responsiveness_metrics->sum()) / $count_responsiveness_nodes;
         return $this->successResponse($response);
     }
 

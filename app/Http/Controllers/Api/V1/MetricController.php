@@ -37,13 +37,18 @@ class MetricController extends Controller
         ;");
         $max_peers =  $max_peers[0]->max_peers ?? 0;
         $max_block_height = Node::max('block_height');
-        $max_uptime = Metric::max('uptime');
-
-        $latest = Node::where('node_address', $user->public_address_node)->orderBy('created_at', 'desc')->first();
+        $max_uptime = DB::select("SELECT max(uptime) as max_uptime FROM
+        (
+        SELECT MAX(uptime) as uptime FROM metric
+        UNION
+        SELECT MAX(uptime) as uptime FROM node_info
+        ) AS results
+        ;");
+        $max_uptime =  $max_uptime[0]->max_uptime ?? 0;
+        $latest = Node::where('node_address', $user->public_address_node)->whereNotnull('protocol_version')->orderBy('created_at', 'desc')->first();
         if (!$latest) {
             $latest = new Node();
         }
-        $latest_uptime = $latest->uptime ?? null;
         $latest_block_height = $latest->block_height ?? null;
         $latest_update_responsiveness = $latest->update_responsiveness ?? null;
         $latest_peers = $latest->peers ?? null;
@@ -58,8 +63,13 @@ class MetricController extends Controller
         $metric_peers = $metric->peers ?? null;
 
         $nodeInfo = NodeInfo::where('node_address', $user->public_address_node)->first();
+        if (!$nodeInfo) {
+			$nodeInfo = new NodeInfo();
+		}
+        $latest_uptime = $nodeInfo->uptime ?? null;
         $nodeInfo_uptime = $nodeInfo->uptime ?? null;
         $nodeInfo_block_height = $nodeInfo->block_height ?? null;
+        $nodeInfo_update_responsiveness = $nodeInfo->update_responsiveness ?? null;
         $nodeInfo_peers = $nodeInfo->peers ?? null;
 
         $metric->avg_uptime = $nodeInfo_uptime ?? $metric_uptime;
@@ -160,13 +170,19 @@ class MetricController extends Controller
             ;");
             $max_peers =  $max_peers[0]->max_peers ?? 0;
             $max_block_height = Node::max('block_height');
-            $max_uptime = Metric::max('uptime');
+            $max_uptime = DB::select("SELECT max(uptime) as max_uptime FROM
+            (
+            SELECT MAX(uptime) as uptime FROM metric
+            UNION
+            SELECT MAX(uptime) as uptime FROM node_info
+            ) AS results
+            ;");
+            $max_uptime =  $max_uptime[0]->max_uptime ?? 0;
 
-            $latest = Node::where('node_address', $user->public_address_node)->orderBy('created_at', 'desc')->first();
+            $latest = Node::where('node_address', $user->public_address_node)->whereNotnull('protocol_version')->orderBy('created_at', 'desc')->first();
             if (!$latest) {
                 $latest = new Node();
             }
-            $latest_uptime = $latest->uptime ?? null;
             $latest_block_height = $latest->block_height ?? null;
             $latest_update_responsiveness = $latest->update_responsiveness ?? null;
             $latest_peers = $latest->peers ?? null;
@@ -181,9 +197,14 @@ class MetricController extends Controller
             $metric_peers = $metric->peers ?? null;
 
             $nodeInfo = NodeInfo::where('node_address', $user->public_address_node)->first();
+            if (!$nodeInfo) {
+                $nodeInfo = new NodeInfo();
+            }
+            $latest_uptime = $nodeInfo->uptime ?? null;
             $nodeInfo_uptime = $nodeInfo->uptime ?? null;
             $nodeInfo_block_height = $nodeInfo->block_height ?? null;
             $nodeInfo_peers = $nodeInfo->peers ?? null;
+            $nodeInfo_update_responsiveness = $nodeInfo->update_responsiveness ?? null;
 
             $metric->avg_uptime = $nodeInfo_uptime ?? $metric_uptime;
             $metric->avg_block_height_average = $nodeInfo_block_height ?? $metric_block_height;

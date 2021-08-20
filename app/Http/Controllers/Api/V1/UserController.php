@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Console\Helper;
 use App\Http\Controllers\Controller;
 use App\Http\EmailerHelper;
 use App\Http\Requests\Api\AddOwnerNodeRequest;
@@ -700,7 +701,8 @@ class UserController extends Controller
         if (!$user || $user->role == 'admin') {
             return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
         }
-        $response = $user->load(['profile', 'shuftipro', 'shuftiproTemp']);
+        $user->metric = Helper::getNodeInfo($user);
+        $response = $user->load(['profile']);
         return $this->successResponse($response);
     }
 

@@ -6,6 +6,7 @@ use App\Models\Node;
 use App\Models\NodeInfo as ModelsNodeInfo;
 use App\Models\User;
 use App\Services\NodeHelper;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 
 class NodeInfo extends Command
@@ -42,13 +43,14 @@ class NodeInfo extends Command
     public function handle()
     {
         $nodeHelper = new NodeHelper();
-        // $nodeHelper->updateStats();
+        $nodeHelper->updateStats();
         $this->updateNode();
+        $this->updateUptime();
     }
 
     public function updateNode()
     {
-        $nodes = Node::get();
+        $nodes = Node::whereNotNull('protocol_version')->get();
         $max_hight_block = $nodes->max('block_height');
         $base_block = 10;
         $versions = $nodes->pluck('protocol_version');
@@ -108,6 +110,18 @@ class NodeInfo extends Command
                 $nodeInfo->peers = round($totalPeer / $countVersion);
                 $nodeInfo->save();
             }
+        }
+    }
+
+    public function updateUptime()
+    {
+        $nodes = ModelsNodeInfo::get();
+        $now = Carbon::now('UTC');
+        $time = $now->subDays(14);
+        foreach ($nodes as $node) {
+            $avg_uptime = Node::where('node_address', $node->node_address)->whereNotNull('uptime')->where('created_at', '>=', $time)->avg('uptime');
+            $node->uptime = $avg_uptime * 100;
+            $node->save();
         }
     }
 }
