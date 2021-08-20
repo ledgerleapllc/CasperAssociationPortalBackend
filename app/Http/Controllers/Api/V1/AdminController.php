@@ -11,6 +11,7 @@ use App\Mail\ResetPasswordMail;
 use App\Mail\InvitationMail;
 use App\Models\Ballot;
 use App\Models\BallotFile;
+use App\Models\BallotFileView;
 use App\Models\Discussion;
 use App\Models\DiscussionComment;
 use App\Models\DocumentFile;
@@ -334,6 +335,13 @@ class AdminController extends Controller
         $limit = $request->limit ?? 15;
         $data = VoteResult::where('ballot_id', '=', $id)->with('user')->orderBy('created_at', 'ASC')->paginate($limit);
 
+        return $this->successResponse($data);
+    }
+
+    public function getViewFileBallot(Request $request, $fileId)
+    {
+        $limit = $request->limit ?? 15;
+        $data = BallotFileView::where('ballot_file_id', '=',  $fileId)->with('user')->orderBy('created_at', 'ASC')->paginate($limit);
         return $this->successResponse($data);
     }
 

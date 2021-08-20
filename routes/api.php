@@ -65,6 +65,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('users/my-votes', [UserController::class, 'getMyVotes']);
             Route::get('users/votes/{id}', [UserController::class, 'getVoteDetail']);
             Route::post('users/votes/{id}', [UserController::class, 'vote']);
+            Route::post('users/viewed-docs/{fileId}', [UserController::class, 'submitViewFileBallot']);
             Route::post('/users/upload-avatar',  [UserController::class, 'uploadAvatar']);
             Route::post('/users/check-password',  [UserController::class, 'checkCurrentPassword']);
             Route::post('/users/settings',  [UserController::class, 'settingUser']);
@@ -117,6 +118,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
                 Route::get('/ballots/{id}', [AdminController::class, 'getDetailBallot'])->where('id', '[0-9]+');
                 Route::get('/ballots/{id}/votes', [AdminController::class, 'getBallotVotes'])->where('id', '[0-9]+');
                 Route::post('/ballots/{id}/cancel', [AdminController::class, 'cancelBallot'])->where('id', '[0-9]+');
+                Route::get('/ballots/viewed-docs/{fileId}', [AdminController::class, 'getViewFileBallot'])->where('id', '[0-9]+');
             });
 
              //perk

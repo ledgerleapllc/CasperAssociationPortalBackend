@@ -113,6 +113,7 @@ class PerkController extends Controller
     }
     public function updatePerk(Request $request, $id)
     {
+        $data = $request->all();
         $validator = Validator::make($request->all(), [
             'title' => 'nullable|string|max:70',
             'content' => 'nullable',
@@ -132,9 +133,8 @@ class PerkController extends Controller
         if (!$perk) {
             return $this->errorResponse('Not found perk', Response::HTTP_BAD_REQUEST);
         }
-
-        $startDate = $request->start_date ?? $perk->start_date;
-        $endDate = $request->end_date ?? $perk->end_date;
+        $startDate = array_key_exists('start_date', $data) ? $request->start_date : $perk->start_date;
+        $endDate = array_key_exists('end_date', $data) ? $request->end_date : $perk->end_date;
         $setting = isset($request->setting) ? $request->setting : $perk->setting;
 
         $visibility = 'hidden';
@@ -148,10 +148,10 @@ class PerkController extends Controller
         if ($request->content) {
             $perk->content = $request->content;
         }
-        if ($request->start_date) {
+        if (array_key_exists('start_date', $data)) {
             $perk->start_date = $request->start_date;
         }
-        if ($request->end_date) {
+        if (array_key_exists('end_date', $data)) {
             $perk->end_date = $request->end_date;
         }
         if (isset($request->setting)) {

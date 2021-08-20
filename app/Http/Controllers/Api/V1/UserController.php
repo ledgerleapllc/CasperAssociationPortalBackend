@@ -16,6 +16,8 @@ use App\Mail\LoginTwoFA;
 use App\Mail\UserConfirmEmail;
 use App\Mail\UserVerifyMail;
 use App\Models\Ballot;
+use App\Models\BallotFile;
+use App\Models\BallotFileView;
 use App\Models\LockRules;
 use App\Models\Metric;
 use App\Models\MonitoringCriteria;
@@ -570,9 +572,13 @@ class UserController extends Controller
     public function getVoteDetail($id)
     {
         $user = auth()->user();
-        $ballot = Ballot::with(['vote', 'voteResults.user'])->where('id', $id)->first();
+        $ballot = Ballot::with(['vote', 'voteResults.user', 'files'])->where('id', $id)->first();
         if (!$ballot) {
             return $this->errorResponse('Not found ballot', Response::HTTP_BAD_REQUEST);
+        }
+        foreach($ballot->files as $file) {
+            $ballotFileView = BallotFileView::where('ballot_file_id', $file->id)->where('user_id', $user->id)->first();
+            $file->is_viewed =  $ballotFileView  ? 1: 0;
         }
         $ballot->user_vote = VoteResult::where('user_id', $user->id)->where('ballot_id', $ballot->id)->first();
         return $this->successResponse($ballot);
@@ -627,6 +633,24 @@ class UserController extends Controller
         return $this->metaSuccess();
     }
 
+    public function submitViewFileBallot(Request $request, $fileId)
+    {
+        $user = auth()->user();
+        $ballotFile = BallotFile::where('id', $fileId)->first();
+        if (!$ballotFile) {
+            return $this->errorResponse('Not found ballot file', Response::HTTP_BAD_REQUEST);
+        }
+        $ballotFileView = BallotFileView::where('ballot_file_id', $ballotFile->id)->where('user_id', $user->id)->first();
+        if ($ballotFileView) {
+            return $this->metaSuccess();
+        }
+        $ballotFileView = new BallotFileView();
+        $ballotFileView->ballot_file_id =  $ballotFile->id;
+        $ballotFileView->ballot_id =  $ballotFile->ballot_id;
+        $ballotFileView->user_id =  $user->id;
+        $ballotFileView->save();
+        return $this->metaSuccess();
+    }
     /**
      * verify file casper singer
      */
@@ -814,11 +838,12 @@ class UserController extends Controller
         return $this->errorResponse(__('Fail confirm change email'), Response::HTTP_BAD_REQUEST);
     }
 
-    public function checkLogin2FA(Request $request) {
+    public function checkLogin2FA(Request $request)
+    {
         $user = auth()->user();
         $verify = VerifyUser::where('email', $user->email)->where('type', VerifyUser::TYPE_LOGIN_TWO_FA)
             ->where('code', $request->code)->first();
-        if($verify) {
+        if ($verify) {
             $verify->delete();
             $user->twoFA_login_active = 0;
             $user->save();
@@ -830,7 +855,7 @@ class UserController extends Controller
     public function resend2FA()
     {
         $user = auth()->user();
-        if($user->twoFA_login == 1) {
+        if ($user->twoFA_login == 1) {
             VerifyUser::where('email', $user->email)->where('type', VerifyUser::TYPE_LOGIN_TWO_FA)->delete();
             $code = Str::random(6);
             $verify = new VerifyUser();
@@ -844,23 +869,28 @@ class UserController extends Controller
         }
         return $this->errorResponse(__('Please enable 2Fa setting'), Response::HTTP_BAD_REQUEST);
     }
-    
-    public function getLockRules() {
+
+    public function getLockRules()
+    {
         $user = auth()->user();
 
         $ruleKycNotVerify = LockRules::where('type', 'kyc_not_verify')->where('is_lock', 1)
             ->orderBy('id', 'ASC')->select(['id', 'screen'])->get();
-        $ruleKycNotVerify1 = array_map(function ($object) { return $object->screen; }, $ruleKycNotVerify->all());
+        $ruleKycNotVerify1 = array_map(function ($object) {
+            return $object->screen;
+        }, $ruleKycNotVerify->all());
         $ruleStatusIsPoor = LockRules::where('type', 'status_is_poor')->where('is_lock', 1)
             ->orderBy('id', 'ASC')->select(['id', 'screen'])->get();
-        $ruleStatusIsPoor1 = array_map(function ($object) { return $object->screen; }, $ruleStatusIsPoor->all());
+        $ruleStatusIsPoor1 = array_map(function ($object) {
+            return $object->screen;
+        }, $ruleStatusIsPoor->all());
 
         $data = [
             'kyc_not_verify' => $ruleKycNotVerify1,
             'status_is_poor' => $ruleStatusIsPoor1,
             'node_status' => $user->node_status
         ];
-        return $this->successResponse($data); 
+        return $this->successResponse($data);
     }
 
     public function getListNodes(Request $request)
@@ -882,11 +912,11 @@ class UserController extends Controller
     public function infoDashboard()
     {
         $user = auth()->user();
-        $rank = 5 ;// dummy
+        $rank = 5; // dummy
         $delegators = 0;
         $stake_amount = 0;
         $nodeInfo = NodeInfo::where('node_address', $user->public_address_node)->first();
-        if($nodeInfo) {
+        if ($nodeInfo) {
             $delegators = $nodeInfo->delegators_count;
             $stake_amount = $nodeInfo->total_staked_amount;
         }
