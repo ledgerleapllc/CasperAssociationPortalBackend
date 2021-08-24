@@ -184,6 +184,10 @@ class User extends Authenticatable
         return $this->hasOne('App\Models\Metric', 'user_id');
     }
 
+    public function nodeInfo() {
+        return $this->hasOne('App\Models\NodeInfo', 'node_address', 'public_address_node');
+    }
+
     public function getNewThreadsAttribute() {
         $removedNews = DiscussionRemoveNew::where(['user_id' => $this->id])->pluck('discussion_id');
         $count = Discussion::whereNotIn('id', $removedNews)

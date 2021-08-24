@@ -385,8 +385,8 @@ class NodeHelper
 							['node_address' => $validatorid],
 							[
 								'delegators_count' => $delegators_count,
-								'self_staked_amount' => $self_staked_amount,
-								'total_staked_amount' => $total_staked_amount,
+								'self_staked_amount' => $self_staked_amount/1000000000,
+								'total_staked_amount' => $total_staked_amount/1000000000,
 								'delegation_rate' => $delegation_rate,
 							]
 						);

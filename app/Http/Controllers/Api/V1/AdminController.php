@@ -440,6 +440,7 @@ class AdminController extends Controller
             ['name' => 'users', 'is_permission' => 0, 'user_id' => $admin->id],
             ['name' => 'ballots', 'is_permission' => 0, 'user_id' => $admin->id],
             ['name' => 'perks', 'is_permission' => 0, 'user_id' => $admin->id],
+            ['name' => 'teams', 'is_permission' => 0, 'user_id' => $admin->id],
         ];
 
         Permission::insert($data);
@@ -455,6 +456,7 @@ class AdminController extends Controller
             'users' => 'nullable|in:0,1',
             'ballots' => 'nullable|in:0,1',
             'perks' => 'nullable|in:0,1',
+            'teams' => 'nullable|in:0,1',
         ]);
 
         if ($validator->fails()) {
@@ -491,6 +493,20 @@ class AdminController extends Controller
             $permisstion = Permission::where('user_id', $id)->where('name', 'perks')->first();
             if ($permisstion) {
                 $permisstion->is_permission = $request->perks;
+                $permisstion->save();
+            }
+        }
+
+        if (isset($request->teams)) {
+            $permisstion = Permission::where('user_id', $id)->where('name', 'teams')->first();
+            if ($permisstion) {
+                $permisstion->is_permission = $request->teams;
+                $permisstion->save();
+            } else {
+                $permisstion = new Permission();
+                $permisstion->is_permission = $request->teams;
+                $permisstion->user_id = $id;
+                $permisstion->name = 'teams';
                 $permisstion->save();
             }
         }
@@ -986,7 +1002,8 @@ class AdminController extends Controller
         $nodes =  User::select([
             'id as user_id',
             'public_address_node',
-            'is_fail_node'
+            'is_fail_node',
+            'rank',
         ])
             ->where('banned', 0)
             ->whereNotNull('public_address_node')
@@ -995,7 +1012,7 @@ class AdminController extends Controller
                     $query->where('is_fail_node', 1);
                 }
             })
-            ->orderBy('id', 'desc')
+            ->orderBy('rank', 'desc')
             ->paginate($limit);
 
         return $this->successResponse($nodes);

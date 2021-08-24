@@ -23,6 +23,7 @@ use App\Models\LockRules;
 use App\Models\Metric;
 use App\Models\MonitoringCriteria;
 use App\Models\DiscussionPin;
+use App\Models\Node;
 use App\Models\NodeInfo;
 use App\Models\OwnerNode;
 use App\Models\Profile;
@@ -577,9 +578,9 @@ class UserController extends Controller
         if (!$ballot) {
             return $this->errorResponse('Not found ballot', Response::HTTP_BAD_REQUEST);
         }
-        foreach($ballot->files as $file) {
+        foreach ($ballot->files as $file) {
             $ballotFileView = BallotFileView::where('ballot_file_id', $file->id)->where('user_id', $user->id)->first();
-            $file->is_viewed =  $ballotFileView  ? 1: 0;
+            $file->is_viewed =  $ballotFileView  ? 1 : 0;
         }
         $ballot->user_vote = VoteResult::where('user_id', $user->id)->where('ballot_id', $ballot->id)->first();
         return $this->successResponse($ballot);
@@ -685,13 +686,82 @@ class UserController extends Controller
 
     public function getMembers(Request $request)
     {
+        $search = $request->search ;
         $limit = $request->limit ?? 15;
+        $slide_value_uptime = $request->uptime ?? 0;
+        $slide_value_update_responsiveness = $request->update_responsiveness ?? 0;
+        $slide_value_delegotors = $request->delegators ?? 0;
+        $slide_value_stake_amount = $request->stake_amount ?? 0;
+        $slide_delegation_rate = $request->delegation_rate ?? 0;
+
+        $max_uptime = Node::max('uptime');
+        $max_uptime = $max_uptime * 100;
+        $max_delegators = NodeInfo::max('delegators_count');
+        $max_stake_amount = NodeInfo::max('total_staked_amount');
+
         $sort_key = $request->sort_key ?? '';
         $sort_direction = $request->sort_direction ?? '';
         if (!$sort_key) $sort_key = 'created_at';
         if (!$sort_direction) $sort_direction = 'desc';
-        $users = User::where('role', 'member')->orderBy($sort_key, $sort_direction)
-            ->orderBy($sort_key, $sort_direction)->paginate($limit);
+        $users = User::with(['metric'])->where('role', 'member')
+        ->leftJoin('node_info', 'users.public_address_node', '=', 'node_info.node_address')
+        ->leftJoin('profile', 'users.id', '=', 'profile.user_id')
+        ->where(function ($query) use ($search) {
+            if ($search) {
+                $query->where('users.first_name', 'like', '%' . $search . '%')
+                ->orWhere('users.last_name', 'like', '%' . $search . '%');
+            }
+        })
+        ->select([
+            'users.*',
+            'profile.status',
+            'node_info.uptime',
+            'node_info.delegation_rate',
+            'node_info.delegators_count',
+            'node_info.total_staked_amount',
+        ])
+        ->get();
+        foreach ($users as $user) {
+            $latest = Node::where('node_address', $user->public_address_node)->whereNotnull('protocol_version')->orderBy('created_at', 'desc')->first();
+            if (!$latest) {
+                $latest = new Node();
+            }
+            $delegation_rate = $user->delegation_rate ?  $user->delegation_rate / 100 : 1;
+            if(!$user->metric && !$user->nodeInfo) {
+                $user->totalScore = null;
+                continue;
+            }
+            $latest_uptime_node = isset($latest->uptime) ? $latest->uptime * 100 : null;
+            $latest_update_responsiveness_node = $latest->update_responsiveness ?? null;
+            $metric = $user->metric;
+            if (!$metric) {
+                $metric = new Metric();
+            }
+            $latest_uptime_metric = $metric->uptime ? $metric->uptime : null;
+            $latest_update_responsiveness_metric = $metric->update_responsiveness ? $metric->update_responsiveness : null;
+
+            $latest_uptime = $latest_uptime_node ??  $latest_uptime_metric ?? 1;
+            $latest_update_responsiveness = $latest_update_responsiveness_node ??  $latest_update_responsiveness_metric ?? 1;
+
+            $delegators_count = $user->delegators_count ? $user->nodeInfo->delegators_count : 0;
+            $total_staked_amount = $user->total_staked_amount ? $user->nodeInfo->total_staked_amount : 0;
+
+            $uptime_score = ($slide_value_uptime * $latest_uptime) / 100 ;
+            $update_responsiveness_score = ($slide_value_update_responsiveness * $latest_update_responsiveness) / 100 ;
+            $dellegator_score = ($delegators_count / $max_delegators) * $slide_value_delegotors;
+            $satke_amount_score = ($total_staked_amount / $max_stake_amount) * $slide_value_stake_amount;
+            $delegation_rate_score = ($slide_delegation_rate * (1 - $delegation_rate)) / 100;
+            $totalScore =  $uptime_score + $update_responsiveness_score + $dellegator_score + $satke_amount_score + $delegation_rate_score;
+
+            $user->totalScore = $totalScore;
+            $user->uptime = $user->uptime ?  $user->uptime : $metric->uptime;
+        }
+        if($sort_key == 'totalScore') {
+            $users = $users->sortByDesc('totalScore')->values();
+        } else {
+            $users = $users->sortByDesc('created_at')->values();
+        }
+        $users = Helper::paginate($users, $limit, $request->page);
         return $this->successResponse($users);
     }
 
@@ -914,7 +984,6 @@ class UserController extends Controller
     public function infoDashboard()
     {
         $user = auth()->user();
-        $rank = 5; // dummy
         $delegators = 0;
         $stake_amount = 0;
         $nodeInfo = NodeInfo::where('node_address', $user->public_address_node)->first();
@@ -925,7 +994,7 @@ class UserController extends Controller
         $totalPin = DiscussionPin::where('user_id', $user->id)->count();
         $response['totalNewDiscusstion'] = $user->new_threads;
         $response['totalPinDiscusstion'] = $totalPin;
-        $response['rank'] = $rank;
+        $response['rank'] = $user->rank;
         $response['delegators'] = $delegators;
         $response['stake_amount'] = $stake_amount;
         return $this->successResponse($response);
