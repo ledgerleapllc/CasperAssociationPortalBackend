@@ -40,6 +40,7 @@ use App\Services\CasperSignature;
 use App\Services\CasperSigVerify;
 use App\Services\ShuftiproCheck;
 use App\Services\Test;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
@@ -686,7 +687,7 @@ class UserController extends Controller
 
     public function getMembers(Request $request)
     {
-        $search = $request->search ;
+        $search = $request->search;
         $limit = $request->limit ?? 15;
         $slide_value_uptime = $request->uptime ?? 0;
         $slide_value_update_responsiveness = $request->update_responsiveness ?? 0;
@@ -704,30 +705,30 @@ class UserController extends Controller
         if (!$sort_key) $sort_key = 'created_at';
         if (!$sort_direction) $sort_direction = 'desc';
         $users = User::with(['metric'])->where('role', 'member')
-        ->leftJoin('node_info', 'users.public_address_node', '=', 'node_info.node_address')
-        ->leftJoin('profile', 'users.id', '=', 'profile.user_id')
-        ->where(function ($query) use ($search) {
-            if ($search) {
-                $query->where('users.first_name', 'like', '%' . $search . '%')
-                ->orWhere('users.last_name', 'like', '%' . $search . '%');
-            }
-        })
-        ->select([
-            'users.*',
-            'profile.status',
-            'node_info.uptime',
-            'node_info.delegation_rate',
-            'node_info.delegators_count',
-            'node_info.total_staked_amount',
-        ])
-        ->get();
+            ->leftJoin('node_info', 'users.public_address_node', '=', 'node_info.node_address')
+            ->leftJoin('profile', 'users.id', '=', 'profile.user_id')
+            ->where(function ($query) use ($search) {
+                if ($search) {
+                    $query->where('users.first_name', 'like', '%' . $search . '%')
+                        ->orWhere('users.last_name', 'like', '%' . $search . '%');
+                }
+            })
+            ->select([
+                'users.*',
+                'profile.status',
+                'node_info.uptime',
+                'node_info.delegation_rate',
+                'node_info.delegators_count',
+                'node_info.total_staked_amount',
+            ])
+            ->get();
         foreach ($users as $user) {
             $latest = Node::where('node_address', $user->public_address_node)->whereNotnull('protocol_version')->orderBy('created_at', 'desc')->first();
             if (!$latest) {
                 $latest = new Node();
             }
             $delegation_rate = $user->delegation_rate ?  $user->delegation_rate / 100 : 1;
-            if(!$user->metric && !$user->nodeInfo) {
+            if (!$user->metric && !$user->nodeInfo) {
                 $user->totalScore = null;
                 continue;
             }
@@ -746,8 +747,8 @@ class UserController extends Controller
             $delegators_count = $user->delegators_count ? $user->nodeInfo->delegators_count : 0;
             $total_staked_amount = $user->total_staked_amount ? $user->nodeInfo->total_staked_amount : 0;
 
-            $uptime_score = ($slide_value_uptime * $latest_uptime) / 100 ;
-            $update_responsiveness_score = ($slide_value_update_responsiveness * $latest_update_responsiveness) / 100 ;
+            $uptime_score = ($slide_value_uptime * $latest_uptime) / 100;
+            $update_responsiveness_score = ($slide_value_update_responsiveness * $latest_update_responsiveness) / 100;
             $dellegator_score = ($delegators_count / $max_delegators) * $slide_value_delegotors;
             $satke_amount_score = ($total_staked_amount / $max_stake_amount) * $slide_value_stake_amount;
             $delegation_rate_score = ($slide_delegation_rate * (1 - $delegation_rate)) / 100;
@@ -756,7 +757,7 @@ class UserController extends Controller
             $user->totalScore = $totalScore;
             $user->uptime = $user->uptime ?  $user->uptime : $metric->uptime;
         }
-        if($sort_key == 'totalScore') {
+        if ($sort_key == 'totalScore') {
             $users = $users->sortByDesc('totalScore')->values();
         } else {
             $users = $users->sortByDesc('created_at')->values();
@@ -831,7 +832,7 @@ class UserController extends Controller
             }
             $user->new_email = $newEmail;
 
-            // curent email 
+            // curent email
             $codeCurrentEmail = Str::random(6);
             $url = $request->header('origin') ?? $request->root();
             $urlCurrentEmail = $url . '/change-email/cancel-changes?code=' . $codeCurrentEmail . '&email=' . urlencode($currentEmail);
@@ -998,5 +999,179 @@ class UserController extends Controller
         $response['delegators'] = $delegators;
         $response['stake_amount'] = $stake_amount;
         return $this->successResponse($response);
+    }
+
+    public function getEarningByNode($node)
+    {
+        $user = User::where('public_address_node', $node)->first();
+        if ($user) {
+            $daily_earning = 0;
+            $total_earning = 0;
+            $startDate = Carbon::now()->startOfDay();
+            $endDate = Carbon::now()->endOfDay();
+
+            $minDate = Node::where('node_address', $node)->where('timestamp', '>=', $startDate)
+                ->whereNotNull('era_id')->whereNotNull('weight')
+                ->where('timestamp', '<=',   $endDate)->orderBy('timestamp', 'asc')->first();
+            $maxDate = Node::where('node_address', $node)->where('timestamp', '>=', $startDate)
+                ->whereNotNull('era_id')->whereNotNull('weight')
+                ->where('timestamp', '<=',   $endDate)->orderBy('timestamp', 'desc')->first();
+
+            if ($minDate && $maxDate) {
+                $min_era_id = $minDate->era_id;
+                $max_era_id = $maxDate->era_id;
+                $min_weight = $minDate->weight;
+                $max_weight = $maxDate->weight;
+                if (($max_era_id - $min_era_id) != 0) {
+                    $daily_earning = abs($max_weight - $min_weight) / (abs($max_era_id - $min_era_id) / 2) * 24;
+                }
+            }
+
+            $min = Node::where('node_address', $node)->whereNotNull('era_id')->whereNotNull('weight')->orderBy('timestamp', 'asc')->first();
+            $max = Node::where('node_address', $node)->whereNotNull('era_id')->whereNotNull('weight')->orderBy('timestamp', 'desc')->first();
+            if ($min && $max) {
+                $min_era_id = $min->era_id;
+                $max_era_id = $max->era_id;
+                $min_weight = $min->weight;
+                $max_weight = $max->weight;
+                if (($max_era_id - $min_era_id) != 0) {
+                    $total_earning = abs($max_weight - $min_weight) / (abs($max_era_id - $min_era_id) / 2) * 24;
+                }
+            }
+            return $this->successResponse([
+                'daily_earning' => $daily_earning,
+                'total_earning' => $total_earning
+            ]);
+        } else {
+            return $this->successResponse([]);
+        }
+    }
+
+    public function getChartEarningByNode($node)
+    {
+        $user = User::where('public_address_node', $node)->first();
+        if ($user) {
+            $startDate = Carbon::now()->startOfDay()->subHours(2);
+            $endDate = Carbon::now()->startOfDay();
+            $result_day = [];
+            $result_week = [];
+            $result_month = [];
+            $result_year = [];
+            for ($i = 0; $i <= 12; $i++) {
+                $min = Node::where('node_address', $node)->where('timestamp', '>=', $startDate)
+                    ->whereNotNull('era_id')->whereNotNull('weight')
+                    ->where('timestamp', '<=',   $endDate)->orderBy('timestamp', 'asc')->first();
+                $max = Node::where('node_address', $node)->where('timestamp', '>=', $startDate)
+                    ->whereNotNull('era_id')->whereNotNull('weight')
+                    ->where('timestamp', '<=',   $endDate)->orderBy('timestamp', 'desc')->first();
+                $weight = 0;
+                if ($min && $max) {
+                    $min_era_id = $min->era_id;
+                    $max_era_id = $max->era_id;
+                    $min_weight = $min->weight;
+                    $max_weight = $max->weight;
+                    if (($max_era_id - $min_era_id) != 0) {
+                        $weight = abs($max_weight - $min_weight) / (abs($max_era_id - $min_era_id) / 2) * 24;
+                    }
+                }
+                array_push($result_day, [
+                    'weight' => $weight,
+                    'item' => $i,
+                ]);
+                $startDate->addHours(2);
+                $endDate->addHours(2);
+            }
+
+            $startWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
+            $endWeek =  Carbon::now()->startOfWeek(Carbon::MONDAY)->addDay();
+            for ($i = 0; $i <= 6; $i++) {
+                $min = Node::where('node_address', $node)->where('timestamp', '>=', $startWeek)
+                    ->whereNotNull('era_id')->whereNotNull('weight')
+                    ->where('timestamp', '<=',   $endWeek)->orderBy('timestamp', 'asc')->first();
+                $max = Node::where('node_address', $node)->where('timestamp', '>=', $startWeek)
+                    ->whereNotNull('era_id')->whereNotNull('weight')
+                    ->where('timestamp', '<=',   $endWeek)->orderBy('timestamp', 'desc')->first();
+                $weight = 0;
+                if ($min && $max) {
+                    $min_era_id = $min->era_id;
+                    $max_era_id = $max->era_id;
+                    $min_weight = $min->weight;
+                    $max_weight = $max->weight;
+                    if (($max_era_id - $min_era_id) != 0) {
+                        $weight = abs($max_weight - $min_weight) / (abs($max_era_id - $min_era_id) / 2) * 24;
+                    }
+                }
+                array_push($result_week, [
+                    'weight' => $weight,
+                    'item' => $i,
+                ]);
+                $startWeek->addDay();
+                $endWeek->addDay();
+            }
+
+            $totalDaysInMonth = Carbon::now()->daysInMonth;
+            $startMonth = Carbon::now()->startOfMonth();
+            $endMonth = Carbon::now()->startOfMonth()->addDay();
+
+            for ($i = 0; $i < $totalDaysInMonth; $i++) {
+                $min = Node::where('node_address', $node)->where('timestamp', '>=', $startMonth)
+                    ->whereNotNull('era_id')->whereNotNull('weight')
+                    ->where('timestamp', '<=',   $endMonth)->orderBy('timestamp', 'asc')->first();
+                $max = Node::where('node_address', $node)->where('timestamp', '>=', $startMonth)
+                    ->whereNotNull('era_id')->whereNotNull('weight')
+                    ->where('timestamp', '<=',   $endMonth)->orderBy('timestamp', 'desc')->first();
+                $weight = 0;
+                if ($min && $max) {
+                    $min_era_id = $min->era_id;
+                    $max_era_id = $max->era_id;
+                    $min_weight = $min->weight;
+                    $max_weight = $max->weight;
+                    if (($max_era_id - $min_era_id) != 0) {
+                        $weight = abs($max_weight - $min_weight) / (abs($max_era_id - $min_era_id) / 2) * 24;
+                    }
+                }
+                array_push($result_month, [
+                    'weight' => $weight,
+                    'item' => $i,
+                ]);
+                $startMonth->addDay();
+                $endMonth->addDay();
+            }
+            $startYear = Carbon::now()->startOfYear();
+            $endYear = Carbon::now()->startOfYear()->addMonth();
+            for ($i = 0; $i <= 11; $i++) {
+                $min = Node::where('node_address', $node)->where('timestamp', '>=', $startYear)
+                    ->whereNotNull('era_id')->whereNotNull('weight')
+                    ->where('timestamp', '<=',   $endYear)->orderBy('timestamp', 'asc')->first();
+                $max = Node::where('node_address', $node)->where('timestamp', '>=', $startYear)
+                    ->whereNotNull('era_id')->whereNotNull('weight')
+                    ->where('timestamp', '<=',   $endYear)->orderBy('timestamp', 'desc')->first();
+                $weight = 0;
+                if ($min && $max) {
+                    $min_era_id = $min->era_id;
+                    $max_era_id = $max->era_id;
+                    $min_weight = $min->weight;
+                    $max_weight = $max->weight;
+                    if (($max_era_id - $min_era_id) != 0) {
+                        $weight = abs($max_weight - $min_weight) / (abs($max_era_id - $min_era_id) / 2) * 24;
+                    }
+                }
+                array_push($result_year, [
+                    'weight' => $weight,
+                    'item' => $i,
+                ]);
+                $startYear->addMonth();
+                $endYear->addMonth();
+            }
+
+            return $this->successResponse([
+                'day' => $result_day,
+                'week' => $result_week,
+                'month' => $result_month,
+                'year' => $result_year,
+            ]);
+        } else {
+            return $this->successResponse([]);
+        }
     }
 }

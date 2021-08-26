@@ -191,7 +191,8 @@ class NodeHelper
 
 	public function getNode8888Status(
 		$validatorid = null,
-		$ip = null
+		$ip = null,
+		$era_validators = null
 	) {
 		if (!$validatorid) {
 			return [
@@ -232,7 +233,7 @@ class NodeHelper
 			array_push($this->fail_peers, $ip);
 			$uptime = array_key_exists($validatorid, $this->keyed_peers) ? 1 : 0;
 			$user = User::where('public_address_node', $validatorid)->first();
-			if($user) {
+			if ($user) {
 				Node::create(
 					[
 						'node_address' => $validatorid,
@@ -240,6 +241,7 @@ class NodeHelper
 					]
 				);
 			}
+			KeyPeer::where('public_key', $validatorid)->delete();
 			return;
 		}
 
@@ -248,7 +250,7 @@ class NodeHelper
 		$state_root_hash = $last_block->state_root_hash ?? null;
 		$block_height = $last_block->height ?? null;
 		$block_hash = $last_block->hash ?? null;
-		$timestamp = $last_block->timestamp ?? null;
+		$timestamp = $last_block->timestamp ? Carbon::parse( $last_block->timestamp ): null;
 		$era_id = $last_block->era_id ?? null;
 		$public_key = $json->our_public_signing_key ?? null;
 		$build_version = $json->build_version ?? null;
@@ -280,13 +282,13 @@ class NodeHelper
 		// SAVE $block_hash IN TABLE OF BLOCK HASHES TO CALCULATE UPTIME
 		// SAVE $decoded_peers TO DATABASE BY VALIDATOR ID
 		// SAVE $this->keyed_peers KEY/VAL OBJECT TO DATABASE
-		if($ip && $public_key) {
+		if ($ip && $public_key) {
 			KeyPeer::firstOrCreate([
 				'ip' =>  $ip,
 				'public_key' => $public_key,
-			]);	
+			]);
 		}
-		
+
 		$next_upgrade = $json->next_upgrade ?? null;
 		$activation_point = null;
 		$protocol_version = null;
@@ -315,24 +317,30 @@ class NodeHelper
 			($activation_point - $era_id) && $protocol_version == lastest;
 			IS THE LEADER OF RESPONSIVENESS.
 			*/
-			$node =  $public_key ? $public_key : $validatorid; 
-			$user = User::where('public_address_node', $node)->first();
-			if($user) {
-				Node::create(
-					[
-						'node_address' => $node,
-						'block_hash' => $block_hash,
-						'block_height' => $block_height,
-						'protocol_version' => $protocol_version,
-						'activation_point' => $activation_point,
-						'era_id' => $era_id,
-						'update_responsiveness' => $time_remaining,
-						'peers' => $peercount,
-						'uptime' => 1,
-					]
-				);
-			}
-			
+		}
+		$node =  $public_key ? $public_key : $validatorid;
+		$result = $era_validators->firstWhere('era_id', $era_id);
+		$result = $result ? collect($result->validator_weights) : null;
+		$resonse = $result ? $result->firstWhere('public_key',  $node) : null;
+		$weight = $resonse ? ($resonse->weight) / 1000000000 : null;
+
+		$user = User::where('public_address_node', $node)->first();
+		if ($user) {
+			Node::create(
+				[
+					'node_address' => $node,
+					'block_hash' => $block_hash,
+					'block_height' => $block_height,
+					'protocol_version' => $protocol_version,
+					'activation_point' => $activation_point,
+					'era_id' => $era_id,
+					'update_responsiveness' => $time_remaining,
+					'peers' => $peercount,
+					'uptime' => 1,
+					'weight' => $weight,
+					'timestamp' => $timestamp,
+				]
+			);
 			Log::info("success:  $validatorid");
 			return 'success';
 		}
@@ -351,8 +359,12 @@ class NodeHelper
 		$this->keyed_peers = $key_peer_array;
 		$auction_data = $this->getNodeAuctionData();
 		$full_auction = $auction_data->detail->full_auction ?? null;
+		$era_id =  $auction_data->detail->era_id;
 		$auction_state = $full_auction->auction_state ?? null;
-
+		$era_validators = $auction_state->era_validators ?? null;
+		$era_validators = collect(($era_validators));
+		$max_era = $era_validators->max('era_id');
+		$min_era = $era_validators->min('era_id');
 		$bids = $auction_state->bids ?? null;
 
 		if ($bids && gettype($bids) == 'array') {
@@ -379,14 +391,15 @@ class NodeHelper
 					// SAVE $total_staked_amount TO DATABASE BY $validatorid
 					// $total_staked_amount CHANGE DIFFERENCE OVER TIME DETERMINES THE "Validator Rewards" GRAPH ON "Nodes" PAGE.
 
-					$this->getNode8888Status($validatorid);
+					$this->getNode8888Status($validatorid, null, $era_validators);
 					if ($user) {
+
 						NodeInfo::updateOrCreate(
 							['node_address' => $validatorid],
 							[
 								'delegators_count' => $delegators_count,
-								'self_staked_amount' => $self_staked_amount/1000000000,
-								'total_staked_amount' => $total_staked_amount/1000000000,
+								'self_staked_amount' => $self_staked_amount / 1000000000,
+								'total_staked_amount' => $total_staked_amount / 1000000000,
 								'delegation_rate' => $delegation_rate,
 							]
 						);

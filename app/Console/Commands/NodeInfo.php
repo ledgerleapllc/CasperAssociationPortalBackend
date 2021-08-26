@@ -48,6 +48,7 @@ class NodeInfo extends Command
         $this->updateNode();
         $this->updateUptime();
         $this->updateRank();
+        $this->updateDataMorethen2Weeks();
     }
 
     public function updateNode()
@@ -188,5 +189,17 @@ class NodeInfo extends Command
         foreach ($users as $key => $user) {
             User::where('id', $user->id)->update(['rank' => $key + 1]);
         }
+    }
+
+    public function updateDataMorethen2Weeks()
+    {
+        $now = Carbon::now('UTC');
+        $time = $now->subDays(14);
+        Node::where('created_at', '<', $time)->update([
+            'uptime' => null,
+            'block_height' => null,
+            'update_responsiveness' => null,
+            'peers' => null,
+        ]);
     }
 }

@@ -106,13 +106,16 @@ class Helper
 		$rank = 5; // dummy
 		$delegators = 0;
 		$stake_amount = 0;
+		$self_staked_amount = 0;
 		if ($nodeInfo) {
 			$delegators = $nodeInfo->delegators_count;
 			$stake_amount = $nodeInfo->total_staked_amount;
+			$self_staked_amount = $nodeInfo->self_staked_amount;
 		}
 		$metric->rank = $rank;
 		$metric->delegators = $delegators;
 		$metric->stake_amount = $stake_amount;
+		$metric->self_staked_amount = $self_staked_amount;
 		$metric['node_status'] = $user->node_status;
 		$metric['monitoring_criteria'] = $monitoringCriteria;
 		return $metric;
