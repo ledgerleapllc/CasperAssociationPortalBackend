@@ -832,7 +832,7 @@ class UserController extends Controller
             }
             $user->new_email = $newEmail;
 
-            // curent email
+            // curent email 
             $codeCurrentEmail = Str::random(6);
             $url = $request->header('origin') ?? $request->root();
             $urlCurrentEmail = $url . '/change-email/cancel-changes?code=' . $codeCurrentEmail . '&email=' . urlencode($currentEmail);
@@ -1023,7 +1023,7 @@ class UserController extends Controller
                 $min_weight = $minDate->weight;
                 $max_weight = $maxDate->weight;
                 if (($max_era_id - $min_era_id) != 0) {
-                    $daily_earning = abs($max_weight - $min_weight) / (abs($max_era_id - $min_era_id) / 2) * 24;
+                    $daily_earning = abs($max_weight - $min_weight) / (abs($max_era_id - $min_era_id) * 2) * 24;
                 }
             }
 
@@ -1035,7 +1035,7 @@ class UserController extends Controller
                 $min_weight = $min->weight;
                 $max_weight = $max->weight;
                 if (($max_era_id - $min_era_id) != 0) {
-                    $total_earning = abs($max_weight - $min_weight) / (abs($max_era_id - $min_era_id) / 2) * 24;
+                    $total_earning = abs($max_weight - $min_weight) / (abs($max_era_id - $min_era_id) * 2) * 24;
                 }
             }
             return $this->successResponse([
@@ -1071,7 +1071,7 @@ class UserController extends Controller
                     $min_weight = $min->weight;
                     $max_weight = $max->weight;
                     if (($max_era_id - $min_era_id) != 0) {
-                        $weight = abs($max_weight - $min_weight) / (abs($max_era_id - $min_era_id) / 2) * 24;
+                        $weight = abs($max_weight - $min_weight) / (abs($max_era_id - $min_era_id) * 2) * 24;
                     }
                 }
                 array_push($result_day, [
@@ -1098,7 +1098,7 @@ class UserController extends Controller
                     $min_weight = $min->weight;
                     $max_weight = $max->weight;
                     if (($max_era_id - $min_era_id) != 0) {
-                        $weight = abs($max_weight - $min_weight) / (abs($max_era_id - $min_era_id) / 2) * 24;
+                        $weight = abs($max_weight - $min_weight) / (abs($max_era_id - $min_era_id) * 2) * 24;
                     }
                 }
                 array_push($result_week, [
@@ -1108,7 +1108,7 @@ class UserController extends Controller
                 $startWeek->addDay();
                 $endWeek->addDay();
             }
-
+            
             $totalDaysInMonth = Carbon::now()->daysInMonth;
             $startMonth = Carbon::now()->startOfMonth();
             $endMonth = Carbon::now()->startOfMonth()->addDay();
@@ -1127,7 +1127,7 @@ class UserController extends Controller
                     $min_weight = $min->weight;
                     $max_weight = $max->weight;
                     if (($max_era_id - $min_era_id) != 0) {
-                        $weight = abs($max_weight - $min_weight) / (abs($max_era_id - $min_era_id) / 2) * 24;
+                        $weight = abs($max_weight - $min_weight) / (abs($max_era_id - $min_era_id) * 2) * 24;
                     }
                 }
                 array_push($result_month, [
@@ -1153,7 +1153,7 @@ class UserController extends Controller
                     $min_weight = $min->weight;
                     $max_weight = $max->weight;
                     if (($max_era_id - $min_era_id) != 0) {
-                        $weight = abs($max_weight - $min_weight) / (abs($max_era_id - $min_era_id) / 2) * 24;
+                        $weight = abs($max_weight - $min_weight) / (abs($max_era_id - $min_era_id) * 2) * 24;
                     }
                 }
                 array_push($result_year, [
