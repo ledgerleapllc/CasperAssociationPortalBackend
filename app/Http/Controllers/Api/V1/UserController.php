@@ -972,11 +972,12 @@ class UserController extends Controller
         $nodes =  User::select([
             'id as user_id',
             'public_address_node',
-            'is_fail_node'
+            'is_fail_node',
+            'rank',
         ])
             ->where('banned', 0)
             ->whereNotNull('public_address_node')
-            ->orderBy('id', 'desc')
+            ->orderBy('rank', 'desc')
             ->paginate($limit);
 
         return $this->successResponse($nodes);
