@@ -1012,7 +1012,7 @@ class AdminController extends Controller
                     $query->where('is_fail_node', 1);
                 }
             })
-            ->orderBy('rank', 'desc')
+            ->orderBy('rank', 'asc')
             ->paginate($limit);
 
         return $this->successResponse($nodes);

@@ -977,7 +977,7 @@ class UserController extends Controller
         ])
             ->where('banned', 0)
             ->whereNotNull('public_address_node')
-            ->orderBy('rank', 'desc')
+            ->orderBy('rank', 'asc')
             ->paginate($limit);
 
         return $this->successResponse($nodes);
