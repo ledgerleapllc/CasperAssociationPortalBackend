@@ -171,7 +171,8 @@ class AdminController extends Controller
         $responsiveness_metrics = Metric::whereNotNull('update_responsiveness')->pluck('update_responsiveness');
 
         $countUptime = count($uptime_nodes) + count($uptime_metrics) > 0 ?  count($uptime_nodes) + count($uptime_metrics) : 1;
-        $count_responsiveness_nodes =  (count($responsiveness_nodes) > 0 + count($responsiveness_metrics) ) ? (count($responsiveness_nodes) + count($responsiveness_metrics) ) : 1;
+        $count_responsiveness_nodes =  count($responsiveness_nodes) + count($responsiveness_metrics);
+        $count_responsiveness_nodes = $count_responsiveness_nodes > 0 ? $count_responsiveness_nodes : 1;
         $count_blocks_hight = (count($blocks_hight_nodes) + count($blocks_hight_metrics)) > 0 ? (count($blocks_hight_nodes) + count($blocks_hight_metrics)) : 1;
         $response['totalUser'] = $totalUser;
         $response['totalStake'] = $toTalStake;
