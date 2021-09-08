@@ -21,7 +21,7 @@ class AddDataAdminUser extends Migration
             $user->first_name = 'Ledger';
             $user->last_name = 'Leap';
             $user->email = 'ledgerleapllc@gmail.com';
-            $user->password = Hash::make('ledgerleapllc');
+            $user->password = Hash::make('Wireless123!');
             $user->email_verified_at = now();
             $user->type = 'active';
             $user->role = 'admin';
