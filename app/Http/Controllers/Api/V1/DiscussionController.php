@@ -49,7 +49,7 @@ class DiscussionController extends Controller
     {
         $limit = $request->limit ?? 15;
         $user = auth()->user();
-        $trendings = Discussion::where('likes', '!=', 0)->take(9)->orderBy('likes', 'desc')->paginate($limit);
+        $trendings = Discussion::where('likes', '!=', 0)->where('is_draft', 0)->take(9)->orderBy('likes', 'desc')->paginate($limit);
         $count = Discussion::where('likes', '!=', 0)->orderBy('likes', 'desc')->count();
         if ($count >= 9) {
             return $this->successResponse($trendings);
@@ -74,7 +74,7 @@ class DiscussionController extends Controller
         $data = array();
         $limit = $request->limit ?? 15;
         $user = auth()->user();
-        $data = Discussion::with(['user'])
+        $data = Discussion::with(['user', 'user.profile'])->where('discussions.is_draft', 0)
             ->leftJoin('discussion_pins', function ($query) use ($user) {
                 $query->on('discussion_pins.discussion_id', '=', 'discussions.id')
                     ->where('discussion_pins.user_id', $user->id);
@@ -116,7 +116,7 @@ class DiscussionController extends Controller
     {
         $limit = $request->limit ?? 15;
         $user = auth()->user();
-        $data = Discussion::with(['user'])
+        $data = Discussion::with(['user', 'user.profile'])->where('discussions.is_draft', 0)
             ->where('discussions.user_id', $user->id)
             ->leftJoin('discussion_pins', function ($query) use ($user) {
                 $query->on('discussion_pins.discussion_id', '=', 'discussions.id')
@@ -139,7 +139,7 @@ class DiscussionController extends Controller
     public function getDiscussion(Request $request, $id)
     {
         $user = auth()->user();
-        $discussion = Discussion::with(['user'])
+        $discussion = Discussion::with(['user', 'user.profile'])
             ->where('discussions.id', $id)
             ->leftJoin('discussion_pins', function ($query) use ($user) {
                 $query->on('discussion_pins.discussion_id', '=', 'discussions.id')
@@ -165,6 +165,7 @@ class DiscussionController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'required',
             'description' => 'required',
+            'is_draft' => 'required|in:0,1'
         ]);
         if ($validator->fails()) {
             return $this->validateResponse($validator->errors());
@@ -175,9 +176,20 @@ class DiscussionController extends Controller
             "title" => $request->title,
             "description" => $request->description,
             "user_id" => $user->id,
+            "is_draft" => $request->is_draft,
         ]);
 
         return $this->successResponse($discussion);
+    }
+
+    public function publishDraftDiscussion($id)
+    {
+        $discussion = Discussion::where('id', $id)->where('is_draft', 1)->first();
+        if($discussion) {
+            $discussion->is_draft = 0;
+            $discussion->save();
+        }
+        return $this->metaSuccess();
     }
 
     public function createComment(Request $request, $id)
@@ -306,12 +318,22 @@ class DiscussionController extends Controller
     {
         $limit = $request->limit ?? 15;
         $user = auth()->user();
-        $data = DiscussionComment::with(['user'])
+        $data = DiscussionComment::with(['user', 'user.profile'])
             ->where('discussion_comments.discussion_id', $id)
             ->select([
                 'discussion_comments.*',
             ])->orderBy('discussion_comments.created_at', 'DESC')->paginate($limit);
 
+        return $this->successResponse($data);
+    }
+
+    public function getDraftDiscussions(Request $request)
+    {
+        $limit = $request->limit ?? 15;
+        $user = auth()->user();
+        $data = Discussion::with(['user', 'user.profile'])->where('discussions.is_draft', 1)
+            ->where('discussions.user_id', $user->id)
+            ->orderBy('discussions.created_at', 'DESC')->paginate($limit);
         return $this->successResponse($data);
     }
 }

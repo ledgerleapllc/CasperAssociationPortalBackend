@@ -66,6 +66,7 @@ class ShuftiproCheck
         $status = $is_successful ? 'approved' : 'denied';
         //Aml check
         $aml_declined_reason  = null;
+        $hit  = null;
 
         if (
             isset($verification_data['background_checks']) &&
@@ -79,6 +80,9 @@ class ShuftiproCheck
                     $aml_declined_reason = $type[0]['value'];
                 }
             }
+            if (count($hits) > 0 ) {
+                $hit= $hits[0];
+            }
         }
         $data = json_encode([
             'declined_reason' => $declined_reason,
@@ -86,6 +90,7 @@ class ShuftiproCheck
             // 'proofs' => $proofs,
             'verification_result' => $verification_result,
             'aml_declined_reason' => $aml_declined_reason,
+            'hit' => $hit,
             // 'verification_data' => $verification_data
         ]);
 

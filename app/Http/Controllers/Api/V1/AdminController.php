@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Console\Helper;
 use  App\Models\NodeInfo;
 use App\Http\Controllers\Controller;
 use App\Http\EmailerHelper;
@@ -55,7 +56,15 @@ class AdminController extends Controller
         if (!$sort_key) $sort_key = 'created_at';
         if (!$sort_direction) $sort_direction = 'desc';
         $users = User::where('role', 'member')->with(['profile'])
-            ->orderBy($sort_key, $sort_direction)->paginate($limit);
+            ->leftJoin('node_info', 'users.public_address_node', '=', 'node_info.node_address')
+            ->select([
+                'users.*',
+                'node_info.delegation_rate',
+                'node_info.delegators_count',
+                'node_info.self_staked_amount',
+                'node_info.total_staked_amount',
+            ])
+            ->get();
         foreach ($users as $user) {
             $status = 'Onboarding';
             if ($user->profile && $user->profile->status == 'pending') {
@@ -69,6 +78,14 @@ class AdminController extends Controller
             }
             $user->membership_status = $status;
         }
+        if ($sort_direction == 'desc') {
+            $users = $users->sortByDesc($sort_key)->values();
+        } else {
+            $users = $users->sortBy($sort_key)->values();
+        }
+        $users = Helper::paginate($users, $limit, $request->page);
+        $users = $users->toArray();
+        $users['data'] = (collect($users['data'])->values());
         return $this->successResponse($users);
     }
 
@@ -160,9 +177,9 @@ class AdminController extends Controller
         $blocks_hight_metrics = Metric::whereNotNull('block_height_average')->pluck('block_height_average');
         $total_blocks_hight_metrics = 0;
         $base_block = 10;
-        foreach($blocks_hight_metrics as $value) {
+        foreach ($blocks_hight_metrics as $value) {
             $avg = ($base_block - $value) * 10;
-            if($avg > 0) {
+            if ($avg > 0) {
                 $total_blocks_hight_metrics += $avg;
             }
         }
@@ -184,8 +201,8 @@ class AdminController extends Controller
         $response['totalNewComments'] = $totalNewComments;
         $response['totalNewDiscussions'] = $totalNewDiscussions;
         $response['avgUptime'] = ($uptime_nodes->sum() + $uptime_metrics->sum()) /  $countUptime;
-        $response['avgBlockHeightAverage'] =($blocks_hight_nodes->sum() + $total_blocks_hight_metrics) / $count_blocks_hight ;
-        $response['avgUpdateResponsiveness'] =( $responsiveness_nodes->sum() + $responsiveness_metrics->sum()) / $count_responsiveness_nodes;
+        $response['avgBlockHeightAverage'] = ($blocks_hight_nodes->sum() + $total_blocks_hight_metrics) / $count_blocks_hight;
+        $response['avgUpdateResponsiveness'] = ($responsiveness_nodes->sum() + $responsiveness_metrics->sum()) / $count_responsiveness_nodes;
         return $this->successResponse($response);
     }
 
@@ -339,7 +356,7 @@ class AdminController extends Controller
     public function getBallotVotes($id, Request $request)
     {
         $limit = $request->limit ?? 15;
-        $data = VoteResult::where('ballot_id', '=', $id)->with('user')->orderBy('created_at', 'ASC')->paginate($limit);
+        $data = VoteResult::where('ballot_id', '=', $id)->with(['user', 'user.profile'])->orderBy('created_at', 'ASC')->paginate($limit);
 
         return $this->successResponse($data);
     }
@@ -347,7 +364,7 @@ class AdminController extends Controller
     public function getViewFileBallot(Request $request, $fileId)
     {
         $limit = $request->limit ?? 15;
-        $data = BallotFileView::where('ballot_file_id', '=',  $fileId)->with('user')->orderBy('created_at', 'ASC')->paginate($limit);
+        $data = BallotFileView::where('ballot_file_id', '=',  $fileId)->with(['user', 'user.profile'])->orderBy('created_at', 'ASC')->paginate($limit);
         return $this->successResponse($data);
     }
 
@@ -651,6 +668,17 @@ class AdminController extends Controller
             return $this->metaSuccess();
         }
         return $this->errorResponse('Fail Ban User', Response::HTTP_BAD_REQUEST);
+    }
+
+    public function removeUser($id, Request $request)
+    {
+        $user = User::where('id', $id)->where('role', 'member')->first();
+        if ($user) {
+            Profile::where('user_id', $user->id)->delete();
+            $user->delete();
+            return $this->metaSuccess();
+        }
+        return $this->errorResponse('Fail remove User', Response::HTTP_BAD_REQUEST);
     }
 
     public function getVerificationUsers(Request $request)

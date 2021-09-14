@@ -98,6 +98,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
                 Route::post('/users/intakes/{id}/approve', [AdminController::class, 'approveIntakeUser'])->where('id', '[0-9]+');
                 Route::post('/users/intakes/{id}/reset', [AdminController::class, 'resetIntakeUser'])->where('id', '[0-9]+');
                 Route::post('/users/{id}/ban', [AdminController::class, 'banUser'])->where('id', '[0-9]+');
+                Route::post('/users/{id}/remove', [AdminController::class, 'removeUser'])->where('id', '[0-9]+');
             });
             
             // user
@@ -186,6 +187,8 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::post('/{id}/vote', [DiscussionController::class, 'setVote']);
             Route::post('/{id}/pin', [DiscussionController::class, 'setPin']);
             Route::get('/{id}/comment', [DiscussionController::class, 'getComment']);
+            Route::post('/{id}/publish', [DiscussionController::class, 'publishDraftDiscussion']);
+            Route::get('/draft', [DiscussionController::class, 'getDraftDiscussions']);
         });
 
         Route::prefix('users/verification')->group(function () {
