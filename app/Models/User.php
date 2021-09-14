@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasApiTokens, SoftDeletes;
+    use HasFactory, Notifiable, HasApiTokens;
     const TYPE_INDIVIDUAL = 'individual';
     const TYPE_ENTITY = 'entity';
 

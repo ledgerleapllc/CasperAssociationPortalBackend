@@ -157,6 +157,7 @@ class DiscussionController extends Controller
             ])->first();
         $discussion->read = $discussion->read + 1;
         $discussion->save();
+        $discussion->total_pinned = DiscussionPin::where('discussion_id', $id)->count();
         return $this->successResponse($discussion);
     }
 
