@@ -337,4 +337,16 @@ class DiscussionController extends Controller
             ->orderBy('discussions.created_at', 'DESC')->paginate($limit);
         return $this->successResponse($data);
     }
+
+    public function deleteDraftDiscussions($id) 
+    {
+        $user = auth()->user();
+        $discussion = Discussion::where('id', $id)->where('discussions.is_draft', 1)->where('discussions.user_id', $user->id)->first();
+        if($discussion) {
+            $discussion->delete();
+            return $this->metaSuccess();
+        } else {
+            return $this->errorResponse('Can not delete draft', Response::HTTP_BAD_REQUEST);
+        }
+    }
 }

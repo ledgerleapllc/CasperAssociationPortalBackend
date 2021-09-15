@@ -189,6 +189,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('/{id}/comment', [DiscussionController::class, 'getComment']);
             Route::post('/{id}/publish', [DiscussionController::class, 'publishDraftDiscussion']);
             Route::get('/draft', [DiscussionController::class, 'getDraftDiscussions']);
+            Route::delete('{id}/draft', [DiscussionController::class, 'deleteDraftDiscussions']);
         });
 
         Route::prefix('users/verification')->group(function () {
