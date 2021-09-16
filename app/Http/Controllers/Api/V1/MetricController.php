@@ -134,7 +134,6 @@ class MetricController extends Controller
             $metric->peers = $request->peers;
         }
         $metric->user_id = $id;
-        $metric->node_address = $user->public_address_node;;
         $metric->save();
         return $this->successResponse($metric);
     }
