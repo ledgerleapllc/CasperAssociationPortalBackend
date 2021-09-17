@@ -33,7 +33,7 @@ class Kernel extends ConsoleKernel
             ->runInBackground();
         // ->withoutOverlapping();
         $schedule->command('perk:check')
-            ->dailyAt('00:01')
+            ->everyThirtyMinutes()
             ->runInBackground();
         $schedule->command('notif:check')
             ->dailyAt('00:01')

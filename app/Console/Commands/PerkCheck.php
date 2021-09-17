@@ -49,7 +49,7 @@ class PerkCheck extends Command
         }
 
         // check perk expired
-        $expiredPerks = Perk::where('end_date', '<', $now)->where('setting', 1)->get();
+        $expiredPerks = Perk::where('end_date', '<', $now)->where('setting', 1)->where('status', '!=', 'expired')->get();
         foreach ($expiredPerks as $perk) {
             $perk->status = 'expired';
             $perk->visibility = 'hidden';

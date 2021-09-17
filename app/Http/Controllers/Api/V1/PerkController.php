@@ -119,8 +119,8 @@ class PerkController extends Controller
             'content' => 'nullable',
             'action_link' => 'nullable|url',
             'image' => 'nullable|mimes:jpeg,jpg,png,gif|max:100000',
-            'start_date' => 'nullable|date_format:Y-m-d',
-            'end_date' => 'nullable|date_format:Y-m-d',
+            'start_date' => 'nullable',
+            'end_date' => 'nullable',
             'setting' => 'nullable|in:0,1',
         ]);
         if ($validator->fails()) {
