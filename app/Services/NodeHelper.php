@@ -129,7 +129,7 @@ class NodeHelper
 		return $decoded_peers;
 	}
 
-	private function validateValidatorId($vid)
+	public function validateValidatorId($vid)
 	{
 		// Log::info($this->ten_days_ago);
 		if (

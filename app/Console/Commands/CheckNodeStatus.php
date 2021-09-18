@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\MonitoringCriteria;
 use App\Models\User;
+use App\Services\NodeHelper;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -70,59 +71,73 @@ class CheckNodeStatus extends Command
         } else {
             $updateResponsivenessTime = (float) $updateResponsiveness->given_to_correct_value;
         }
-
+        $nodeHelper = new NodeHelper();
         $now =  Carbon::now('UTC');
-        $users = User::where('role', 'member')->where('banned', 0)->with(['metric'])->get();
+        $users = User::where('role', 'member')->where('banned', 0)->with(['metric', 'nodeInfo'])->get();
         foreach ($users as $user) {
-            if (!$user->metric || !$user->node_verified_at || !$user->letter_verified_at || !$user->signature_request_id) {
+            $nodeInfo = $user->nodeInfo ? $user->nodeInfo : $user->metric;
+            if (!$nodeInfo || !$user->node_verified_at || !$user->letter_verified_at || !$user->signature_request_id) {
                 $user->node_status = null;
                 $user->save();
                 continue;
             }
+            if ($nodeHelper->validateValidatorId($user->public_address_node) != true) {
+                $user->node_status = null;
+                $user->save();
+                continue;
+            }
+            if ($user->is_fail_node == 1) {
+                $user->node_status = 'Offline';
+                $user->save();
+                continue;
+            }
+            $nodeInfo->uptime = $nodeInfo->uptime ? $nodeInfo->uptime : 0;
+            $nodeInfo->block_height_average = $nodeInfo->block_height_average ? $nodeInfo->block_height_average : 0;
+            $nodeInfo->update_responsiveness = $nodeInfo->update_responsiveness ? $nodeInfo->update_responsiveness : 100;
             if (
-                $user->metric->uptime >= $uptimeProbationStart && $user->metric->block_height_average >= $blockHeightProbationStart
-                && $user->metric->update_responsiveness >= $updateResponsivenessProbationStart
+                $nodeInfo->uptime >= $uptimeProbationStart && $nodeInfo->block_height_average >= $blockHeightProbationStart
+                && $nodeInfo->update_responsiveness >= $updateResponsivenessProbationStart
             ) {
                 $user->node_status = 'Online';
                 $user->save();
-                $user->metric->uptime_time_end = null;
-                $user->metric->block_height_average_time_end = null;
-                $user->metric->update_responsiveness_time_end = null;
-                $user->metric->uptime_time_start = null;
-                $user->metric->block_height_average_time_start = null;
-                $user->metric->update_responsiveness_time_start = null;
-                $user->metric->save();
+                $nodeInfo->uptime_time_end = null;
+                $nodeInfo->block_height_average_time_end = null;
+                $nodeInfo->update_responsiveness_time_end = null;
+                $nodeInfo->uptime_time_start = null;
+                $nodeInfo->block_height_average_time_start = null;
+                $nodeInfo->update_responsiveness_time_start = null;
+                $nodeInfo->save();
                 continue;
             }
             if ($user->node_status != 'Probation' && $user->node_status != 'Pulled') {
-                if ($user->metric->uptime < $uptimeProbationStart) {
+                if ($nodeInfo->uptime < $uptimeProbationStart) {
                     $user->node_status = 'Probation';
-                    $user->metric->uptime_time_start = now();
-                    $user->metric->uptime_time_end =  Carbon::now('UTC')->addHours($uptimeTime);
+                    $nodeInfo->uptime_time_start = now();
+                    $nodeInfo->uptime_time_end =  Carbon::now('UTC')->addHours($uptimeTime);
                 }
-                if ($user->metric->block_height_average < $blockHeightProbationStart) {
+                if ($nodeInfo->block_height_average < $blockHeightProbationStart) {
                     $user->node_status = 'Probation';
-                    $user->metric->block_height_average_time_start = now();
-                    $user->metric->block_height_average_time_end =  Carbon::now('UTC')->addHours($blockHeightTime);
+                    $nodeInfo->block_height_average_time_start = now();
+                    $nodeInfo->block_height_average_time_end =  Carbon::now('UTC')->addHours($blockHeightTime);
                 }
 
-                if ($user->metric->update_responsiveness < $updateResponsivenessProbationStart) {
+                if ($nodeInfo->update_responsiveness < $updateResponsivenessProbationStart) {
                     $user->node_status = 'Probation';
-                    $user->metric->update_responsiveness_time_start = now();
-                    $user->metric->update_responsiveness_time_end =  Carbon::now('UTC')->addHours($updateResponsivenessTime);
+                    $nodeInfo->update_responsiveness_time_start = now();
+                    $nodeInfo->update_responsiveness_time_end =  Carbon::now('UTC')->addHours($updateResponsivenessTime);
                 }
                 $user->save();
-                $user->metric->save();
+                $nodeInfo->save();
                 continue;
             }
             if($user->node_status == 'Probation') {
-                if($user->metric->uptime_time_end <= $now && $user->metric->uptime < $uptimeProbationStart) {
+                if($nodeInfo->uptime_time_end <= $now && $nodeInfo->uptime < $uptimeProbationStart) {
                     $user->node_status = 'Pulled';
                 }
-                if($user->metric->block_height_average_time_end <= $now && $user->metric->block_height_average < $blockHeightProbationStart) {
+                if($nodeInfo->block_height_average_time_end <= $now && $nodeInfo->block_height_average < $blockHeightProbationStart) {
                     $user->node_status = 'Pulled';
                 }
-                if($user->metric->update_responsiveness_time_end <= $now && $user->metric->update_responsiveness < $updateResponsivenessProbationStart) {
+                if($nodeInfo->update_responsiveness_time_end <= $now && $nodeInfo->update_responsiveness < $updateResponsivenessProbationStart) {
                     $user->node_status = 'Pulled';
                 }
                 $user->save();

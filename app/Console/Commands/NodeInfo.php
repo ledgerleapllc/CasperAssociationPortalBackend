@@ -70,6 +70,7 @@ class NodeInfo extends Command
                 $user = User::where('public_address_node', $key)->first();
                 if ($user) {
                     $user->is_fail_node = 1;
+                    $user->node_status = 'Offline';
                     $user->save();
                 }
             }
