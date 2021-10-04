@@ -21,6 +21,7 @@ use App\Models\EmailerTriggerAdmin;
 use App\Models\EmailerTriggerUser;
 use App\Models\IpHistory;
 use App\Models\LockRules;
+use App\Models\MembershipAgreementFile;
 use App\Models\Metric;
 use App\Models\MonitoringCriteria;
 use App\Models\Node;
@@ -1065,5 +1066,40 @@ class AdminController extends Controller
         }
 
         return $this->successResponse($graphData);
+    }
+
+    /**
+     * verify file casper singer
+     */
+    public function uploadMembershipFile(Request $request)
+    {
+        try {
+            // Validator
+            $validator = Validator::make($request->all(), [
+                'file' => 'required|mimes:pdf,docx,doc,txt,rtf|max:100000',
+            ]);
+            if ($validator->fails()) {
+                return $this->validateResponse($validator->errors());
+            }
+            $fileName = $request->file('file')->getClientOriginalName();
+            $path = $request->file('file')->storeAs('membership', $fileName);
+            $url = Storage::url($path);
+            MembershipAgreementFile::where('id', '>', 0)->delete();
+            $membershipAgreementFile = new MembershipAgreementFile();
+            $membershipAgreementFile->name = $fileName;
+            $membershipAgreementFile->path = $path;
+            $membershipAgreementFile->url = $url;
+            $membershipAgreementFile->save();
+            DB::table('users')->update(['membership_agreement' => 0]);
+            return $this->successResponse($membershipAgreementFile);
+        } catch (\Exception $ex) {
+            return $this->errorResponse(__('Failed upload file'), Response::HTTP_BAD_REQUEST, $ex->getMessage());
+        }
+    }
+
+    public function getMembershipFile()
+    {
+        $membershipAgreementFile = MembershipAgreementFile::first();
+        return $this->successResponse($membershipAgreementFile);
     }
 }

@@ -23,6 +23,7 @@ use App\Models\LockRules;
 use App\Models\Metric;
 use App\Models\MonitoringCriteria;
 use App\Models\DiscussionPin;
+use App\Models\MembershipAgreementFile;
 use App\Models\Node;
 use App\Models\NodeInfo;
 use App\Models\OwnerNode;
@@ -1109,7 +1110,7 @@ class UserController extends Controller
                 $startWeek->addDay();
                 $endWeek->addDay();
             }
-            
+
             $totalDaysInMonth = Carbon::now()->daysInMonth;
             $startMonth = Carbon::now()->startOfMonth();
             $endMonth = Carbon::now()->startOfMonth()->addDay();
@@ -1174,5 +1175,19 @@ class UserController extends Controller
         } else {
             return $this->successResponse([]);
         }
+    }
+
+    public function getMembershipFile()
+    {
+        $membershipAgreementFile = MembershipAgreementFile::first();
+        return $this->successResponse($membershipAgreementFile);
+    }
+
+    public function membershipAgreement()
+    {
+        $user = auth()->user();
+        $user->membership_agreement = 1;
+        $user->save();
+        return $this->metaSuccess();
     }
 }

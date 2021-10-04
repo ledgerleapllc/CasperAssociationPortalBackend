@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AdminController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\ContactController;
 use App\Http\Controllers\Api\V1\HelloSignController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\DiscussionController;
@@ -83,6 +84,12 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('users/dashboard', [UserController::class, 'infoDashboard']);
             Route::get('/nodes/{node}/earning', [UserController::class, 'getEarningByNode']);
             Route::get('/nodes/{node}/chart', [UserController::class, 'getChartEarningByNode']);
+
+            Route::post('/users/contact-us',  [ContactController::class, 'submitContact']);
+
+            Route::get('/users/membership-file',  [UserController::class, 'getMembershipFile']);
+            Route::post('/users/membership-agreement',  [UserController::class, 'membershipAgreement']);
+
         });
         Route::prefix('admin')->middleware(['role_admin'])->group(function () {
             Route::get('/users', [AdminController::class, 'getUsers']);
@@ -173,6 +180,14 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             // rules lock
             Route::get('/lock-rules',  [AdminController::class, 'getLockRules']);
             Route::put('/lock-rules/{id}',  [AdminController::class, 'updateLockRules'])->where('id', '[0-9]+');
+
+            // contact recipients
+            Route::get('/contact-recipients',  [ContactController::class, 'getContactRecipients']);
+            Route::post('/contact-recipients',  [ContactController::class, 'addContactRecipients']);
+            Route::delete('/contact-recipients/{id}',  [ContactController::class, 'deleteContactRecipients'])->where('id', '[0-9]+');
+            Route::get('/membership-file',  [AdminController::class, 'getMembershipFile']);
+            Route::post('/membership-file',  [AdminController::class, 'uploadMembershipFile']);
+
         });
         Route::prefix('discussions')->group(function () {
             Route::get('/trending', [DiscussionController::class, 'getTrending']);
