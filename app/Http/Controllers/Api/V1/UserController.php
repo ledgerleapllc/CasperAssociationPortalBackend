@@ -370,6 +370,8 @@ class UserController extends Controller
             ],
             $data
         );
+        $user->reset_kyc = 0;
+        $user->save();
         return $this->metaSuccess();
     }
 
