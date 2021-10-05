@@ -39,6 +39,7 @@ use App\Repositories\UserRepository;
 use App\Repositories\VerifyUserRepository;
 use App\Services\CasperSignature;
 use App\Services\CasperSigVerify;
+use App\Services\NodeHelper;
 use App\Services\ShuftiproCheck;
 use App\Services\Test;
 use Carbon\Carbon;
@@ -1006,43 +1007,12 @@ class UserController extends Controller
     public function getEarningByNode($node)
     {
         $user = User::where('public_address_node', $node)->first();
-        if ($user) {
-            $daily_earning = 0;
-            $total_earning = 0;
-            $startDate = Carbon::now()->startOfDay();
-            $endDate = Carbon::now()->endOfDay();
+        $nodeInfo = NodeInfo::where('node_address', $node)->first();
 
-            $minDate = Node::where('node_address', $node)->where('timestamp', '>=', $startDate)
-                ->whereNotNull('era_id')->whereNotNull('weight')
-                ->where('timestamp', '<=',   $endDate)->orderBy('timestamp', 'asc')->first();
-            $maxDate = Node::where('node_address', $node)->where('timestamp', '>=', $startDate)
-                ->whereNotNull('era_id')->whereNotNull('weight')
-                ->where('timestamp', '<=',   $endDate)->orderBy('timestamp', 'desc')->first();
-
-            if ($minDate && $maxDate) {
-                $min_era_id = $minDate->era_id;
-                $max_era_id = $maxDate->era_id;
-                $min_weight = $minDate->weight;
-                $max_weight = $maxDate->weight;
-                if (($max_era_id - $min_era_id) != 0) {
-                    $daily_earning = abs($max_weight - $min_weight) / (abs($max_era_id - $min_era_id) * 2) * 24;
-                }
-            }
-
-            $min = Node::where('node_address', $node)->whereNotNull('era_id')->whereNotNull('weight')->orderBy('timestamp', 'asc')->first();
-            $max = Node::where('node_address', $node)->whereNotNull('era_id')->whereNotNull('weight')->orderBy('timestamp', 'desc')->first();
-            if ($min && $max) {
-                $min_era_id = $min->era_id;
-                $max_era_id = $max->era_id;
-                $min_weight = $min->weight;
-                $max_weight = $max->weight;
-                if (($max_era_id - $min_era_id) != 0) {
-                    $total_earning = abs($max_weight - $min_weight) / (abs($max_era_id - $min_era_id) * 2) * 24;
-                }
-            }
+        if ($user && $nodeInfo) {
             return $this->successResponse([
-                'daily_earning' => $daily_earning,
-                'total_earning' => $total_earning
+                'daily_earning' => $nodeInfo->daily_earning,
+                'total_earning' => $nodeInfo->total_earning
             ]);
         } else {
             return $this->successResponse([]);
@@ -1053,119 +1023,11 @@ class UserController extends Controller
     {
         $user = User::where('public_address_node', $node)->first();
         if ($user) {
-            $startDate = Carbon::now()->startOfDay()->subHours(2);
-            $endDate = Carbon::now()->startOfDay();
-            $result_day = [];
-            $result_week = [];
-            $result_month = [];
-            $result_year = [];
-            for ($i = 0; $i <= 12; $i++) {
-                $min = Node::where('node_address', $node)->where('timestamp', '>=', $startDate)
-                    ->whereNotNull('era_id')->whereNotNull('weight')
-                    ->where('timestamp', '<=',   $endDate)->orderBy('timestamp', 'asc')->first();
-                $max = Node::where('node_address', $node)->where('timestamp', '>=', $startDate)
-                    ->whereNotNull('era_id')->whereNotNull('weight')
-                    ->where('timestamp', '<=',   $endDate)->orderBy('timestamp', 'desc')->first();
-                $weight = 0;
-                if ($min && $max) {
-                    $min_era_id = $min->era_id;
-                    $max_era_id = $max->era_id;
-                    $min_weight = $min->weight;
-                    $max_weight = $max->weight;
-                    if (($max_era_id - $min_era_id) != 0) {
-                        $weight = abs($max_weight - $min_weight) / (abs($max_era_id - $min_era_id) * 2) * 24;
-                    }
-                }
-                array_push($result_day, [
-                    'weight' => $weight,
-                    'item' => $i,
-                ]);
-                $startDate->addHours(2);
-                $endDate->addHours(2);
-            }
-
-            $startWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
-            $endWeek =  Carbon::now()->startOfWeek(Carbon::MONDAY)->addDay();
-            for ($i = 0; $i <= 6; $i++) {
-                $min = Node::where('node_address', $node)->where('timestamp', '>=', $startWeek)
-                    ->whereNotNull('era_id')->whereNotNull('weight')
-                    ->where('timestamp', '<=',   $endWeek)->orderBy('timestamp', 'asc')->first();
-                $max = Node::where('node_address', $node)->where('timestamp', '>=', $startWeek)
-                    ->whereNotNull('era_id')->whereNotNull('weight')
-                    ->where('timestamp', '<=',   $endWeek)->orderBy('timestamp', 'desc')->first();
-                $weight = 0;
-                if ($min && $max) {
-                    $min_era_id = $min->era_id;
-                    $max_era_id = $max->era_id;
-                    $min_weight = $min->weight;
-                    $max_weight = $max->weight;
-                    if (($max_era_id - $min_era_id) != 0) {
-                        $weight = abs($max_weight - $min_weight) / (abs($max_era_id - $min_era_id) * 2) * 24;
-                    }
-                }
-                array_push($result_week, [
-                    'weight' => $weight,
-                    'item' => $i,
-                ]);
-                $startWeek->addDay();
-                $endWeek->addDay();
-            }
-
-            $totalDaysInMonth = Carbon::now()->daysInMonth;
-            $startMonth = Carbon::now()->startOfMonth();
-            $endMonth = Carbon::now()->startOfMonth()->addDay();
-
-            for ($i = 0; $i < $totalDaysInMonth; $i++) {
-                $min = Node::where('node_address', $node)->where('timestamp', '>=', $startMonth)
-                    ->whereNotNull('era_id')->whereNotNull('weight')
-                    ->where('timestamp', '<=',   $endMonth)->orderBy('timestamp', 'asc')->first();
-                $max = Node::where('node_address', $node)->where('timestamp', '>=', $startMonth)
-                    ->whereNotNull('era_id')->whereNotNull('weight')
-                    ->where('timestamp', '<=',   $endMonth)->orderBy('timestamp', 'desc')->first();
-                $weight = 0;
-                if ($min && $max) {
-                    $min_era_id = $min->era_id;
-                    $max_era_id = $max->era_id;
-                    $min_weight = $min->weight;
-                    $max_weight = $max->weight;
-                    if (($max_era_id - $min_era_id) != 0) {
-                        $weight = abs($max_weight - $min_weight) / (abs($max_era_id - $min_era_id) * 2) * 24;
-                    }
-                }
-                array_push($result_month, [
-                    'weight' => $weight,
-                    'item' => $i,
-                ]);
-                $startMonth->addDay();
-                $endMonth->addDay();
-            }
-            $startYear = Carbon::now()->startOfYear();
-            $endYear = Carbon::now()->startOfYear()->addMonth();
-            for ($i = 0; $i <= 11; $i++) {
-                $min = Node::where('node_address', $node)->where('timestamp', '>=', $startYear)
-                    ->whereNotNull('era_id')->whereNotNull('weight')
-                    ->where('timestamp', '<=',   $endYear)->orderBy('timestamp', 'asc')->first();
-                $max = Node::where('node_address', $node)->where('timestamp', '>=', $startYear)
-                    ->whereNotNull('era_id')->whereNotNull('weight')
-                    ->where('timestamp', '<=',   $endYear)->orderBy('timestamp', 'desc')->first();
-                $weight = 0;
-                if ($min && $max) {
-                    $min_era_id = $min->era_id;
-                    $max_era_id = $max->era_id;
-                    $min_weight = $min->weight;
-                    $max_weight = $max->weight;
-                    if (($max_era_id - $min_era_id) != 0) {
-                        $weight = abs($max_weight - $min_weight) / (abs($max_era_id - $min_era_id) * 2) * 24;
-                    }
-                }
-                array_push($result_year, [
-                    'weight' => $weight,
-                    'item' => $i,
-                ]);
-                $startYear->addMonth();
-                $endYear->addMonth();
-            }
-
+            $nodeHelper = new NodeHelper();
+            $result_day =  $nodeHelper->getValidatorRewards($node, 'day');
+            $result_week =  $nodeHelper->getValidatorRewards($node, 'week');
+            $result_month =  $nodeHelper->getValidatorRewards($node, 'month');
+            $result_year =  $nodeHelper->getValidatorRewards($node, 'year');
             return $this->successResponse([
                 'day' => $result_day,
                 'week' => $result_week,
@@ -1187,6 +1049,14 @@ class UserController extends Controller
     {
         $user = auth()->user();
         $user->membership_agreement = 1;
+        $user->save();
+        return $this->metaSuccess();
+    }
+
+    public function checkResetKyc()
+    {
+        $user = auth()->user();
+        $user->reset_kyc = 0;
         $user->save();
         return $this->metaSuccess();
     }

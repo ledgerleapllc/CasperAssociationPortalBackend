@@ -48,7 +48,6 @@ class NodeInfo extends Command
         $this->updateNode();
         $this->updateUptime();
         $this->updateRank();
-        $this->updateDataMorethen2Weeks();
     }
 
     public function updateNode()
@@ -76,7 +75,6 @@ class NodeInfo extends Command
             }
             $totalResponsiveness = 0;
             $totalBlockHeight = 0;
-            $totalPeer = 0;
             $nodeInfo = ModelsNodeInfo::where('node_address', $key)->first();
             if ($nodeInfo) {
                 $groupedVersion = $values->groupBy('protocol_version');
@@ -101,7 +99,6 @@ class NodeInfo extends Command
                 foreach ($totalArray as $total) {
                     $totalResponsiveness += $total['totalVerResponsiveness'];
                     $totalBlockHeight += $total['totalVerBlockHeight'];
-                    $totalPeer += $total['totalVerPeer'];
                 }
                 $block_height = round($totalBlockHeight / $countVersion);
                 $block_height_average =  ($base_block - ($max_hight_block - $block_height)) * 10;
@@ -111,7 +108,6 @@ class NodeInfo extends Command
                 $nodeInfo->block_height = $block_height;
                 $nodeInfo->block_height_average = $block_height_average;
                 $nodeInfo->update_responsiveness = round($totalResponsiveness / $countVersion);
-                $nodeInfo->peers = round($totalPeer / $countVersion);
                 $nodeInfo->save();
             }
         }
@@ -192,15 +188,4 @@ class NodeInfo extends Command
         }
     }
 
-    public function updateDataMorethen2Weeks()
-    {
-        $now = Carbon::now('UTC');
-        $time = $now->subDays(14);
-        Node::where('created_at', '<', $time)->update([
-            'uptime' => null,
-            'block_height' => null,
-            'update_responsiveness' => null,
-            'peers' => null,
-        ]);
-    }
 }

@@ -89,6 +89,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
 
             Route::get('/users/membership-file',  [UserController::class, 'getMembershipFile']);
             Route::post('/users/membership-agreement',  [UserController::class, 'membershipAgreement']);
+            Route::post('/users/check-reset-kyc',  [UserController::class, 'checkResetKyc']);
 
         });
         Route::prefix('admin')->middleware(['role_admin'])->group(function () {

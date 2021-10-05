@@ -720,7 +720,8 @@ class AdminController extends Controller
             Shuftipro::where('user_id', $user->id)->delete();
             ShuftiproTemp::where('user_id', $user->id)->delete();
             DocumentFile::where('user_id', $user->id)->delete();
-
+            $user->reset_kyc = 1;
+            $user->save();
             Mail::to($user->email)->send(new AdminAlert('You need to submit KYC again', $message));
             return $this->metaSuccess();
         }
