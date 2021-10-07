@@ -128,7 +128,8 @@ class UserController extends Controller
      */
     public function getProfile()
     {
-        $user = auth()->user()->load(['profile', 'permissions', 'nodeInfo' ]);
+        $user = auth()->user()->load(['profile', 'permissions']);
+        $user->metric = Helper::getNodeInfo($user);
         return $this->successResponse($user);
     }
 

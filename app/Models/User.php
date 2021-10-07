@@ -201,22 +201,4 @@ class User extends Authenticatable
         return $this->hasMany('App\Models\DocumentFile');
     }
 
-    // dummy data remove latter
-    public function getAveragePeersAttribute($value)
-    {
-        return 18;
-    }
-    public function getValidatorFeeAttribute($value)
-    {
-        return 5;
-    }
-    public function getCsprDelegatedAttribute($value)
-    {
-        return 15000000;
-    }
-    public function getCsprSelfStakedAttribute($value)
-    {
-        return 1200000;
-    }
-
 }
