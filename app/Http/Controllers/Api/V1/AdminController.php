@@ -311,6 +311,77 @@ class AdminController extends Controller
         }
     }
 
+    public function edittBallot($id, Request $request)
+    {
+        try {
+            DB::beginTransaction();
+            // Validator
+            $validator = Validator::make($request->all(), [
+                'title' => 'nullable',
+                'description' => 'nullable',
+                'time' => 'nullable',
+                'time_unit' => 'nullable|in:minutes,hours,days',
+                'files' => 'array',
+                'files.*' => 'file|max:100000|mimes:pdf,docx,doc,txt,rtf',
+                'file_ids_remove' => 'array'
+            ]);
+            if ($validator->fails()) {
+                return $this->validateResponse($validator->errors());
+            }
+            $time = $request->time;
+            $timeUnit = $request->time_unit;
+            $ballot = Ballot::where('id', $id)->first();
+            if (!$ballot) {
+                return $this->errorResponse('Not found ballot', Response::HTTP_BAD_REQUEST);
+            }
+            if ($request->title) $ballot->title = $request->title;
+            if ($request->description) $ballot->description = $request->description;
+            if($time && $timeUnit) {
+                $mins = 0;
+                if ($timeUnit == 'minutes') {
+                    $mins = $time;
+                } else if ($timeUnit == 'hours') {
+                    $mins = $time * 60;
+                } else if ($timeUnit == 'days') {
+                    $mins = $time * 60 * 24;
+                }
+                $start = Carbon::createFromFormat("Y-m-d H:i:s", Carbon::now('UTC'), "UTC");
+                $now = Carbon::now('UTC');
+                $timeEnd = $start->addMinutes($mins);
+                $ballot->time = $time;          
+                $ballot->time_unit = $timeUnit;
+                $ballot->time_end = $timeEnd;
+                $ballot->created_at = $now;
+            }
+            $ballot->save();
+            if ($request->hasFile('files')) {
+                $files = $request->file('files');
+                foreach ($files as $file) {
+                    $name = $file->getClientOriginalName();
+                    $folder = 'ballot/' . $ballot->id;
+                    $path = $file->storeAs($folder, $name);
+                    $url = Storage::url($path);
+                    $ballotFile = new BallotFile();
+                    $ballotFile->ballot_id = $ballot->id;
+                    $ballotFile->name = $name;
+                    $ballotFile->path = $path;
+                    $ballotFile->url = $url;
+                    $ballotFile->save();
+                }
+            }
+            if ($request->file_ids_remove) {
+                foreach($request->file_ids_remove as $file_id) {
+                    BallotFile::where('id', $file_id)->where('ballot_id', $id)->delete();
+                }
+            }
+            DB::commit();
+            return $this->metaSuccess();
+        } catch (\Exception $ex) {
+            DB::rollBack();
+            return $this->errorResponse('Submit ballot fail', Response::HTTP_BAD_REQUEST, $ex->getMessage());
+        }
+    }
+
     public function getBallots(Request $request)
     {
         $limit = $request->limit;
@@ -619,6 +690,7 @@ class AdminController extends Controller
 
         return $this->successResponse($ipAddress);
     }
+    
     public function approveIntakeUser($id)
     {
         $admin = auth()->user();
@@ -630,7 +702,7 @@ class AdminController extends Controller
             $user->save();
             $emailerData = EmailerHelper::getEmailerData();
             EmailerHelper::triggerUserEmail($user->email, 'Your letter of motivation is APPROVED', $emailerData, $user);
-            if ($user->letter_verified_at && $user->signature_request_id && $user->node_verified_at) {
+            if ($user->letter_verified_at && $user->node_verified_at) {
                 EmailerHelper::triggerUserEmail($user->email, 'Congratulations', $emailerData, $user);
             }
             return $this->metaSuccess();
