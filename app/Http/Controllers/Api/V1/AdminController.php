@@ -336,7 +336,7 @@ class AdminController extends Controller
             }
             if ($request->title) $ballot->title = $request->title;
             if ($request->description) $ballot->description = $request->description;
-            if($time && $timeUnit) {
+            if($time && $timeUnit && ($time != $ballot->time || $timeUnit != $ballot->time_unit)) {
                 $mins = 0;
                 if ($timeUnit == 'minutes') {
                     $mins = $time;
@@ -350,8 +350,8 @@ class AdminController extends Controller
                 $timeEnd = $start->addMinutes($mins);
                 $ballot->time = $time;          
                 $ballot->time_unit = $timeUnit;
-                $ballot->time_end = $timeEnd;
                 $ballot->created_at = $now;
+                $ballot->time_end = $timeEnd;
             }
             $ballot->save();
             if ($request->hasFile('files')) {
