@@ -23,6 +23,7 @@ use App\Models\LockRules;
 use App\Models\Metric;
 use App\Models\MonitoringCriteria;
 use App\Models\DiscussionPin;
+use App\Models\Donation;
 use App\Models\MembershipAgreementFile;
 use App\Models\Node;
 use App\Models\NodeInfo;
@@ -703,7 +704,9 @@ class UserController extends Controller
         $max_uptime = Node::max('uptime');
         $max_uptime = $max_uptime * 100;
         $max_delegators = NodeInfo::max('delegators_count');
+        if($max_delegators < 1) $max_delegators = 1;
         $max_stake_amount = NodeInfo::max('total_staked_amount');
+        if($max_stake_amount < 1) $max_stake_amount = 1;
 
         $sort_key = $request->sort_key ?? '';
         $sort_direction = $request->sort_direction ?? '';
@@ -1061,6 +1064,29 @@ class UserController extends Controller
         $user = auth()->user();
         $user->reset_kyc = 0;
         $user->save();
+        return $this->metaSuccess();
+    }
+
+    public function submitDonation(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'first_name' => 'required|regex:/^[A-Za-z. ]{1,255}$/',
+            'last_name' => 'nullable|regex:/^[A-Za-z. ]{1,255}$/',
+            'email' => 'required|email|max:256',
+            'amount' => 'required',
+            'message' => 'nullable|max:5000',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->validateResponse($validator->errors());
+        }
+        $donation = new Donation();
+        $donation->first_name = $request->first_name;
+        $donation->last_name = $request->last_name;
+        $donation->email = $request->email;
+        $donation->amount = $request->amount;
+        $donation->message = $request->message;
+        $donation->save();
         return $this->metaSuccess();
     }
 }
