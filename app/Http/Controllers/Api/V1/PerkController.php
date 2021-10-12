@@ -93,7 +93,7 @@ class PerkController extends Controller
     public function getPerksAdmin(Request $request)
     {
         $limit = $request->limit ?? 15;
-        $sort_key = $request->sort_key ?? 'created_at';
+        $sort_key = $request->sort_key ?? 'end_date';
         $sort_direction = $request->sort_direction ?? 'desc';
         if (isset($request->setting)) {
             $perks = Perk::where('setting', $request->setting)->orderBy($sort_key, $sort_direction)->paginate($limit);

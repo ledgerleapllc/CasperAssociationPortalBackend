@@ -107,12 +107,15 @@ class Helper
 		$delegators = 0;
 		$stake_amount = 0;
 		$self_staked_amount = 0;
+		$is_open_port = 0;
 		if ($nodeInfo) {
 			$delegators = $nodeInfo->delegators_count;
 			$stake_amount = $nodeInfo->total_staked_amount;
 			$self_staked_amount = $nodeInfo->self_staked_amount;
+			$is_open_port = $nodeInfo->is_open_port;
 		}
 		$metric->rank = $rank;
+		$metric->is_open_port = $is_open_port;
 		$metric->delegators = $delegators;
 		$metric->stake_amount = $stake_amount;
 		$metric->self_staked_amount = $self_staked_amount;

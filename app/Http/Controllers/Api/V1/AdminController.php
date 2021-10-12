@@ -108,6 +108,7 @@ class AdminController extends Controller
             $status = 'Not verified';
         }
         $user->membership_status = $status;
+        $user->metric = Helper::getNodeInfo($user);
         return $this->successResponse($user);
     }
 

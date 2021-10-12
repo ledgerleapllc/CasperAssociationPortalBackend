@@ -63,6 +63,7 @@ class NodeHelper
                         $build_version = explode('-', $build_version);
                         $build_version = $build_version[0];
                     }
+                    $is_open_port =  isset($info['uptime']) && isset($info['update_responsiveness']) ? 1 : 0 ;
                     NodeInfo::updateOrCreate(
                         ['node_address' => $validatorid],
                         [
@@ -70,7 +71,9 @@ class NodeHelper
                             'total_staked_amount' => $info['total_stake'],
                             'delegation_rate' => $info['delegation_rate'],
                             'daily_earning' => $info['daily_earnings'] ?? 0,
-                            'total_earning' => isset($totalRewards['data']) &&  $totalRewards['data']  > 0 ? $totalRewards['data'] / 1000000000 : 0
+                            'self_staked_amount' => $info['self_stake'] ?? 0,
+                            'total_earning' => isset($totalRewards['data']) &&  $totalRewards['data']  > 0 ? $totalRewards['data'] / 1000000000 : 0,
+                            'is_open_port' => $is_open_port
                         ]
                     );
 
