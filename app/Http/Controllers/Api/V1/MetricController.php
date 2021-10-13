@@ -96,6 +96,8 @@ class MetricController extends Controller
             $delegators = $nodeInfo->delegators_count;
             $stake_amount = $nodeInfo->total_staked_amount;
         }
+        $mbs = NodeInfo::max('mbs');
+        $metric->mbs = $mbs;
         $metric->rank = $rank;
         $metric->delegators = $delegators;
         $metric->stake_amount = $stake_amount;
@@ -231,6 +233,8 @@ class MetricController extends Controller
                 $stake_amount = $nodeInfo->total_staked_amount;
                 $is_open_port = $nodeInfo->is_open_port;
             }
+            $mbs = NodeInfo::max('mbs');
+            $metric->mbs = $mbs;
             $metric->rank = $rank;
             $metric->is_open_port = $is_open_port;
             $metric->delegators = $delegators;

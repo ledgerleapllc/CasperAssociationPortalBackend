@@ -114,6 +114,8 @@ class Helper
 			$self_staked_amount = $nodeInfo->self_staked_amount;
 			$is_open_port = $nodeInfo->is_open_port;
 		}
+		$mbs = NodeInfo::max('mbs');
+        $metric->mbs = $mbs;
 		$metric->rank = $rank;
 		$metric->is_open_port = $is_open_port;
 		$metric->delegators = $delegators;

@@ -1014,14 +1014,17 @@ class UserController extends Controller
     {
         $user = User::where('public_address_node', $node)->first();
         $nodeInfo = NodeInfo::where('node_address', $node)->first();
-
+        $mbs = NodeInfo::max('mbs');
         if ($user && $nodeInfo) {
             return $this->successResponse([
                 'daily_earning' => $nodeInfo->daily_earning,
-                'total_earning' => $nodeInfo->total_earning
+                'total_earning' => $nodeInfo->total_earning,
+                'mbs' => $mbs,
             ]);
         } else {
-            return $this->successResponse([]);
+            return $this->successResponse([
+                'mbs' => $mbs,
+            ]);
         }
     }
 

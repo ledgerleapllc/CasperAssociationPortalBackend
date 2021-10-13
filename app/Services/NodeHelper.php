@@ -51,6 +51,7 @@ class NodeHelper
     {
         $data = $this->getValidatorStanding();
         $validator_standing = isset($data['validator_standing']) ? $data['validator_standing']  : null;
+        $mbs =  isset($data['MBS']) ? $data['MBS']  : 0;
         $users = User::whereNotNull('public_address_node')->get();
         if ($validator_standing) {
             foreach ($users as $user) {
@@ -73,7 +74,8 @@ class NodeHelper
                             'daily_earning' => $info['daily_earnings'] ?? 0,
                             'self_staked_amount' => $info['self_stake'] ?? 0,
                             'total_earning' => isset($totalRewards['data']) &&  $totalRewards['data']  > 0 ? $totalRewards['data'] / 1000000000 : 0,
-                            'is_open_port' => $is_open_port
+                            'is_open_port' => $is_open_port,
+                            'mbs' => $mbs,
                         ]
                     );
 
