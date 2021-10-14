@@ -15,7 +15,10 @@ class ContactController extends Controller
 {
     public function submitContact(Request $request)
     {
-        $user = auth()->user();
+        $user_id = null;
+        if(auth()->user()) {
+            $user_id = auth()->user()->id;
+        }
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|email',
@@ -25,7 +28,7 @@ class ContactController extends Controller
             return $this->validateResponse($validator->errors());
         }
         $contactUs = new ContactUs();
-        $contactUs->user_id = $user->id;
+        $contactUs->user_id = $user_id;
         $contactUs->name = $request->name;
         $contactUs->email = $request->email;
         $contactUs->message = $request->message;
