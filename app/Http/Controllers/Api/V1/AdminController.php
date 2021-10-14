@@ -1131,11 +1131,8 @@ class AdminController extends Controller
         $items = TokenPrice::orderBy('created_at', 'asc')->get();
         if ($items && count($items)) {
             foreach ($items as $item) {
-                $name = Carbon::parse($item->created_at)->format("Y-m-d H:i");
-                $graphData[] = [
-                    'name' => $name,
-                    'Price' => $item->price
-                ];
+                $name = strtotime($item->created_at);
+                $graphData[$name] = $item->price;
             }
         }
 

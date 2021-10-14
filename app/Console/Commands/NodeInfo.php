@@ -46,7 +46,7 @@ class NodeInfo extends Command
         $nodeHelper = new NodeHelper();
         $nodeHelper->updateStats();
         $this->updateNode();
-        $this->updateUptime();
+        // $this->updateUptime();
         $this->updateRank();
     }
 
@@ -105,9 +105,7 @@ class NodeInfo extends Command
                 if ($block_height_average <= 0) {
                     $block_height_average = 0;
                 }
-                $nodeInfo->block_height = $block_height;
                 $nodeInfo->block_height_average = $block_height_average;
-                $nodeInfo->update_responsiveness = round($totalResponsiveness / $countVersion);
                 $nodeInfo->save();
             }
         }

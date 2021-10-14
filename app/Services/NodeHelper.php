@@ -76,6 +76,9 @@ class NodeHelper
                             'total_earning' => isset($totalRewards['data']) &&  $totalRewards['data']  > 0 ? $totalRewards['data'] / 1000000000 : 0,
                             'is_open_port' => $is_open_port,
                             'mbs' => $mbs,
+                            'update_responsiveness' => isset($info['update_responsiveness']) ? $info['update_responsiveness'] * 100 : 0,
+                            'uptime' => isset($info['uptime']) ? $info['uptime'] * 100 : 0,
+                            'block_height' => $info['block_height'] ?? 0,
                         ]
                     );
 
