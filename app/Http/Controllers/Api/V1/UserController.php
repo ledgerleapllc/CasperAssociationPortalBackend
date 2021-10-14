@@ -1044,7 +1044,7 @@ class UserController extends Controller
                 'year' => $result_year,
             ]);
         } else {
-            return $this->successResponse([]);
+            return $this->successResponse(null);
         }
     }
 

@@ -64,7 +64,7 @@ class NodeHelper
                         $build_version = explode('-', $build_version);
                         $build_version = $build_version[0];
                     }
-                    $is_open_port =  isset($info['uptime']) && isset($info['update_responsiveness']) ? 1 : 0 ;
+                    $is_open_port =  isset($info['uptime']) && isset($info['update_responsiveness']) ? 1 : 0;
                     NodeInfo::updateOrCreate(
                         ['node_address' => $validatorid],
                         [
@@ -105,84 +105,6 @@ class NodeHelper
         if (isset($data['success']) && $data['success'] == false) {
             return [];
         }
-        $result_day = [];
-        $result_week = [];
-        $result_month = [];
-        $result_year = [];
-        $result = collect();
-        foreach ($data as $key => $value) {
-            $result->push([
-                'weight' => $value,
-                'time' => Carbon::parse($key),
-            ]);
-        }
-        if ($range == 'day') {
-            $startDate = Carbon::now()->startOfDay()->subHours(2);
-            $endDate = Carbon::now()->startOfDay();
-            for ($i = 0; $i <= 12; $i++) {
-                $min =  $result->whereBetween('time', [$startDate, $endDate])->min('weight');
-                $max = $result->whereBetween('time', [$startDate, $endDate])->max('weight');
-                $weight =  $max - $min;
-                array_push($result_day, [
-                    'weight' => $max - $min,
-                    'item' => $i,
-                ]);
-                $startDate->addHours(2);
-                $endDate->addHours(2);
-            }
-            return $result_day;
-        }
-
-        if ($range == 'week') {
-            $startWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
-            $endWeek =  Carbon::now()->startOfWeek(Carbon::MONDAY)->addDay();
-            for ($i = 0; $i <= 6; $i++) {
-                $min =  $result->whereBetween('time', [$startWeek, $endWeek])->min('weight');
-                $max = $result->whereBetween('time', [$startWeek, $endWeek])->max('weight');
-                $weight =  $max - $min;
-                array_push($result_week, [
-                    'weight' => $weight,
-                    'item' => $i,
-                ]);
-                $startWeek->addDay();
-                $endWeek->addDay();
-            }
-            return $result_week;
-        }
-
-        if ($range == 'month') {
-            $totalDaysInMonth = Carbon::now()->daysInMonth;
-            $startMonth = Carbon::now()->startOfMonth();
-            $endMonth = Carbon::now()->startOfMonth()->addDay();
-            for ($i = 0; $i < $totalDaysInMonth; $i++) {
-                $min =  $result->whereBetween('time', [$startMonth, $endMonth])->min('weight');
-                $max = $result->whereBetween('time', [$startMonth, $endMonth])->max('weight');
-                $weight =  $max - $min;
-                array_push($result_month, [
-                    'weight' => $weight,
-                    'item' => $i,
-                ]);
-                $startMonth->addDay();
-                $endMonth->addDay();
-            }
-            return $result_month;
-        }
-
-        if ($range == 'year') {
-            $startYear = Carbon::now()->startOfYear();
-            $endYear = Carbon::now()->startOfYear()->addMonth();
-            for ($i = 0; $i <= 11; $i++) {
-                $min =  $result->whereBetween('time', [$startYear, $endYear])->min('weight');
-                $max = $result->whereBetween('time', [$startYear, $endYear])->max('weight');
-                $weight =  $max - $min;
-                array_push($result_year, [
-                    'weight' => $weight,
-                    'item' => $i,
-                ]);
-                $startYear->addMonth();
-                $endYear->addMonth();
-            }
-            return $result_year;
-        }
+        return $data;
     }
 }
