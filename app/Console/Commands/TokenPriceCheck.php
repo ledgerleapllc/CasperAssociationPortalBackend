@@ -48,7 +48,7 @@ class TokenPriceCheck extends Command
             isset($response['data']['quote']['USD']['price'])
         ) {
             $price = (float) $response['data']['quote']['USD']['price'];
-            $price = round($price, 2);
+            $price = round($price, 4);
 
             if ($price > 0) {
                 $tokenPrice = new TokenPriceModel;

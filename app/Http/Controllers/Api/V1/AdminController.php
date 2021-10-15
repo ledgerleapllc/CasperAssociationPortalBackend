@@ -1132,7 +1132,7 @@ class AdminController extends Controller
         if ($items && count($items)) {
             foreach ($items as $item) {
                 $name = strtotime($item->created_at);
-                $graphData[$name] = $item->price;
+                $graphData[$name] = number_format($item->price, 4);
             }
         }
 
