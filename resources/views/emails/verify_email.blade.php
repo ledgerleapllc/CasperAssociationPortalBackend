@@ -145,7 +145,7 @@
 			<h2 id="title">Welcome to the Casper Association portal!</h2>
 			<div class="divider"></div>
 			<div id="content-html">
-			Please find your confirmation code below to activate your account.
+			Your confirmation code is below — enter it in your open browser window and we'll help you get signed in.
 			<h1>{{ $code }}</h1>
 			</div>
 			

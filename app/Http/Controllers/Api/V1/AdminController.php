@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Console\Helper;
-use  App\Models\NodeInfo;
+use App\Models\NodeInfo;
 use App\Http\Controllers\Controller;
 use App\Http\EmailerHelper;
 use App\Mail\AdminAlert;
