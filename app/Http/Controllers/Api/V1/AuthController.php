@@ -152,7 +152,7 @@ class AuthController extends Controller
                 ],
                 [
                     'code' => $code,
-                    'created_at' => now()
+                    'created_at' => now(),
                 ]
             );
             Mail::to($user->email)->send(new UserVerifyMail($code));

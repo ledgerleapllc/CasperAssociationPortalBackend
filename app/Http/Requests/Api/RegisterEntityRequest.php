@@ -33,7 +33,7 @@ class RegisterEntityRequest extends FormRequest
             'last_name' => 'required|regex:/^[A-Za-z. ]{1,255}$/',
             'email' => 'required|email|max:256|unique:users',
             'password' => 'required|min:8|max:80',
-            'pseudonym' => 'required|alpha_num|max:200',
+            'pseudonym' => 'required|alpha_num|max:200|unique:users',
             'telegram' => 'nullable|regex:/^[@][a-zA-Z0-9_-]+$/',
         ];
     }
