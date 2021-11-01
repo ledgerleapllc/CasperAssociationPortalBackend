@@ -50,7 +50,7 @@ class DiscussionController extends Controller
         $limit = $request->limit ?? 15;
         $user = auth()->user();
         $trendings = Discussion::where('likes', '!=', 0)->where('is_draft', 0)->take(9)->orderBy('likes', 'desc')->paginate($limit);
-        $count = Discussion::where('likes', '!=', 0)->orderBy('likes', 'desc')->count();
+        $count = Discussion::where('likes', '!=', 0)->where('is_draft', 0)->orderBy('likes', 'desc')->count();
         if ($count >= 9) {
             return $this->successResponse($trendings);
         } else {
@@ -59,10 +59,11 @@ class DiscussionController extends Controller
             $removed_ids = DiscussionRemoveNew::where(['user_id' => $user->id])->pluck('discussion_id');
             $news = Discussion::whereNotIn('id', $trending_ids)
                 ->whereNotIn('id', $removed_ids)
+                ->where('is_draft', 0)
                 ->take($remains)->orderBy('id', 'desc')->get();
             $trendingArray = $trendings->toArray() ;
             $trendingArray['data'] = array_merge($trendingArray['data'], $news->toArray());
-            
+
             return $this->successResponse( [
                 'data' => $trendingArray['data']
             ]);
@@ -338,7 +339,7 @@ class DiscussionController extends Controller
         return $this->successResponse($data);
     }
 
-    public function deleteDraftDiscussions($id) 
+    public function deleteDraftDiscussions($id)
     {
         $user = auth()->user();
         $discussion = Discussion::where('id', $id)->where('discussions.is_draft', 1)->where('discussions.user_id', $user->id)->first();
