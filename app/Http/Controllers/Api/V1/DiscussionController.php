@@ -166,7 +166,7 @@ class DiscussionController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'required',
             'description' => 'required',
-            'is_draft' => 'required|in:0,1'
+            // 'is_draft' => 'required|in:0,1'
         ]);
         if ($validator->fails()) {
             return $this->validateResponse($validator->errors());
@@ -177,7 +177,7 @@ class DiscussionController extends Controller
             "title" => $request->title,
             "description" => $request->description,
             "user_id" => $user->id,
-            "is_draft" => $request->is_draft,
+            "is_draft" => (int) $request->get('is_draft'),
         ]);
 
         return $this->successResponse($discussion);

@@ -69,7 +69,7 @@ class VerificationController extends Controller
             'first_name' => 'required',
             'last_name' => 'required',
             'country_citizenship' => 'required',
-            'page_number' => 'required|integer',
+            // 'page_number' => 'required|integer',
             'dob' => 'required',
         ]);
         
@@ -88,8 +88,8 @@ class VerificationController extends Controller
         $profile->dob = Carbon::parse($request->dob)->format('Y-m-d');
         if ($type == 'entity') {
             $profile->page_is_representative = $request->page_is_representative?? '';
+            $profile->page_number = $request->page_number;
         }
-        $profile->page_number = $request->page_number;
         $userData = User::where('id', $user->id)->first();
         $userData->first_name = $request->first_name;
         $userData->last_name = $request->last_name;
