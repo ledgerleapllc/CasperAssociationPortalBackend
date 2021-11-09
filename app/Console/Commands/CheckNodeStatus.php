@@ -81,11 +81,13 @@ class CheckNodeStatus extends Command
                 $user->save();
                 continue;
             }
+            /*
             if ($nodeHelper->validateValidatorId($user->public_address_node) != true) {
                 $user->node_status = null;
                 $user->save();
                 continue;
             }
+            */
             if ($user->is_fail_node == 1) {
                 $user->node_status = 'Offline';
                 $user->save();

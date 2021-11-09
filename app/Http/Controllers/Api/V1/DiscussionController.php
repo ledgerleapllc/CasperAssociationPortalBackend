@@ -161,6 +161,24 @@ class DiscussionController extends Controller
         $discussion->total_pinned = DiscussionPin::where('discussion_id', $id)->count();
         return $this->successResponse($discussion);
     }
+    
+    public function updateDiscussion($id, Request $request) {
+        $validator = Validator::make($request->all(), [
+            'title' => 'required',
+            'description' => 'required',
+        ]);
+        if ($validator->fails()) {
+            return $this->validateResponse($validator->errors());
+        }
+
+        $user = auth()->user();
+        $discussion = $this->discussionRepo->update($id, [
+            "title" => $request->title,
+            "description" => $request->description,
+        ]);
+        
+        return $this->successResponse($discussion);
+    }
 
     public function postDiscussion(Request $request)
     {

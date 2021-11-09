@@ -146,7 +146,7 @@
 			<div class="divider"></div>
 			<div id="content-html">
 			Your confirmation code is below — enter it in your open browser window and we'll help you get signed in.
-			<h1>{{ $code }}</h1>
+			<h1 style="text-align: center;">{{ $code }}</h1>
 			</div>
 			
 			<div class="divider"></div>
