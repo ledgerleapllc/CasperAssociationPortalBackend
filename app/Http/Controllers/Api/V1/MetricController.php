@@ -26,7 +26,7 @@ class MetricController extends Controller
             SELECT MAX(update_responsiveness) as update_responsiveness FROM node_info
             ) AS results
             ;");
-        $max_update_responsiveness =  $max_update_responsiveness[0]->max_update_responsiveness ?? 0;
+        $max_update_responsiveness = $max_update_responsiveness[0]->max_update_responsiveness ?? 0;
 
         $max_peers = DB::select("SELECT max(peers) as max_peers FROM
         (
@@ -84,7 +84,8 @@ class MetricController extends Controller
 
         $metric->peers = $latest_peers ?? $metric_peers;
         $metric->update_responsiveness = $latest_update_responsiveness ?? $metric_update_responsiveness;
-        $metric->block_height_average = $latest_block_height ??  $metric_block_height;
+        $metric->block_height_average = $latest_block_height ?? $metric_block_height;
+        $metric->block_height_average = 25;
         $metric->uptime = $latest_uptime  ?? $metric_uptime;
 
         $monitoringCriteria = MonitoringCriteria::get();

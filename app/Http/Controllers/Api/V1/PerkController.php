@@ -19,8 +19,10 @@ class PerkController extends Controller
             'content' => 'required',
             'action_link' => 'required|url',
             'image' => 'required|mimes:jpeg,jpg,png,gif|max:100000',
-            'start_date' => 'nullable|date_format:Y-m-d',
-            'end_date' => 'nullable|date_format:Y-m-d|after_or_equal:today',
+            'start_date' => 'required|nullable|date_format:Y-m-d',
+            'end_date' => 'required|nullable|date_format:Y-m-d|after_or_equal:today',
+            'start_time' => 'required|nullable|date_format:H:i:s',
+            'end_time' => 'required|nullable|date_format:H:i:s',
             'setting' => 'required|in:0,1',
         ]);
         if ($validator->fails()) {
@@ -45,6 +47,8 @@ class PerkController extends Controller
         $perk->action_link = $request->action_link;
         $perk->start_date = $request->start_date;
         $perk->end_date = $request->end_date;
+        $perk->start_time = $request->start_time;
+        $perk->end_time = $request->end_time;
         $perk->setting = $request->setting;
 
         $filenameWithExt = $request->file('image')->getClientOriginalName();
@@ -119,8 +123,10 @@ class PerkController extends Controller
             'content' => 'nullable',
             'action_link' => 'nullable|url',
             'image' => 'nullable|mimes:jpeg,jpg,png,gif|max:100000',
-            'start_date' => 'nullable',
-            'end_date' => 'nullable',
+            'start_date' => 'required|nullable',
+            'end_date' => 'required|nullable',
+            'start_time' => 'required|nullable|date_format:H:i:s',
+            'end_time' => 'required|nullable|date_format:H:i:s',
             'setting' => 'nullable|in:0,1',
         ]);
         if ($validator->fails()) {
@@ -148,12 +154,12 @@ class PerkController extends Controller
         if ($request->content) {
             $perk->content = $request->content;
         }
-        if (array_key_exists('start_date', $data)) {
-            $perk->start_date = $request->start_date;
-        }
-        if (array_key_exists('end_date', $data)) {
-            $perk->end_date = $request->end_date;
-        }
+        
+        $perk->start_date = $request->start_date;
+        $perk->end_date = $request->end_date;
+        $perk->start_time = $request->start_time;
+        $perk->end_time = $request->end_time;
+        
         if (isset($request->setting)) {
             $perk->setting = $request->setting;
         }

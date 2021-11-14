@@ -30,7 +30,7 @@ class ResetKYC extends Mailable
     public function build()
     {
         return $this->view('emails.reset_kyc')
-            ->subject('You need to submit KYC again')
+            ->subject('You need to verify your identity again')
             ->with([
                 'text' => $this->text
             ]);

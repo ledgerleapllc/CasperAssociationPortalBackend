@@ -253,10 +253,14 @@ class AdminController extends Controller
             $validator = Validator::make($request->all(), [
                 'title' => 'required',
                 'description' => 'required',
-                'time' => 'required',
-                'time_unit' => 'required|in:minutes,hours,days',
+                // 'time' => 'required',
+                // 'time_unit' => 'required|in:minutes,hours,days',
                 'files' => 'array',
-                'files.*' => 'file|max:100000|mimes:pdf,docx,doc,txt,rtf'
+                'files.*' => 'file|max:100000|mimes:pdf,docx,doc,txt,rtf',
+                'start_date' => 'required',
+                'start_time' => 'required',
+                'end_date' => 'required',
+                'end_time' => 'required',
             ]);
             if ($validator->fails()) {
                 return $this->validateResponse($validator->errors());
@@ -279,9 +283,14 @@ class AdminController extends Controller
             $ballot->user_id = $user->id;
             $ballot->title = $request->title;
             $ballot->description = $request->description;
-            $ballot->time = $time;
-            $ballot->time_unit = $timeUnit;
-            $ballot->time_end = $timeEnd;
+            // $ballot->time = $time;
+            // $ballot->time_unit = $timeUnit;
+            // $ballot->time_end = $timeEnd;
+            $ballot->time_end = $request->end_date . ' ' . $request->end_time;
+            $ballot->start_date = $request->start_date;
+            $ballot->start_time = $request->start_time;
+            $ballot->end_date = $request->end_date;
+            $ballot->end_time = $request->end_time;
             $ballot->status = 'active';
             $ballot->created_at = $now;
             $ballot->save();
@@ -320,11 +329,15 @@ class AdminController extends Controller
             $validator = Validator::make($request->all(), [
                 'title' => 'nullable',
                 'description' => 'nullable',
-                'time' => 'nullable',
-                'time_unit' => 'nullable|in:minutes,hours,days',
+                // 'time' => 'nullable',
+                // 'time_unit' => 'nullable|in:minutes,hours,days',
                 'files' => 'array',
                 'files.*' => 'file|max:100000|mimes:pdf,docx,doc,txt,rtf',
-                'file_ids_remove' => 'array'
+                'file_ids_remove' => 'array',
+                'start_date' => 'required',
+                'start_time' => 'required',
+                'end_date' => 'required',
+                'end_time' => 'required',
             ]);
             if ($validator->fails()) {
                 return $this->validateResponse($validator->errors());
@@ -337,6 +350,16 @@ class AdminController extends Controller
             }
             if ($request->title) $ballot->title = $request->title;
             if ($request->description) $ballot->description = $request->description;
+
+            $now = Carbon::now('UTC');
+            $ballot->created_at = $now;
+            $ballot->time_end = $request->end_date . ' ' . $request->end_time;
+            $ballot->start_date = $request->start_date;
+            $ballot->start_time = $request->start_time;
+            $ballot->end_date = $request->end_date;
+            $ballot->end_time = $request->end_time;
+            
+            /*
             if($time && $timeUnit && ($time != $ballot->time || $timeUnit != $ballot->time_unit)) {
                 $mins = 0;
                 if ($timeUnit == 'minutes') {
@@ -349,11 +372,13 @@ class AdminController extends Controller
                 $start = Carbon::createFromFormat("Y-m-d H:i:s", Carbon::now('UTC'), "UTC");
                 $now = Carbon::now('UTC');
                 $timeEnd = $start->addMinutes($mins);
-                $ballot->time = $time;          
+                $ballot->time = $time;     
                 $ballot->time_unit = $timeUnit;
                 $ballot->created_at = $now;
                 $ballot->time_end = $timeEnd;
             }
+            */
+
             $ballot->save();
             if ($request->hasFile('files')) {
                 $files = $request->file('files');
@@ -897,8 +922,18 @@ class AdminController extends Controller
                 'shuftipro.status as kyc_status',
                 'shuftipro.background_checks_result',
             ])
-            ->where('users.role', 'member')->where('banned', 0)->first();
+            ->where('users.role', 'member')
+            ->where('banned', 0)
+            ->first();
         if ($user) {
+            if (
+                isset($user->shuftipro) &&
+                isset($user->shuftipro->address_proof) &&
+                $user->shuftipro->address_proof
+            ) {
+                $url = Storage::disk('local')->url($user->shuftipro->address_proof);
+                $user->shuftipro->address_proof_link = asset($url);
+            }
             return $this->successResponse($user);
         }
         return $this->errorResponse('Fail get verification user', Response::HTTP_BAD_REQUEST);

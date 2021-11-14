@@ -92,7 +92,6 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('/users/membership-file',  [UserController::class, 'getMembershipFile']);
             Route::post('/users/membership-agreement',  [UserController::class, 'membershipAgreement']);
             Route::post('/users/check-reset-kyc',  [UserController::class, 'checkResetKyc']);
-
         });
         Route::prefix('admin')->middleware(['role_admin'])->group(function () {
             Route::get('/users', [AdminController::class, 'getUsers']);
@@ -101,7 +100,6 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('/users/{id}/kyc', [AdminController::class, 'getKYC'])->where('id', '[0-9]+');
             Route::get('/list-node', [AdminController::class, 'getListNodes']);
             
-
             // intakes
             Route::middleware([])->group(function () {
                 Route::get('/users/intakes', [AdminController::class, 'getIntakes']);
@@ -191,8 +189,8 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::delete('/contact-recipients/{id}',  [ContactController::class, 'deleteContactRecipients'])->where('id', '[0-9]+');
             Route::get('/membership-file',  [AdminController::class, 'getMembershipFile']);
             Route::post('/membership-file',  [AdminController::class, 'uploadMembershipFile']);
-
         });
+
         Route::prefix('discussions')->group(function () {
             Route::get('/trending', [DiscussionController::class, 'getTrending']);
             Route::get('/all', [DiscussionController::class, 'getDiscussions']);
