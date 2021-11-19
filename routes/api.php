@@ -127,7 +127,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
                 Route::post('/ballots', [AdminController::class, 'submitBallot']);
                 Route::get('/ballots', [AdminController::class, 'getBallots']);
                 Route::get('/ballots/{id}', [AdminController::class, 'getDetailBallot'])->where('id', '[0-9]+');
-                Route::post('/ballots/{id}/edit', [AdminController::class, 'edittBallot'])->where('id', '[0-9]+');
+                Route::post('/ballots/{id}/edit', [AdminController::class, 'editBallot'])->where('id', '[0-9]+');
                 Route::get('/ballots/{id}/votes', [AdminController::class, 'getBallotVotes'])->where('id', '[0-9]+');
                 Route::post('/ballots/{id}/cancel', [AdminController::class, 'cancelBallot'])->where('id', '[0-9]+');
                 Route::get('/ballots/viewed-docs/{fileId}', [AdminController::class, 'getViewFileBallot'])->where('id', '[0-9]+');

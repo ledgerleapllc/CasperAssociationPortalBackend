@@ -321,7 +321,7 @@ class AdminController extends Controller
         }
     }
 
-    public function edittBallot($id, Request $request)
+    public function editBallot($id, Request $request)
     {
         try {
             DB::beginTransaction();
