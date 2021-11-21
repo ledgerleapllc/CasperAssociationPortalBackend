@@ -84,6 +84,7 @@ class ShuftiproCheck
                 $hit= $hits[0];
             }
         }
+
         $data = json_encode([
             'declined_reason' => $declined_reason,
             'event' => $event,
@@ -94,11 +95,8 @@ class ShuftiproCheck
             // 'verification_data' => $verification_data
         ]);
 
-
         $document_proof = $address_proof = null;
-        $document_result =
-            $address_result =
-            $background_checks_result = 0;
+        $document_result = $address_result = $background_checks_result = 0;
 
         // Document Proof
         if (
@@ -171,7 +169,6 @@ class ShuftiproCheck
 
         Shuftipro::where('user_id', $user_id)->delete();
 
-
         $record = new Shuftipro();
         $record->user_id = $user_id;
         $record->reference_id = $reference_id;
@@ -184,6 +181,8 @@ class ShuftiproCheck
         $record->reviewed = $is_successful ? 1 : 0; // No need to review successful ones
 
         if ($document_proof) {
+            $record->document_proof = $document_proof;
+            /*
             try {
                 $url = strtok($document_proof, '?');
                 $pathinfo = pathinfo($url);
@@ -194,8 +193,11 @@ class ShuftiproCheck
             } catch (Exception $e) {
                 $record->document_proof = $document_proof;
             }
+            */
         }
         if ($address_proof) {
+            $record->address_proof = $address_proof;
+            /*
             try {
                 $url = strtok($document_proof, '?');
                 $pathinfo = pathinfo($url);
@@ -206,6 +208,7 @@ class ShuftiproCheck
             } catch (Exception $e) {
                 $record->address_proof = $address_proof;
             }
+            */
         }
         $record->save();
 

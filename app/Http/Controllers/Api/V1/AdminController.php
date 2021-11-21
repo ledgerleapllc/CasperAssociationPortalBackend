@@ -45,6 +45,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 class AdminController extends Controller
@@ -784,19 +785,20 @@ class AdminController extends Controller
     {
         $limit = $request->limit ?? 15;
         $users = User::where('users.role', 'member')->where('banned', 0)
-            ->join('profile', function ($query) {
-                $query->on('profile.user_id', '=', 'users.id')
-                    ->where('profile.status', 'pending');
-            })
-            ->join('shuftipro', 'shuftipro.user_id', '=', 'users.id')
-            ->select([
-                'users.id as user_id',
-                'users.created_at',
-                'users.email',
-                'profile.*',
-                'shuftipro.status as kyc_status',
-                'shuftipro.background_checks_result',
-            ])->paginate($limit);
+                        ->join('profile', function ($query) {
+                            $query->on('profile.user_id', '=', 'users.id')
+                                ->where('profile.status', 'pending');
+                        })
+                        ->join('shuftipro', 'shuftipro.user_id', '=', 'users.id')
+                        ->select([
+                            'users.id as user_id',
+                            'users.created_at',
+                            'users.email',
+                            'profile.*',
+                            'shuftipro.status as kyc_status',
+                            'shuftipro.background_checks_result',
+                            'shuftipro.manual_approved_at'
+                        ])->paginate($limit);
         return $this->successResponse($users);
     }
 
@@ -896,6 +898,75 @@ class AdminController extends Controller
             return $this->metaSuccess();
         }
         return $this->errorResponse('Fail approve AML', Response::HTTP_BAD_REQUEST);
+    }
+
+    public function refreshLinks($id)
+    {
+        $url = 'https://api.shuftipro.com/status';
+        $user = User::with('shuftipro')->find($id);
+
+        $shuftipro = $user->shuftipro;
+        if ($shuftipro) {
+            $client_id = config('services.shufti.client_id');
+            $secret_key = config('services.shufti.client_secret');
+
+            $response = Http::withBasicAuth($client_id, $secret_key)->post($url, [
+                'reference' => $shuftipro->reference_id
+            ]);
+
+            $data = $response->json();
+            if (!$data || !is_array($data)) return;
+
+            if (
+                !isset($data['reference']) || 
+                !isset($data['event'])
+            ) {
+                return $this->successResponse([
+                    'success' => false,
+                ]);
+            }
+
+            $events = [
+                'verification.accepted', 
+                'verification.declined',
+                'request.timeout'
+            ];
+
+            if (!in_array($data['event'], $events)) {
+                return $this->successResponse([
+                    'success' => false,
+                ]);
+            }
+
+            $proofs = isset($data['proofs']) ? $data['proofs'] : null;
+
+            if (
+                $proofs && 
+                isset($proofs['document']) && 
+                isset($proofs['document']['proof'])
+            ) {
+                $shuftipro->document_proof = $proofs['document']['proof'];
+            }
+      
+            // Address Proof
+            if (
+                $proofs && 
+                isset($proofs['address']) && 
+                isset($proofs['address']['proof']) 
+            ) {
+                $shuftipro->address_proof = $proofs['address']['proof'];
+            }
+
+            $shuftipro->save();
+
+            return $this->successResponse([
+                'success' => true,
+            ]);
+        }
+
+        return $this->successResponse([
+            'success' => false,
+        ]);
     }
 
     public function banAndDenyUser($id)
