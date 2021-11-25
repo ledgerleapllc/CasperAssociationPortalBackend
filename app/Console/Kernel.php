@@ -47,7 +47,6 @@ class Kernel extends ConsoleKernel
         $schedule->command('node-info')
             ->everyThirtyMinutes()
             ->runInBackground();
-
     }
 
     /**

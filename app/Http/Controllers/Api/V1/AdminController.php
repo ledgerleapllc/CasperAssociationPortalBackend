@@ -57,16 +57,17 @@ class AdminController extends Controller
         $sort_direction = $request->sort_direction ?? '';
         if (!$sort_key) $sort_key = 'created_at';
         if (!$sort_direction) $sort_direction = 'desc';
-        $users = User::where('role', 'member')->with(['profile'])
-            ->leftJoin('node_info', 'users.public_address_node', '=', 'node_info.node_address')
-            ->select([
-                'users.*',
-                'node_info.delegation_rate',
-                'node_info.delegators_count',
-                'node_info.self_staked_amount',
-                'node_info.total_staked_amount',
-            ])
-            ->get();
+        $users = User::where('role', 'member')
+                        ->with(['profile'])
+                        ->leftJoin('node_info', 'users.public_address_node', '=', 'node_info.node_address')
+                        ->select([
+                            'users.*',
+                            'node_info.delegation_rate',
+                            'node_info.delegators_count',
+                            'node_info.self_staked_amount',
+                            'node_info.total_staked_amount',
+                        ])
+                        ->get();
         foreach ($users as $user) {
             $status = 'Onboarding';
             if ($user->profile && $user->profile->status == 'pending') {

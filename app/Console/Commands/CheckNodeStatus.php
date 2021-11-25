@@ -55,9 +55,9 @@ class CheckNodeStatus extends Command
         $blockHeight = MonitoringCriteria::where('type', 'block-height')->first();
         $blockHeightProbationStart = (float) $blockHeight->probation_start;
         if ($blockHeight->given_to_correct_unit == 'Weeks') {
-            $blockHeightTime = (float)$blockHeight->given_to_correct_value * 7 * 24;
+            $blockHeightTime = (float) $blockHeight->given_to_correct_value * 7 * 24;
         } else if ($blockHeight->given_to_correct_unit == 'Days') {
-            $blockHeightTime = (float)$blockHeight->given_to_correct_value * 24;
+            $blockHeightTime = (float) $blockHeight->given_to_correct_value * 24;
         } else {
             $blockHeightTime = (float) $blockHeight->given_to_correct_value;
         }
@@ -74,7 +74,11 @@ class CheckNodeStatus extends Command
         $nodeHelper = new NodeHelper();
         $now =  Carbon::now('UTC');
         $users = User::where('role', 'member')->where('banned', 0)->with(['metric', 'nodeInfo'])->get();
+        
         foreach ($users as $user) {
+            $user->node_status = 'Online';
+            $user->save();
+
             $nodeInfo = $user->nodeInfo ? $user->nodeInfo : $user->metric;
             if (!$nodeInfo || !$user->node_verified_at || !$user->letter_verified_at || !$user->signature_request_id) {
                 $user->node_status = null;

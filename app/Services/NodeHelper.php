@@ -58,6 +58,10 @@ class NodeHelper
                 $validatorid = $user->public_address_node;
                 if (isset($validator_standing[$validatorid])) {
                     $info = $validator_standing[$validatorid];
+                    $fee = (float) $info['delegation_rate'];
+                    $user->validator_fee = round($fee, 2);
+                    $user->save();
+
                     $totalRewards = $this->getTotalRewards($validatorid);
                     $build_version = $info['build_version'] ?? null;
                     if ($build_version) {

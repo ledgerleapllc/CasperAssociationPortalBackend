@@ -668,7 +668,7 @@ class UserController extends Controller
         try {
             // Validator
             $validator = Validator::make($request->all(), [
-                'avatar' => 'sometimes|mimes:jpeg,jpg,png,gif|max:100000',
+                'avatar' => 'sometimes|mimes:jpeg,jpg,png,gif,webp|max:100000',
             ]);
             if ($validator->fails()) {
                 return $this->validateResponse($validator->errors());
