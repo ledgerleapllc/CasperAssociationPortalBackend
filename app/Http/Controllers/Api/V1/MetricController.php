@@ -85,7 +85,6 @@ class MetricController extends Controller
         $metric->peers = $latest_peers ?? $metric_peers;
         $metric->update_responsiveness = $latest_update_responsiveness ?? $metric_update_responsiveness;
         $metric->block_height_average = $latest_block_height ?? $metric_block_height;
-        $metric->block_height_average = 25;
         $metric->uptime = $latest_uptime  ?? $metric_uptime;
 
         $monitoringCriteria = MonitoringCriteria::get();
