@@ -1235,7 +1235,7 @@ class AdminController extends Controller
         $user = Auth::user();
         $graphData = [];
 
-        $items = TokenPrice::orderBy('created_at', 'asc')->get();
+        $items = TokenPrice::orderBy('created_at', 'asc')->limit(100)->get();
         if ($items && count($items)) {
             foreach ($items as $item) {
                 $name = strtotime($item->created_at);
