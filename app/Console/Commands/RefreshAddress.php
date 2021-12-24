@@ -53,7 +53,7 @@ class RefreshAddress extends Command
 
         if ($nodes) {
             foreach ($nodes as $node) {
-                $address = $node->node_address;
+                $address = strtolower($node->node_address);
                 $newAddress = (new ChecksumValidator())->do($address);
                 $node->node_address = $newAddress;
                 $node->refreshed = 1;
@@ -70,7 +70,7 @@ class RefreshAddress extends Command
 
         if ($nodeInfos) {
             foreach ($nodeInfos as $nodeInfo) {
-                $address = $nodeInfo->node_address;
+                $address = strtolower($nodeInfo->node_address);
                 $newAddress = (new ChecksumValidator())->do($address);
                 $nodeInfo->node_address = $newAddress;
                 $nodeInfo->refreshed = 1;
@@ -87,14 +87,10 @@ class RefreshAddress extends Command
         if ($users) {
             foreach ($users as $user) {
                 $address = strtolower($user->public_address_node);
-                
-                $correct_checksum = (int) (new ChecksumValidator($address))->do();
-                if ($correct_checksum) {
-                    $newAddress = (new ChecksumValidator())->do($address);
-                    $user->public_address_node = $newAddress;
-                    $user->refreshed = 1;
-                    $user->save();
-                }
+                $newAddress = (new ChecksumValidator())->do($address);
+                $user->public_address_node = $newAddress;
+                $user->refreshed = 1;
+                $user->save();
             }
         }
 
