@@ -306,7 +306,7 @@ class UserController extends Controller
         }
 
         $user->update(['public_address_node' => $public_address]);
-        
+
         return $this->metaSuccess();
     }
 
@@ -351,7 +351,6 @@ class UserController extends Controller
                 );
                 // $verified = true;
                 if ($verified) {
-
                     $fullpath = 'sigfned_file/' . $user->id . '/signature';
                     Storage::disk('local')->put($fullpath,  trim($hexstring));
                     // $url = Storage::disk('local')->url($fullpath);
@@ -359,6 +358,7 @@ class UserController extends Controller
                     $user->node_verified_at = now();
                     $user->save();
                     $emailerData = EmailerHelper::getEmailerData();
+
                     EmailerHelper::triggerUserEmail($user->email, 'Your Node is Verified', $emailerData, $user);
 
                     if ($user->letter_verified_at && $user->signature_request_id && $user->node_verified_at) {
@@ -839,18 +839,31 @@ class UserController extends Controller
         if ($request->new_password) {
             $user->password = bcrypt($request->new_password);
         }
+
         if ($request->username) {
-            $checkUsername = User::where('username', $request->username)->where('username', '!=', $user->username)->first();
+            $checkUsername = User::where('username', $request->username)
+                                ->where('username', '!=', $user->username)
+                                ->first();
             if ($checkUsername) {
                 return $this->errorResponse(__('this username has already been taken'), Response::HTTP_BAD_REQUEST);
             }
             $user->username = $request->username;
         }
+        
         if (isset($request->twoFA_login)) {
             $user->twoFA_login = $request->twoFA_login;
         }
-        if ($request->email) {
-            $checkEmail = User::where('email', $request->email)->orWhere('new_email',  $request->email)->first();
+        
+        if ($request->email && $request->email != $user->email) {
+            $emailParam = $request->email;
+
+            $checkEmail = User::where(function ($query) use ($emailParam) {
+                                $query->where('email', $emailParam)
+                                        ->orWhere('new_email', $emailParam);
+                            })
+                            ->where('id', '!=', $user->id)
+                            ->first();
+            
             $currentEmail = $user->email;
             $newEmail = $request->email;
             if ($checkEmail) {
@@ -858,7 +871,7 @@ class UserController extends Controller
             }
             $user->new_email = $newEmail;
 
-            // curent email 
+            // Current Email 
             $codeCurrentEmail = Str::random(6);
             $url = $request->header('origin') ?? $request->root();
             $urlCurrentEmail = $url . '/change-email/cancel-changes?code=' . $codeCurrentEmail . '&email=' . urlencode($currentEmail);
