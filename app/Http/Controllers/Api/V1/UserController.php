@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Console\Helper;
+
 use App\Http\Controllers\Controller;
 use App\Http\EmailerHelper;
 use App\Http\Requests\Api\AddOwnerNodeRequest;
@@ -12,10 +13,12 @@ use App\Http\Requests\Api\ResendEmailRequest;
 use App\Http\Requests\Api\SubmitKYCRequest;
 use App\Http\Requests\Api\SubmitPublicAddressRequest;
 use App\Http\Requests\Api\VerifyFileCasperSignerRequest;
+
 use App\Mail\AddNodeMail;
 use App\Mail\LoginTwoFA;
 use App\Mail\UserConfirmEmail;
 use App\Mail\UserVerifyMail;
+
 use App\Models\Ballot;
 use App\Models\BallotFile;
 use App\Models\BallotFileView;
@@ -34,15 +37,19 @@ use App\Models\User;
 use App\Models\VerifyUser;
 use App\Models\Vote;
 use App\Models\VoteResult;
+
 use App\Repositories\OwnerNodeRepository;
 use App\Repositories\ProfileRepository;
 use App\Repositories\UserRepository;
 use App\Repositories\VerifyUserRepository;
+
 use App\Services\CasperSignature;
 use App\Services\CasperSigVerify;
 use App\Services\NodeHelper;
 use App\Services\ShuftiproCheck;
 use App\Services\Test;
+use App\Services\ChecksumValidator;
+
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Validation\Rule;
@@ -288,7 +295,16 @@ class UserController extends Controller
     public function submitPublicAddress(SubmitPublicAddressRequest $request)
     {
         $user = auth()->user();
-        $user->update(['public_address_node' => $request->public_address]);
+
+        $address = strtolower($request->public_address);
+        $public_address = (new ChecksumValidator())->do($address);
+
+        $correct_checksum = (int) (new ChecksumValidator($public_address))->do();
+        if (!$correct_checksum) {
+            return $this->errorResponse(__('Please provide valid address'), Response::HTTP_BAD_REQUEST);
+        }
+
+        $user->update(['public_address_node' => $public_address]);
         return $this->metaSuccess();
     }
 
