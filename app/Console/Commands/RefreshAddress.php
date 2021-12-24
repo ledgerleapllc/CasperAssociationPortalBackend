@@ -86,14 +86,13 @@ class RefreshAddress extends Command
                                 ->get();
         if ($users) {
             foreach ($users as $user) {
-                try {
-                    $address = $user->public_address_node;
+                $address = strtolower($user->public_address_node);
+                
+                $correct_checksum = (int) (new ChecksumValidator($address))->do();
+                if ($correct_checksum) {
                     $newAddress = (new ChecksumValidator())->do($address);
                     $user->public_address_node = $newAddress;
                     $user->refreshed = 1;
-                    $user->save();
-                } catch (\Exception $ex) {
-                    $user->refreshed = 2;
                     $user->save();
                 }
             }

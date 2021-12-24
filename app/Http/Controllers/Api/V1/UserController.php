@@ -298,18 +298,14 @@ class UserController extends Controller
 
         $address = strtolower($request->public_address);
 
-        try {
-            $public_address = (new ChecksumValidator())->do($address);
+        $public_address = (new ChecksumValidator())->do($address);
 
-            $correct_checksum = (int) (new ChecksumValidator($public_address))->do();
-            if (!$correct_checksum) {
-                return $this->errorResponse(__('Please provide valid address'), Response::HTTP_BAD_REQUEST);
-            }
-
-            $user->update(['public_address_node' => $public_address]);
-        } catch (\Exception $ex) {
+        $correct_checksum = (int) (new ChecksumValidator($public_address))->do();
+        if (!$correct_checksum) {
             return $this->errorResponse(__('Please provide valid address'), Response::HTTP_BAD_REQUEST);
         }
+
+        $user->update(['public_address_node' => $public_address]);
         
         return $this->metaSuccess();
     }
