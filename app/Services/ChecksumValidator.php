@@ -376,7 +376,7 @@ class ChecksumValidator {
 			} elseif ($this->keytag == '02') {
 				$this->algo = 'secp256k1';
 			} else {
-				throw new Exception("Invalid keytag. First byte must be either '01' or '02");
+				return false;
 			}
 
 			$v = hex2bin($this->validator_id);
@@ -402,7 +402,7 @@ class ChecksumValidator {
 			} elseif ($this->keytag == '02') {
 				$this->algo = 'secp256k1';
 			} else {
-				throw new Exception("Invalid keytag. First byte must be either '01' or '02");
+				return false;
 			}
 
 			$v = hex2bin($_v);
