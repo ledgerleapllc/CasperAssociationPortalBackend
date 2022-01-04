@@ -71,6 +71,7 @@ class CheckNodeStatus extends Command
         } else {
             $updateResponsivenessTime = (float) $updateResponsiveness->given_to_correct_value;
         }
+
         $nodeHelper = new NodeHelper();
         $now =  Carbon::now('UTC');
         $users = User::where('role', 'member')->where('banned', 0)->with(['metric', 'nodeInfo'])->get();
@@ -121,6 +122,7 @@ class CheckNodeStatus extends Command
                     $nodeInfo->uptime_time_start = now();
                     $nodeInfo->uptime_time_end =  Carbon::now('UTC')->addHours($uptimeTime);
                 }
+                
                 if ($nodeInfo->block_height_average < $blockHeightProbationStart) {
                     $user->node_status = 'Probation';
                     $nodeInfo->block_height_average_time_start = now();

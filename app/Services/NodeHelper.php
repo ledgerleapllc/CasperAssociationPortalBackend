@@ -7,12 +7,15 @@ use App\Models\Node;
 use App\Models\NodeInfo;
 use App\Models\User;
 use Carbon\Carbon;
+
 use Exception;
+
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Exception\ServerException;
@@ -20,6 +23,7 @@ use GuzzleHttp\Exception\BadResponseException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 
+use App\Services\ChecksumValidator;
 
 class NodeHelper
 {
@@ -50,27 +54,42 @@ class NodeHelper
     public function updateStats()
     {
         $data = $this->getValidatorStanding();
+        
         $validator_standing = isset($data['validator_standing']) ? $data['validator_standing']  : null;
         $mbs =  isset($data['MBS']) ? $data['MBS']  : 0;
         $users = User::whereNotNull('public_address_node')->get();
         if ($validator_standing) {
+            // Refresh Validator Standing
+            foreach ($validator_standing as $key => $value) {
+                $newKey = (new ChecksumValidator())->do($key);
+                $validator_standing[$newKey] = $value;
+            }
+
             foreach ($users as $user) {
                 $validatorid = $user->public_address_node;
+                $validatorid = (new ChecksumValidator())->do($validatorid);
+
                 if (isset($validator_standing[$validatorid])) {
                     $info = $validator_standing[$validatorid];
                     $fee = (float) $info['delegation_rate'];
+
                     $user->validator_fee = round($fee, 2);
                     $user->save();
 
                     $totalRewards = $this->getTotalRewards($validatorid);
+
                     $build_version = $info['build_version'] ?? null;
                     if ($build_version) {
                         $build_version = explode('-', $build_version);
                         $build_version = $build_version[0];
                     }
+
                     $is_open_port =  isset($info['uptime']) && isset($info['update_responsiveness']) ? 1 : 0;
+                    
                     NodeInfo::updateOrCreate(
-                        ['node_address' => $validatorid],
+                        [
+                            'node_address' => $validatorid
+                        ],
                         [
                             'delegators_count' => $info['delegator_count'] ?? 0,
                             'total_staked_amount' => $info['total_stake'],

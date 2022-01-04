@@ -6,6 +6,7 @@ use App\Console\Helper;
 
 use App\Http\Controllers\Controller;
 use App\Http\EmailerHelper;
+
 use App\Http\Requests\Api\AddOwnerNodeRequest;
 use App\Http\Requests\Api\ChangeEmailRequest;
 use App\Http\Requests\Api\ChangePasswordRequest;
@@ -52,6 +53,7 @@ use App\Services\ChecksumValidator;
 
 use Carbon\Carbon;
 use Exception;
+
 use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -749,7 +751,10 @@ class UserController extends Controller
             ])
             ->get();
         foreach ($users as $user) {
-            $latest = Node::where('node_address', $user->public_address_node)->whereNotnull('protocol_version')->orderBy('created_at', 'desc')->first();
+            $latest = Node::where('node_address', $user->public_address_node)
+                            ->whereNotnull('protocol_version')
+                            ->orderBy('created_at', 'desc')
+                            ->first();
             if (!$latest) {
                 $latest = new Node();
             }

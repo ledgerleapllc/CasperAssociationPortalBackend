@@ -7,8 +7,9 @@ use App\Models\Node;
 use App\Models\NodeInfo as ModelsNodeInfo;
 use App\Models\User;
 use App\Services\NodeHelper;
-use Carbon\Carbon;
 use Illuminate\Console\Command;
+
+use Carbon\Carbon;
 
 class NodeInfo extends Command
 {
@@ -117,7 +118,10 @@ class NodeInfo extends Command
         $now = Carbon::now('UTC');
         $time = $now->subDays(14);
         foreach ($nodes as $node) {
-            $avg_uptime = Node::where('node_address', $node->node_address)->whereNotNull('uptime')->where('created_at', '>=', $time)->avg('uptime');
+            $avg_uptime = Node::where('node_address', $node->node_address)
+                            ->whereNotNull('uptime')
+                            ->where('created_at', '>=', $time)
+                            ->avg('uptime');
             $node->uptime = $avg_uptime * 100;
             $node->save();
         }
@@ -146,6 +150,7 @@ class NodeInfo extends Command
                 'node_info.total_staked_amount',
             ])
             ->get();
+
         foreach ($users as $user) {
             $latest = Node::where('node_address', $user->public_address_node)->whereNotnull('protocol_version')->orderBy('created_at', 'desc')->first();
             if (!$latest) {
