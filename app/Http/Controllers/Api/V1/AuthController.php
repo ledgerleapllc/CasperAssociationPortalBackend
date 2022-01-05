@@ -140,6 +140,7 @@ class AuthController extends Controller
         try {
             DB::beginTransaction();
             $data = $request->all();
+            
             $data['password'] = bcrypt($request->password);
             $data['last_login_at'] = now();
             $data['type'] = User::TYPE_INDIVIDUAL;
