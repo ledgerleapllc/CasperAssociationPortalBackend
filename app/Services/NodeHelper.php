@@ -43,9 +43,7 @@ class NodeHelper
 
     public function getTotalRewards($validatorId)
     {
-        $response = Http::withHeaders([
-            'Authorization' => "token $this->SEENA_API_KEY",
-        ])->withOptions([
+        $response = Http::withOptions([
             'verify' => false,
         ])->get("https://api.CSPR.live/validators/$validatorId/total-rewards");
         return $response->json();
@@ -77,7 +75,7 @@ class NodeHelper
                     $user->save();
 
                     $totalRewards = $this->getTotalRewards($validatorid);
-
+                    
                     $build_version = $info['build_version'] ?? null;
                     if ($build_version) {
                         $build_version = explode('-', $build_version);

@@ -75,12 +75,13 @@ class CheckNodeStatus extends Command
         $nodeHelper = new NodeHelper();
         $now =  Carbon::now('UTC');
         $users = User::where('role', 'member')->where('banned', 0)->with(['metric', 'nodeInfo'])->get();
-        
+
         foreach ($users as $user) {
             $user->node_status = 'Online';
             $user->save();
 
             $nodeInfo = $user->nodeInfo ? $user->nodeInfo : $user->metric;
+
             if (!$nodeInfo || !$user->node_verified_at || !$user->letter_verified_at || !$user->signature_request_id) {
                 $user->node_status = null;
                 $user->save();

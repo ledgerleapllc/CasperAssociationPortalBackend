@@ -89,7 +89,19 @@ class MetricController extends Controller
 
         $monitoringCriteria = MonitoringCriteria::get();
         $nodeInfo = NodeInfo::where('node_address', $user->public_address_node)->first();
-        $rank = 5 ;// dummy
+        
+        $rank = $user->rank;
+        $totalCount =  User::select([
+                            'id as user_id',
+                            'public_address_node',
+                            'is_fail_node',
+                            'rank',
+                        ])
+                            ->where('banned', 0)
+                            ->whereNotNull('public_address_node')
+                            ->get()
+                            ->count();
+        
         $delegators = 0;
         $stake_amount = 0;
         if ($nodeInfo) {
@@ -99,6 +111,7 @@ class MetricController extends Controller
         $mbs = NodeInfo::max('mbs');
         $metric->mbs = $mbs;
         $metric->rank = $rank;
+        $metric->totalCount = $totalCount;
         $metric->delegators = $delegators;
         $metric->stake_amount = $stake_amount;
         $metric['node_status'] = $user->node_status;
