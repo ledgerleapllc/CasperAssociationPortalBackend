@@ -45,7 +45,7 @@ class RefreshAddress extends Command
     {
         // Runs Every 5 Mins = 300 Seconds
         $nodes = Node::whereNotNull('node_address')
-                        ->where('refreshed', 1)
+                        ->where('refreshed', 0)
                         ->orderBy('created_at', 'asc')
                         ->offset(0)
                         ->limit(50)
@@ -55,13 +55,13 @@ class RefreshAddress extends Command
                 $address = strtolower($node->node_address);
                 // $newAddress = (new ChecksumValidator())->do($address);
                 $node->node_address = $address;
-                $node->refreshed = 0;
+                $node->refreshed = 1;
                 $node->save();
             }
         }
 
         $nodeInfos = NodeInfo::whereNotNull('node_address')
-                                ->where('refreshed', 1)
+                                ->where('refreshed', 0)
                                 ->orderBy('created_at', 'asc')
                                 ->offset(0)
                                 ->limit(50)
@@ -72,13 +72,13 @@ class RefreshAddress extends Command
                 $address = strtolower($nodeInfo->node_address);
                 // $newAddress = (new ChecksumValidator())->do($address);
                 $nodeInfo->node_address = $address;
-                $nodeInfo->refreshed = 0;
+                $nodeInfo->refreshed = 1;
                 $nodeInfo->save();
             }
         }
 
         $users = User::whereNotNull('public_address_node')
-                                ->where('refreshed', 1)
+                                ->where('refreshed', 0)
                                 ->orderBy('created_at', 'asc')
                                 ->offset(0)
                                 ->limit(50)
@@ -88,7 +88,7 @@ class RefreshAddress extends Command
                 $address = strtolower($user->public_address_node);
                 // $newAddress = (new ChecksumValidator())->do($address);
                 $user->public_address_node = $address;
-                $user->refreshed = 0;
+                $user->refreshed = 1;
                 $user->save();
             }
         }
