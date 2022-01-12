@@ -300,7 +300,8 @@ class UserController extends Controller
 
         $address = strtolower($request->public_address);
 
-        $public_address = (new ChecksumValidator())->do($address);
+        // $public_address = (new ChecksumValidator())->do($address);
+        $public_address = strtolower($address);
 
         $correct_checksum = (int) (new ChecksumValidator($public_address))->do();
         if (!$correct_checksum) {
@@ -336,7 +337,7 @@ class UserController extends Controller
             $casperSigVerify = new CasperSigVerify();
             $user = auth()->user();
             $message = $user->message_content;
-            $public_validator_key = $user->public_address_node;
+            $public_validator_key = strtolower($user->public_address_node);
             $file = $request->file;
 
             $name = $file->getClientOriginalName();
@@ -751,7 +752,7 @@ class UserController extends Controller
             ])
             ->get();
         foreach ($users as $user) {
-            $latest = Node::where('node_address', $user->public_address_node)
+            $latest = Node::where('node_address', strtolower($user->public_address_node))
                             ->whereNotnull('protocol_version')
                             ->orderBy('created_at', 'desc')
                             ->first();
@@ -1032,7 +1033,7 @@ class UserController extends Controller
         $user = auth()->user();
         $delegators = 0;
         $stake_amount = 0;
-        $nodeInfo = NodeInfo::where('node_address', $user->public_address_node)->first();
+        $nodeInfo = NodeInfo::where('node_address', strtolower($user->public_address_node))->first();
         if ($nodeInfo) {
             $delegators = $nodeInfo->delegators_count;
             $stake_amount = $nodeInfo->total_staked_amount;
@@ -1048,6 +1049,7 @@ class UserController extends Controller
 
     public function getEarningByNode($node)
     {
+        $node = strtolower($node);
         $user = User::where('public_address_node', $node)->first();
         $nodeInfo = NodeInfo::where('node_address', $node)->first();
         $mbs = NodeInfo::max('mbs');
@@ -1066,6 +1068,7 @@ class UserController extends Controller
 
     public function getChartEarningByNode($node)
     {
+        $node = strtolower($node);
         $user = User::where('public_address_node', $node)->first();
         if ($user) {
             $nodeHelper = new NodeHelper();

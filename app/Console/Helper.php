@@ -59,7 +59,10 @@ class Helper
 			;");
         $max_uptime =  $max_uptime[0]->max_uptime ?? 0;
 
-		$latest = Node::where('node_address', $user->public_address_node)->whereNotnull('protocol_version')->orderBy('created_at', 'desc')->first();
+		$latest = Node::where('node_address', strtolower($user->public_address_node))
+						->whereNotnull('protocol_version')
+						->orderBy('created_at', 'desc')
+						->first();
 		if (!$latest) {
 			$latest = new Node();
 		}
@@ -76,7 +79,7 @@ class Helper
 		$metric_update_responsiveness = $metric->update_responsiveness ?? null;
 		$metric_peers = $metric->peers ?? null;
 
-		$nodeInfo = NodeInfo::where('node_address', $user->public_address_node)->first();
+		$nodeInfo = NodeInfo::where('node_address', strtolower($user->public_address_node))->first();
 		if (!$nodeInfo) {
 			$nodeInfo = new NodeInfo();
 		}
@@ -102,7 +105,7 @@ class Helper
 		$metric->uptime = $latest_uptime  ? $latest_uptime : $metric_uptime;
 
 		$monitoringCriteria = MonitoringCriteria::get();
-		$nodeInfo = NodeInfo::where('node_address', $user->public_address_node)->first();
+		$nodeInfo = NodeInfo::where('node_address', strtolower($user->public_address_node))->first();
 		$rank = 5; // dummy
 		$delegators = 0;
 		$stake_amount = 0;

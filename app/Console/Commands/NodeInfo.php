@@ -63,6 +63,8 @@ class NodeInfo extends Command
         $highestVersion = (end($versions));
         $grouped = $nodes->groupBy('node_address');
         foreach ($grouped as $key => $values) {
+            $key = strtolower($key);
+
             $versionsNodes = $values->pluck('protocol_version');
             $versionsNodes = $versionsNodes->toArray();
 
@@ -126,7 +128,7 @@ class NodeInfo extends Command
         $now = Carbon::now('UTC');
         $time = $now->subDays(14);
         foreach ($nodes as $node) {
-            $avg_uptime = Node::where('node_address', $node->node_address)
+            $avg_uptime = Node::where('node_address', strtolower($node->node_address))
                                 ->whereNotNull('uptime')
                                 ->where('created_at', '>=', $time)
                                 ->avg('uptime');
@@ -160,7 +162,7 @@ class NodeInfo extends Command
             ->get();
 
         foreach ($users as $user) {
-            $latest = Node::where('node_address', $user->public_address_node)->whereNotnull('protocol_version')->orderBy('created_at', 'desc')->first();
+            $latest = Node::where('node_address', strtolower($user->public_address_node))->whereNotnull('protocol_version')->orderBy('created_at', 'desc')->first();
             if (!$latest) {
                 $latest = new Node();
             }

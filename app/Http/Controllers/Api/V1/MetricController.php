@@ -45,7 +45,7 @@ class MetricController extends Controller
         ) AS results
         ;");
         $max_uptime =  $max_uptime[0]->max_uptime ?? 0;
-        $latest = Node::where('node_address', $user->public_address_node)->whereNotnull('protocol_version')->orderBy('created_at', 'desc')->first();
+        $latest = Node::where('node_address', strtolower($user->public_address_node))->whereNotnull('protocol_version')->orderBy('created_at', 'desc')->first();
         if (!$latest) {
             $latest = new Node();
         }
@@ -62,7 +62,7 @@ class MetricController extends Controller
         $metric_update_responsiveness = $metric->update_responsiveness ?? null;
         $metric_peers = $metric->peers ?? null;
 
-        $nodeInfo = NodeInfo::where('node_address', $user->public_address_node)->first();
+        $nodeInfo = NodeInfo::where('node_address', strtolower($user->public_address_node))->first();
         if (!$nodeInfo) {
 			$nodeInfo = new NodeInfo();
 		}
@@ -88,7 +88,7 @@ class MetricController extends Controller
         $metric->uptime = $latest_uptime  ?? $metric_uptime;
 
         $monitoringCriteria = MonitoringCriteria::get();
-        $nodeInfo = NodeInfo::where('node_address', $user->public_address_node)->first();
+        $nodeInfo = NodeInfo::where('node_address', strtolower($user->public_address_node))->first();
         
         $rank = $user->rank;
         $totalCount =  User::select([
@@ -164,6 +164,7 @@ class MetricController extends Controller
 
     public function getMetricUserByNodeName($node)
     {
+        $node = strtolower($node);
         $user = User::where('public_address_node', $node)->first();
         if ($user) {
             $max_update_responsiveness = DB::select("SELECT max(update_responsiveness) as max_update_responsiveness FROM
@@ -193,7 +194,7 @@ class MetricController extends Controller
             ;");
             $max_uptime =  $max_uptime[0]->max_uptime ?? 0;
 
-            $latest = Node::where('node_address', $user->public_address_node)->whereNotnull('protocol_version')->orderBy('created_at', 'desc')->first();
+            $latest = Node::where('node_address', strtolower($user->public_address_node))->whereNotnull('protocol_version')->orderBy('created_at', 'desc')->first();
             if (!$latest) {
                 $latest = new Node();
             }
@@ -210,7 +211,7 @@ class MetricController extends Controller
             $metric_update_responsiveness = $metric->update_responsiveness ?? null;
             $metric_peers = $metric->peers ?? null;
 
-            $nodeInfo = NodeInfo::where('node_address', $user->public_address_node)->first();
+            $nodeInfo = NodeInfo::where('node_address', strtolower($user->public_address_node))->first();
             if (!$nodeInfo) {
                 $nodeInfo = new NodeInfo();
             }
@@ -236,7 +237,7 @@ class MetricController extends Controller
             $metric->uptime = $latest_uptime  ?? $metric_uptime;
 
             $monitoringCriteria = MonitoringCriteria::get();
-            $nodeInfo = NodeInfo::where('node_address', $user->public_address_node)->first();
+            $nodeInfo = NodeInfo::where('node_address', strtolower($user->public_address_node))->first();
             $rank = 5 ;// dummy
             $delegators = 0;
             $stake_amount = 0;

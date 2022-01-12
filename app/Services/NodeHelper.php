@@ -59,13 +59,13 @@ class NodeHelper
         if ($validator_standing) {
             // Refresh Validator Standing
             foreach ($validator_standing as $key => $value) {
-                $newKey = (new ChecksumValidator())->do($key);
-                $validator_standing[$newKey] = $value;
+                // $newKey = (new ChecksumValidator())->do($key);
+                $validator_standing[strtolower($key)] = $value;
             }
 
             foreach ($users as $user) {
-                $validatorid = $user->public_address_node;
-                $validatorid = (new ChecksumValidator())->do($validatorid);
+                $validatorid = strtolower($user->public_address_node);
+                // $validatorid = (new ChecksumValidator())->do($validatorid);
 
                 if (isset($validator_standing[$validatorid])) {
                     $info = $validator_standing[$validatorid];

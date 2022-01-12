@@ -45,24 +45,23 @@ class RefreshAddress extends Command
     {
         // Runs Every 5 Mins = 300 Seconds
         $nodes = Node::whereNotNull('node_address')
-                        ->where('refreshed', 0)
+                        ->where('refreshed', 1)
                         ->orderBy('created_at', 'asc')
                         ->offset(0)
                         ->limit(50)
                         ->get();
-
         if ($nodes) {
             foreach ($nodes as $node) {
                 $address = strtolower($node->node_address);
-                $newAddress = (new ChecksumValidator())->do($address);
-                $node->node_address = $newAddress;
-                $node->refreshed = 1;
+                // $newAddress = (new ChecksumValidator())->do($address);
+                $node->node_address = $address;
+                $node->refreshed = 0;
                 $node->save();
             }
         }
 
         $nodeInfos = NodeInfo::whereNotNull('node_address')
-                                ->where('refreshed', 0)
+                                ->where('refreshed', 1)
                                 ->orderBy('created_at', 'asc')
                                 ->offset(0)
                                 ->limit(50)
@@ -71,15 +70,15 @@ class RefreshAddress extends Command
         if ($nodeInfos) {
             foreach ($nodeInfos as $nodeInfo) {
                 $address = strtolower($nodeInfo->node_address);
-                $newAddress = (new ChecksumValidator())->do($address);
-                $nodeInfo->node_address = $newAddress;
-                $nodeInfo->refreshed = 1;
+                // $newAddress = (new ChecksumValidator())->do($address);
+                $nodeInfo->node_address = $address;
+                $nodeInfo->refreshed = 0;
                 $nodeInfo->save();
             }
         }
 
         $users = User::whereNotNull('public_address_node')
-                                ->where('refreshed', 0)
+                                ->where('refreshed', 1)
                                 ->orderBy('created_at', 'asc')
                                 ->offset(0)
                                 ->limit(50)
@@ -87,9 +86,9 @@ class RefreshAddress extends Command
         if ($users) {
             foreach ($users as $user) {
                 $address = strtolower($user->public_address_node);
-                $newAddress = (new ChecksumValidator())->do($address);
-                $user->public_address_node = $newAddress;
-                $user->refreshed = 1;
+                // $newAddress = (new ChecksumValidator())->do($address);
+                $user->public_address_node = $address;
+                $user->refreshed = 0;
                 $user->save();
             }
         }
