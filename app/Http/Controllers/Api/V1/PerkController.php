@@ -214,6 +214,7 @@ class PerkController extends Controller
 
     public function deletePerk($id)
     {
+        PerkResult::where('perk_id', $id)->delete();        
         Perk::where('id', $id)->delete();
         return $this->metaSuccess();
     }

@@ -56,6 +56,7 @@ class NodeInfo extends Command
     {
         $nodes = Node::whereNotNull('protocol_version')->get();
         $max_hight_block = $nodes->max('block_height');
+        
         $base_block = 10;
         $versions = $nodes->pluck('protocol_version');
         $versions = $versions->toArray();

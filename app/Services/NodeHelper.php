@@ -54,7 +54,8 @@ class NodeHelper
         $data = $this->getValidatorStanding();
         
         $validator_standing = isset($data['validator_standing']) ? $data['validator_standing']  : null;
-        $mbs =  isset($data['MBS']) ? $data['MBS']  : 0;
+
+        $mbs = isset($data['MBS']) ? $data['MBS']  : 0;
         $users = User::whereNotNull('public_address_node')->get();
         if ($validator_standing) {
             // Refresh Validator Standing
@@ -103,9 +104,11 @@ class NodeHelper
                         ]
                     );
 
-                    Node::create(
+                    Node::updateOrCreate(
                         [
-                            'node_address' => $validatorid,
+                            'node_address' => $validatorid
+                        ],
+                        [
                             'block_height' => $info['block_height'] ?? null,
                             'protocol_version' => $build_version,
                             'update_responsiveness' => isset($info['update_responsiveness']) ? $info['update_responsiveness'] * 100 : null,

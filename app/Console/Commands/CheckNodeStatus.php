@@ -4,8 +4,8 @@ namespace App\Console\Commands;
 
 use App\Models\MonitoringCriteria;
 use App\Models\User;
-use App\Services\NodeHelper;
 use Carbon\Carbon;
+
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -72,10 +72,12 @@ class CheckNodeStatus extends Command
             $updateResponsivenessTime = (float) $updateResponsiveness->given_to_correct_value;
         }
 
-        $nodeHelper = new NodeHelper();
-        $now =  Carbon::now('UTC');
-        $users = User::where('role', 'member')->where('banned', 0)->with(['metric', 'nodeInfo'])->get();
-
+        $now = Carbon::now('UTC');
+        $users = User::where('role', 'member')
+                        ->where('banned', 0)
+                        ->with(['metric', 'nodeInfo'])
+                        ->get();
+        
         foreach ($users as $user) {
             $user->node_status = 'Online';
             $user->save();
@@ -87,13 +89,6 @@ class CheckNodeStatus extends Command
                 $user->save();
                 continue;
             }
-            /*
-            if ($nodeHelper->validateValidatorId($user->public_address_node) != true) {
-                $user->node_status = null;
-                $user->save();
-                continue;
-            }
-            */
             if ($user->is_fail_node == 1) {
                 $user->node_status = 'Offline';
                 $user->save();
@@ -135,6 +130,7 @@ class CheckNodeStatus extends Command
                     $nodeInfo->update_responsiveness_time_start = now();
                     $nodeInfo->update_responsiveness_time_end =  Carbon::now('UTC')->addHours($updateResponsivenessTime);
                 }
+
                 $user->save();
                 $nodeInfo->save();
                 continue;

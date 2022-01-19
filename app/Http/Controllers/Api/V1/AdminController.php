@@ -154,7 +154,7 @@ class AdminController extends Controller
 
         $totalUser = User::where('role', 'member')->count();
         $toTalStake = NodeInfo::sum('total_staked_amount');
-        $totalDelagateer = NodeInfo::sum('delegators_count');;
+        $totalDelagateer = NodeInfo::sum('delegators_count');
         $totalNewUserReady =  User::where('banned', 0)
             ->where('role', 'member')
             ->where(function ($q) {
