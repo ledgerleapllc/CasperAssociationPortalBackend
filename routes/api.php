@@ -28,7 +28,7 @@ Route::namespace('Api')->middleware([])->group(function () {
     Route::post('hellosign', [HelloSignController::class, 'hellosignHook']);
 });
 
-Route::post('/shuftipro-status', [UserController::class, 'updateShuftiproStatus']);
+Route::post('shuftipro-status', [UserController::class, 'updateShuftiproStatus']);
 
 Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
     Route::post('/auth/login', [AuthController::class, 'login'])->name('login');;
