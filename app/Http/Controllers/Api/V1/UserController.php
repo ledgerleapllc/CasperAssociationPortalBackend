@@ -33,6 +33,7 @@ use App\Models\Node;
 use App\Models\NodeInfo;
 use App\Models\OwnerNode;
 use App\Models\Profile;
+use App\Models\Shuftipro;
 use App\Models\ShuftiproTemp;
 use App\Models\User;
 use App\Models\VerifyUser;
@@ -47,9 +48,9 @@ use App\Repositories\VerifyUserRepository;
 use App\Services\CasperSignature;
 use App\Services\CasperSigVerify;
 use App\Services\NodeHelper;
-use App\Services\ShuftiproCheck;
 use App\Services\Test;
 use App\Services\ChecksumValidator;
+use App\Services\ShuftiproCheck as ServicesShuftiproCheck;
 
 use Carbon\Carbon;
 use Exception;
@@ -88,6 +89,25 @@ class UserController extends Controller
         $this->verifyUserRepo = $verifyUserRepo;
         $this->profileRepo = $profileRepo;
         $this->ownerNodeRepo = $ownerNodeRepo;
+    }
+
+    public function updateShuftiproStatus() {
+        $json = file_get_contents('php://input');
+
+        if ($json) {
+            $data = json_decode($json, true);
+
+            if ($data && isset($data['reference'])) {
+                $shuftiproCheck = new ServicesShuftiproCheck();
+
+                $reference_id = $data['reference'];
+                $record = Shuftipro::where('reference_id', $reference_id)->first();
+                
+                if ($record) {
+                    $shuftiproCheck->handleExisting($record);
+                }
+            }
+        }
     }
 
     /**
@@ -300,10 +320,10 @@ class UserController extends Controller
 
         $address = strtolower($request->public_address);
 
-        // $public_address = (new ChecksumValidator())->do($address);
+        $public_address_temp = (new ChecksumValidator())->do($address);
         $public_address = strtolower($address);
 
-        $correct_checksum = (int) (new ChecksumValidator($public_address))->do();
+        $correct_checksum = (int) (new ChecksumValidator($public_address_temp))->do();
         if (!$correct_checksum) {
             return $this->errorResponse(__('Please provide valid address'), Response::HTTP_BAD_REQUEST);
         }
