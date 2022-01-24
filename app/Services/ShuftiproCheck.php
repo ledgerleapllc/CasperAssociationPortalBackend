@@ -56,6 +56,7 @@ class ShuftiproCheck
 
         $is_successful = $event == 'verification.accepted' ? 1 : 0;
         $status = $is_successful ? 'approved' : 'denied';
+
         //Aml check
         $aml_declined_reason  = null;
         $hit  = null;
@@ -157,8 +158,6 @@ class ShuftiproCheck
             $background_checks_result = 1;
         }
 
-        Shuftipro::where('user_id', $user_id)->delete();
-
         $record = $item;
         $record->user_id = $user_id;
         $record->reference_id = $reference_id;
@@ -185,7 +184,7 @@ class ShuftiproCheck
         $user = User::find($user_id);
         $user->kyc_verified_at = now();
         $user->save();
-        
+
         if ($status == "approved") {
             $profile = Profile::where('user_id', $user_id);
             if ($profile) {
