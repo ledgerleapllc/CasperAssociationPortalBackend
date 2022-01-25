@@ -91,6 +91,7 @@ class UserController extends Controller
         $this->ownerNodeRepo = $ownerNodeRepo;
     }
 
+    // Shuftipro Webhook
     public function updateShuftiproStatus() {
         $json = file_get_contents('php://input');
 
@@ -101,10 +102,34 @@ class UserController extends Controller
                 $shuftiproCheck = new ServicesShuftiproCheck();
 
                 $reference_id = $data['reference'];
+
                 $record = Shuftipro::where('reference_id', $reference_id)->first();
-                
+                $recordTemp = ShuftiproTemp::where('reference_id', $reference_id)->first();
+
+                if (!$recordTemp) {
+                    return;
+                }
+
                 if ($record) {
                     $shuftiproCheck->handleExisting($record);
+                } else {
+                    $user = User::find($recordTemp->user_id);
+                    if ($user) {
+                        $user_id = $user->id;
+                        $profile = Profile::where('user_id', $user_id)->first();
+                        if ($profile) {
+                            $profile->status = 'pending';
+                            $profile->save();
+                        }
+
+                        $recordTemp->status = 'booked';
+                        $recordTemp->save();
+
+                        $emailerData = EmailerHelper::getEmailerData();
+                        EmailerHelper::triggerAdminEmail('KYC or AML need review', $emailerData, $user);
+                        
+                        $shuftiproCheck->handle($recordTemp);
+                    }
                 }
             }
         }
