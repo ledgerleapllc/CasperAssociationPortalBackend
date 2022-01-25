@@ -65,6 +65,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('users/message-content', [UserController::class, 'getMessageContent']);
             Route::post('users/shuftipro-temp',  [UserController::class, 'saveShuftiproTemp']);
             Route::put('users/shuftipro-temp', [UserController::class, 'updateShuftiproTemp']);
+            Route::put('users/shuftipro-temp/delete', [UserController::class, 'deleteShuftiproTemp']);
             Route::put('/users/type-owner-node',  [UserController::class, 'updateTypeOwnerNode']);
             Route::post('users/verify-bypass',  [UserController::class, 'verifyBypass']);
             Route::post('/users/upload-letter',  [UserController::class, 'uploadLetter']);

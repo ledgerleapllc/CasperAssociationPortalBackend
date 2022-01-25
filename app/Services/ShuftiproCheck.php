@@ -202,7 +202,7 @@ class ShuftiproCheck
         $url = 'https://api.shuftipro.com/status';
         $client_id = config('services.shufti.client_id');
         $secret_key = config('services.shufti.client_secret');
-
+        
         $auth = $client_id . ":" . $secret_key;
 
         $response = Http::withBasicAuth($client_id, $secret_key)->post($url, [

@@ -131,23 +131,27 @@ class UserController extends Controller
                     }
                     $shuftiproCheck->handleExisting($record);
                 } else {
-                    $user = User::find($recordTemp->user_id);
-                    if ($user) {
-                        $user_id = $user->id;
-                        $profile = Profile::where('user_id', $user_id)->first();
+                    $events = [
+                        'verification.accepted',
+                        'verification.declined',
+                    ];
+                    if (isset($data['event']) && in_array($data['event'], $events)) {
+                        $user = User::find($recordTemp->user_id);
 
-                        if ($profile) {
-                            $profile->status = 'pending';
-                            $profile->save();
+                        if ($user) {
+                            $user_id = $user->id;
+                            $profile = Profile::where('user_id', $user_id)->first();
+
+                            if ($profile) {
+                                $profile->status = 'pending';
+                                $profile->save();
+                            }
+
+                            $recordTemp->status = 'booked';
+                            $recordTemp->save();
+
+                            $shuftiproCheck->handle($recordTemp);
                         }
-
-                        $recordTemp->status = 'booked';
-                        $recordTemp->save();
-
-                        $emailerData = EmailerHelper::getEmailerData();
-                        EmailerHelper::triggerAdminEmail('KYC or AML need review', $emailerData, $user);
-                        
-                        $shuftiproCheck->handle($recordTemp);
                     }
                 }
             }
@@ -202,7 +206,7 @@ class UserController extends Controller
      */
     public function getProfile()
     {
-        $user = auth()->user()->load(['profile', 'permissions', 'shuftipro']);
+        $user = auth()->user()->load(['profile', 'permissions', 'shuftipro', 'shuftiproTemp']);
         $user->metric = Helper::getNodeInfo($user);
         return $this->successResponse($user);
     }
@@ -577,6 +581,32 @@ class UserController extends Controller
         $record->reference_id = $reference_id;
         $record->save();
 
+        return $this->metaSuccess();
+    }
+
+    // Delete Shuftipro Temp Status
+    public function deleteShuftiproTemp(Request $request)
+    {
+        $user = auth()->user();
+        // Validator
+        $validator = Validator::make($request->all(), [
+            'reference_id' => 'required'
+        ]);
+        if ($validator->fails()) {
+            return $this->validateResponse($validator->errors());
+        }
+
+        $user_id = $user->id;
+        $reference_id = $request->reference_id;
+        $profile = Profile::where('user_id', $user_id)->first();
+        if ($profile) {
+            $profile->status = null;
+            $profile->save();
+        }
+
+        Shuftipro::where('user_id', $user_id)->delete();
+        ShuftiproTemp::where('user_id', $user_id)->delete();
+        
         return $this->metaSuccess();
     }
 

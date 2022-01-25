@@ -777,6 +777,8 @@ class AdminController extends Controller
     {
         $user = User::where('id', $id)->where('role', 'member')->first();
         if ($user) {
+            Shuftipro::where('user_id', $user->id)->delete();
+            ShuftiproTemp::where('user_id', $user->id)->delete();
             Profile::where('user_id', $user->id)->delete();
             $user->delete();
             return $this->metaSuccess();
