@@ -111,12 +111,31 @@ class UserController extends Controller
                 }
 
                 if ($record) {
+                    if (isset($data['event']) && $data['event'] == 'request.deleted') {
+                        // Reset Action
+                        $user = User::find($record->user_id);
+
+                        if ($user) {
+                            $user_id = $user->id;
+                            $profile = Profile::where('user_id', $user_id)->first();
+
+                            if ($profile) {
+                                $profile->status = null;
+                                $profile->save();
+                            }
+                            
+                            Shuftipro::where('user_id', $user->id)->delete();
+                            ShuftiproTemp::where('user_id', $user->id)->delete();
+                        }
+                        return;
+                    }
                     $shuftiproCheck->handleExisting($record);
                 } else {
                     $user = User::find($recordTemp->user_id);
                     if ($user) {
                         $user_id = $user->id;
                         $profile = Profile::where('user_id', $user_id)->first();
+
                         if ($profile) {
                             $profile->status = 'pending';
                             $profile->save();
