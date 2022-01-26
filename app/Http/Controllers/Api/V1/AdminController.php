@@ -243,6 +243,7 @@ class AdminController extends Controller
                     $query->where('users.email', 'like', '%' . $search . '%');
                 }
             })
+            ->orderBy('users.id', 'desc')
             ->paginate($limit);
 
         return $this->successResponse($users);
