@@ -672,7 +672,7 @@ class UserController extends Controller
     public function getVotes(Request $request)
     {
         $status = $request->status ?? 'active';
-        $limit = $request->limit ?? 15;
+        $limit = $request->limit ?? 50;
         $sort_key = $request->sort_key ?? '';
         $sort_direction = $request->sort_direction ?? '';
         if (!$sort_key) $sort_key = 'ballot.id';
@@ -809,7 +809,7 @@ class UserController extends Controller
     public function getMembers(Request $request)
     {
         $search = $request->search;
-        $limit = $request->limit ?? 15;
+        $limit = $request->limit ?? 50;
         $slide_value_uptime = $request->uptime ?? 0;
         $slide_value_update_responsiveness = $request->update_responsiveness ?? 0;
         $slide_value_delegotors = $request->delegators ?? 0;
@@ -905,7 +905,7 @@ class UserController extends Controller
 
     public function getMyVotes(Request $request)
     {
-        $limit = $request->limit ?? 15;
+        $limit = $request->limit ?? 50;
         $user = auth()->user();
         $data = VoteResult::where('vote_result.user_id', $user->id)
             ->join('ballot', function ($query) use ($user) {
@@ -1107,7 +1107,7 @@ class UserController extends Controller
 
     public function getListNodes(Request $request)
     {
-        $limit = $request->limit ?? 15;
+        $limit = $request->limit ?? 50;
         $nodes =  User::select([
             'id as user_id',
             'public_address_node',

@@ -129,7 +129,7 @@ class NotificationController extends Controller
 
     public function getNotification(Request $request) 
     {
-        $limit = $request->limit ?? 15;
+        $limit = $request->limit ?? 50;
         $sort_key = $request->sort_key ?? 'created_at';
         $sort_direction = $request->sort_direction ?? 'desc';
         if (isset($request->setting)) {
@@ -150,7 +150,7 @@ class NotificationController extends Controller
 
     public function getUserViewLogs(Request $request, $id) 
     {
-        $limit = $request->limit ?? 15;
+        $limit = $request->limit ?? 50;
         $sort_key = $request->sort_key ?? 'created_at';
         $sort_direction = $request->sort_direction ?? 'desc';
         $notification = Notification::where('id', $id)->first();

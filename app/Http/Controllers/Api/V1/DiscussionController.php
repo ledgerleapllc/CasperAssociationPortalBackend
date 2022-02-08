@@ -47,7 +47,7 @@ class DiscussionController extends Controller
 
     public function getTrending(Request $request)
     {
-        $limit = $request->limit ?? 15;
+        $limit = $request->limit ?? 50;
         $user = auth()->user();
         $trendings = Discussion::where('likes', '!=', 0)->where('is_draft', 0)->take(9)->orderBy('likes', 'desc')->paginate($limit);
         $count = Discussion::where('likes', '!=', 0)->where('is_draft', 0)->orderBy('likes', 'desc')->count();
@@ -73,7 +73,7 @@ class DiscussionController extends Controller
     public function getDiscussions(Request $request)
     {
         $data = array();
-        $limit = $request->limit ?? 15;
+        $limit = $request->limit ?? 50;
         $user = auth()->user();
         $data = Discussion::with(['user', 'user.profile'])->where('discussions.is_draft', 0)
             ->leftJoin('discussion_pins', function ($query) use ($user) {
@@ -96,7 +96,7 @@ class DiscussionController extends Controller
 
     public function getPinnedDiscussions(Request $request)
     {
-        $limit = $request->limit ?? 15;
+        $limit = $request->limit ?? 50;
         $user = auth()->user();
         $data = DiscussionPin::where('discussion_pins.user_id', $user->id)->with('user')
             ->join('discussions', 'discussions.id', '=', 'discussion_pins.discussion_id')
@@ -115,7 +115,7 @@ class DiscussionController extends Controller
 
     public function getMyDiscussions(Request $request)
     {
-        $limit = $request->limit ?? 15;
+        $limit = $request->limit ?? 50;
         $user = auth()->user();
         $data = Discussion::with(['user', 'user.profile'])->where('discussions.is_draft', 0)
             ->where('discussions.user_id', $user->id)
@@ -336,7 +336,7 @@ class DiscussionController extends Controller
 
     public function getComment(Request $request, $id)
     {
-        $limit = $request->limit ?? 15;
+        $limit = $request->limit ?? 50;
         $user = auth()->user();
         $data = DiscussionComment::with(['user', 'user.profile'])
             ->where('discussion_comments.discussion_id', $id)
@@ -349,7 +349,7 @@ class DiscussionController extends Controller
 
     public function getDraftDiscussions(Request $request)
     {
-        $limit = $request->limit ?? 15;
+        $limit = $request->limit ?? 50;
         $user = auth()->user();
         $data = Discussion::with(['user', 'user.profile'])->where('discussions.is_draft', 1)
             ->where('discussions.user_id', $user->id)

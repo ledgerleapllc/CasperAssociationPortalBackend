@@ -96,7 +96,7 @@ class PerkController extends Controller
 
     public function getPerksAdmin(Request $request)
     {
-        $limit = $request->limit ?? 15;
+        $limit = $request->limit ?? 50;
         $sort_key = $request->sort_key ?? 'end_date';
         $sort_direction = $request->sort_direction ?? 'desc';
         if (isset($request->setting)) {
@@ -221,7 +221,7 @@ class PerkController extends Controller
 
     public function getPerkResultAdmin(Request $request, $id)
     {
-        $limit = $request->limit ?? 15;
+        $limit = $request->limit ?? 50;
         $sort_key = $request->sort_key ?? 'perk_result.created_at';
         $sort_direction = $request->sort_direction ?? 'desc';
         $perk = PerkResult::join('perk', 'perk_result.perk_id', '=', 'perk.id')
@@ -241,7 +241,7 @@ class PerkController extends Controller
     public function getPerksUser(Request $request)
     {
         $user = auth()->user();
-        $limit = $request->limit ?? 15;
+        $limit = $request->limit ?? 50;
         $sort_key = $request->sort_key ?? 'created_at';
         $sort_direction = $request->sort_direction ?? 'desc';
         $perks = Perk::where('visibility', 'visible')->orderBy($sort_key, $sort_direction)->paginate($limit);

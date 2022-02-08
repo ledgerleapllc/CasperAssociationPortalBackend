@@ -54,7 +54,7 @@ class AdminController extends Controller
 {
     public function getUsers(Request $request)
     {
-        $limit = $request->limit ?? 15;
+        $limit = $request->limit ?? 50;
         $sort_key = $request->sort_key ?? '';
         $sort_direction = $request->sort_direction ?? '';
         if (!$sort_key) $sort_key = 'created_at';
@@ -225,7 +225,7 @@ class AdminController extends Controller
     // get intake
     public function getIntakes(Request $request)
     {
-        $limit = $request->limit ?? 15;
+        $limit = $request->limit ?? 50;
         $search = $request->search ?? '';
         $users =  User::select([
             'id', 'email', 'node_verified_at', 'letter_verified_at', 'signature_request_id', 'created_at',
@@ -415,7 +415,7 @@ class AdminController extends Controller
 
     public function getBallots(Request $request)
     {
-        $limit = $request->limit;
+        $limit = $request->limit ?? 50;
         $status = $request->status;
         $sort_key = $request->sort_key ?? '';
         $sort_direction = $request->sort_direction ?? '';
@@ -458,7 +458,7 @@ class AdminController extends Controller
 
     public function getBallotVotes($id, Request $request)
     {
-        $limit = $request->limit ?? 15;
+        $limit = $request->limit ?? 50;
         $data = VoteResult::where('ballot_id', '=', $id)->with(['user', 'user.profile'])->orderBy('created_at', 'ASC')->paginate($limit);
 
         return $this->successResponse($data);
@@ -466,7 +466,7 @@ class AdminController extends Controller
 
     public function getViewFileBallot(Request $request, $fileId)
     {
-        $limit = $request->limit ?? 15;
+        $limit = $request->limit ?? 50;
         $data = BallotFileView::where('ballot_file_id', '=',  $fileId)->with(['user', 'user.profile'])->orderBy('created_at', 'ASC')->paginate($limit);
         return $this->successResponse($data);
     }
@@ -514,7 +514,7 @@ class AdminController extends Controller
 
     public function getSubAdmins(Request $request)
     {
-        $limit = $request->limit ?? 10;
+        $limit = $request->limit ?? 50;
         $admins = User::with(['permissions'])->where(['role' => 'sub-admin'])
             ->orderBy('created_at', 'DESC')
             ->paginate($limit);
@@ -714,7 +714,7 @@ class AdminController extends Controller
         if ($admin == null || $admin->role != 'sub-admin') {
             return $this->errorResponse('Not found admin', Response::HTTP_BAD_REQUEST);
         }
-        $limit = $request->limit ?? 10;
+        $limit = $request->limit ?? 50;
         $ipAddress = IpHistory::where(['user_id' => $admin->id])
             ->orderBy('created_at', 'DESC')
             ->paginate($limit);
@@ -789,7 +789,7 @@ class AdminController extends Controller
 
     public function getVerificationUsers(Request $request)
     {
-        $limit = $request->limit ?? 15;
+        $limit = $request->limit ?? 50;
         $users = User::where('users.role', 'member')->where('banned', 0)
                         ->join('profile', function ($query) {
                             $query->on('profile.user_id', '=', 'users.id')
@@ -1213,7 +1213,7 @@ class AdminController extends Controller
 
     public function getListNodes(Request $request)
     {
-        $limit = $request->limit ?? 15;
+        $limit = $request->limit ?? 50;
         $node_failing  = $request->node_failing  ?? '';
         $nodes =  User::select([
             'id as user_id',
