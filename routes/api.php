@@ -33,7 +33,7 @@ Route::get('shuftipro-status', [UserController::class, 'updateShuftiproStatus'])
 Route::put('shuftipro-status', [UserController::class, 'updateShuftiproStatus']);
 
 Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
-    Route::post('/auth/login', [AuthController::class, 'login'])->name('login');;
+    Route::post('/auth/login', [AuthController::class, 'login'])->name('login');
     Route::post('/auth/register-entity', [AuthController::class, 'registerEntity']);
     Route::post('/auth/register-individual', [AuthController::class, 'registerIndividual']);
     Route::post('/auth/register-sub-admin', [AuthController::class, 'registerSubAdmin']);
