@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\MetricController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PerkController;
 use App\Http\Controllers\Api\V1\VerificationController;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -139,8 +140,8 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
                 Route::get('/ballots/viewed-docs/{fileId}', [AdminController::class, 'getViewFileBallot'])->where('id', '[0-9]+');
             });
 
-             //perk
-             Route::middleware([])->group(function () {
+            //perk
+            Route::middleware([])->group(function () {
                 Route::get('/perks',  [PerkController::class, 'getPerksAdmin']);
                 Route::post('/perks/update/{id}',  [PerkController::class, 'updatePerk']);
                 Route::get('/perks/{id}',  [PerkController::class, 'getPerkDetailAdmin']);
@@ -215,7 +216,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('/draft', [DiscussionController::class, 'getDraftDiscussions']);
             Route::delete('{id}/draft', [DiscussionController::class, 'deleteDraftDiscussions']);
         });
-
+        
         Route::prefix('users/verification')->group(function () {
             Route::post('/submit-node', [VerificationController::class, 'submitNode']);
             Route::post('/submit-detail', [VerificationController::class, 'submitDetail']);
