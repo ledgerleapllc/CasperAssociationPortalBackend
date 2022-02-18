@@ -68,6 +68,12 @@ You may also have to authorize Laravel to write to the storage directory
 sudo chown -R www-data:www-data storage/
 ```
 
+Last, you need to setup roles and admins to start using the portal and see it work. Visit the URL of the backend with the path **/install**. This will install these things for you. You will find your admin credentials generated in the Laravel log file. You may want to disable this endpoint after the initial install to prevent this install endpoint from being used again if you are planning on deploying to a production environment in the future. This is easily done by switching ENV variable **INSTALL_PATH_ENABLED** to 0, or false. You may need to run the following command if Laravel caching is on.
+
+```bash
+php artisan config:clear
+```
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
 
 ## About Laravel
