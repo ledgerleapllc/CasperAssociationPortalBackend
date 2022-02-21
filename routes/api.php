@@ -140,7 +140,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
                 Route::get('/ballots/viewed-docs/{fileId}', [AdminController::class, 'getViewFileBallot'])->where('id', '[0-9]+');
             });
 
-            //perk
+            // perk
             Route::middleware([])->group(function () {
                 Route::get('/perks',  [PerkController::class, 'getPerksAdmin']);
                 Route::post('/perks/update/{id}',  [PerkController::class, 'updatePerk']);
@@ -164,7 +164,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
                 Route::post('/{id}/undo-revoke', [AdminController::class, 'undoRevokeSubAdmin']);
             });
 
-            //emailer
+            // emailer
             Route::post('/emailer-admin', [AdminController::class, 'addEmailerAdmin']);
             Route::delete('/emailer-admin/{adminId}', [AdminController::class, 'deleteEmailerAdmin']);
             Route::get('/emailer-data', [AdminController::class, 'getEmailerData']);
