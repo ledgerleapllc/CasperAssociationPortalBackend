@@ -56,9 +56,9 @@ class DiscussionController extends Controller
         } else {
             $remains = 9 - $count;
             $trending_ids = $trendings->pluck('id');
-            $removed_ids = DiscussionRemoveNew::where(['user_id' => $user->id])->pluck('discussion_id');
+            // $removed_ids = DiscussionRemoveNew::where(['user_id' => $user->id])->pluck('discussion_id');
             $news = Discussion::whereNotIn('id', $trending_ids)
-                ->whereNotIn('id', $removed_ids)
+                // ->whereNotIn('id', $removed_ids)
                 ->where('is_draft', 0)
                 ->take($remains)->orderBy('id', 'desc')->get();
             $trendingArray = $trendings->toArray() ;

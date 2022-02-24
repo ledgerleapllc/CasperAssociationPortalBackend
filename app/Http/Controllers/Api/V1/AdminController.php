@@ -284,6 +284,11 @@ class AdminController extends Controller
             $start = Carbon::createFromFormat("Y-m-d H:i:s", Carbon::now('UTC'), "UTC");
             $now = Carbon::now('UTC');
             $timeEnd = $start->addMinutes($mins);
+
+            $endTime = $request->end_date . ' ' . $request->end_time;
+            $endTimeCarbon = Carbon::createFromFormat('Y-m-d H:i:s', $endTime, 'EST');
+            $endTimeCarbon->setTimezone('UTC');
+
             $ballot = new Ballot();
             $ballot->user_id = $user->id;
             $ballot->title = $request->title;
@@ -291,7 +296,7 @@ class AdminController extends Controller
             // $ballot->time = $time;
             // $ballot->time_unit = $timeUnit;
             // $ballot->time_end = $timeEnd;
-            $ballot->time_end = $request->end_date . ' ' . $request->end_time;
+            $ballot->time_end = $endTimeCarbon;
             $ballot->start_date = $request->start_date;
             $ballot->start_time = $request->start_time;
             $ballot->end_date = $request->end_date;
@@ -422,10 +427,35 @@ class AdminController extends Controller
         if (!$sort_key) $sort_key = 'ballot.id';
         if (!$sort_direction) $sort_direction = 'desc';
 
-        if ($status == 'active') {
-            $ballots = Ballot::with(['user', 'vote'])->where('ballot.status', 'active')
-                ->orderBy($sort_key, $sort_direction)->paginate($limit);
-        } else if ($status && $status != 'active') {
+        $now = Carbon::now('EST');
+        $startDate = $now->format('Y-m-d');
+        $startTime = $now->format('H:i:s');
+        
+        if ($status == 'active') {    
+            $ballots = Ballot::with(['user', 'vote'])
+                            ->where('ballot.status', 'active')
+                            ->where(function ($query) use ($startDate, $startTime) {
+                                $query->where('start_date', '<', $startDate)
+                                        ->orWhere(function ($query) use ($startDate, $startTime) {
+                                            $query->where('start_date', $startDate)
+                                                    ->where('start_time', '<=', $startTime);
+                                        });
+                            })
+                            ->orderBy($sort_key, $sort_direction)
+                            ->paginate($limit);
+        } else if ($status && $status == 'scheduled') {
+            $ballots = Ballot::with(['user', 'vote'])
+                            ->where('ballot.status', 'active')
+                            ->where(function ($query) use ($startDate, $startTime) {
+                                $query->where('start_date', '>', $startDate)
+                                        ->orWhere(function ($query) use ($startDate, $startTime) {
+                                            $query->where('start_date', $startDate)
+                                                    ->where('start_time', '>', $startTime);
+                                        });
+                            })
+                            ->orderBy($sort_key, $sort_direction)
+                            ->paginate($limit);
+        } else if ($status && $status != 'active' && $status != 'scheduled') {
             $ballots = Ballot::with(['user', 'vote'])->where('ballot.status', '!=', 'active')
                 ->orderBy($sort_key, $sort_direction)
                 ->paginate($limit);
