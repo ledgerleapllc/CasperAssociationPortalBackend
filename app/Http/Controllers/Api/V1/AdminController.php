@@ -173,6 +173,8 @@ class AdminController extends Controller
         $totalFailNode = User::where('banned', 0)->whereNotNull('public_address_node')->where('is_fail_node', 1)->count();
 
         $totalPerksActive = Perk::where('status', 'active')->where('created_at', '>=', $timeframe_perk)->count();
+        $totalPerksViews = Perk::where('status', 'active')->where('created_at', '>=', $timeframe_perk)->sum('total_views');
+
         $totalNewComments = DiscussionComment::where('created_at', '>=', $timeframe_comments)->count();
         $totalNewDiscussions = Discussion::where('created_at', '>=', $timeframe_discussions)->count();
 
@@ -204,6 +206,7 @@ class AdminController extends Controller
         $response['totalUserVerification'] = $totalUserVerification;
         $response['totalFailNode'] = $totalFailNode;
         $response['totalPerksActive'] = $totalPerksActive;
+        $response['totalPerksViews'] = $totalPerksViews;
         $response['totalNewComments'] = $totalNewComments;
         $response['totalNewDiscussions'] = $totalNewDiscussions;
         $response['avgUptime'] = ($uptime_nodes->sum() + $uptime_metrics->sum()) /  $countUptime;

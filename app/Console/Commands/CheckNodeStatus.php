@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\MonitoringCriteria;
 use App\Models\User;
+
 use Carbon\Carbon;
 
 use Illuminate\Console\Command;

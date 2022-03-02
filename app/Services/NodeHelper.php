@@ -6,6 +6,7 @@ use App\Models\KeyPeer;
 use App\Models\Node;
 use App\Models\NodeInfo;
 use App\Models\User;
+
 use Carbon\Carbon;
 
 use Exception;
@@ -31,6 +32,7 @@ class NodeHelper
     {
         $this->SEENA_API_KEY = '48454d73487700a29f50719d69be47d4';
     }
+
     public function getValidatorStanding()
     {
         $response = Http::withHeaders([
@@ -53,9 +55,9 @@ class NodeHelper
     {
         $data = $this->getValidatorStanding();
         
-        $validator_standing = isset($data['validator_standing']) ? $data['validator_standing']  : null;
+        $validator_standing = isset($data['validator_standing']) ? $data['validator_standing'] : null;
 
-        $mbs = isset($data['MBS']) ? $data['MBS']  : 0;
+        $mbs = isset($data['MBS']) ? $data['MBS'] : 0;
         $users = User::whereNotNull('public_address_node')->get();
         if ($validator_standing) {
             // Refresh Validator Standing
@@ -72,6 +74,7 @@ class NodeHelper
                     $info = $validator_standing[$validatorid];
                     $fee = (float) $info['delegation_rate'];
 
+                    $user->pending_node = 0;
                     $user->validator_fee = round($fee, 2);
                     $user->save();
 

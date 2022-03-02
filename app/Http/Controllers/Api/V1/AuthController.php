@@ -114,6 +114,7 @@ class AuthController extends Controller
             );
             Mail::to($user->email)->send(new UserVerifyMail($code));
             DB::commit();
+            $user->pending_node = 1;
             $user->last_login_at = now();
             $user->last_login_ip_address = request()->ip();
             $user->save();
@@ -158,6 +159,7 @@ class AuthController extends Controller
             );
             Mail::to($user->email)->send(new UserVerifyMail($code));
             DB::commit();
+            $user->pending_node = 1;
             $user->last_login_at = now();
             $user->last_login_ip_address = request()->ip();
             $user->save();
