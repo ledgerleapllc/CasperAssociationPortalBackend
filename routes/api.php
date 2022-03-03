@@ -86,6 +86,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::put('/users/notification/{id}/view',  [NotificationController::class, 'updateView'])->where('id', '[0-9]+');
             Route::put('/users/notification/{id}/dismiss',  [NotificationController::class, 'dismiss'])->where('id', '[0-9]+');
             Route::put('/users/notification/{id}/click-cta',  [NotificationController::class, 'clickCTA'])->where('id', '[0-9]+');
+            
             // rules lock
             Route::get('/users/lock-rules',  [UserController::class, 'getLockRules']);
             Route::get('users/list-node', [UserController::class, 'getListNodes']);
