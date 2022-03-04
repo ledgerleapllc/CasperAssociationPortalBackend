@@ -58,6 +58,8 @@ class NodeHelper
         $validator_standing = isset($data['validator_standing']) ? $data['validator_standing'] : null;
 
         $mbs = isset($data['MBS']) ? $data['MBS'] : 0;
+        $peers = isset($data['peers']) ? $data['peers'] : 0;
+
         $users = User::whereNotNull('public_address_node')->get();
         if ($validator_standing) {
             // Refresh Validator Standing
@@ -86,7 +88,7 @@ class NodeHelper
                         $build_version = $build_version[0];
                     }
 
-                    $is_open_port =  isset($info['uptime']) && isset($info['update_responsiveness']) ? 1 : 0;
+                    $is_open_port = isset($info['uptime']) && isset($info['update_responsiveness']) ? 1 : 0;
                     
                     NodeInfo::updateOrCreate(
                         [
@@ -104,6 +106,7 @@ class NodeHelper
                             'update_responsiveness' => isset($info['update_responsiveness']) ? $info['update_responsiveness'] * 100 : 0,
                             'uptime' => isset($info['uptime']) ? $info['uptime'] * 100 : 0,
                             'block_height' => $info['block_height'] ?? 0,
+                            'peers' => $info['peer_count'] ?? 0,
                         ]
                     );
 
@@ -117,6 +120,7 @@ class NodeHelper
                             'update_responsiveness' => isset($info['update_responsiveness']) ? $info['update_responsiveness'] * 100 : null,
                             'uptime' => isset($info['uptime']) ? $info['uptime'] : null,
                             'weight' => $info['daily_earnings'] ?? 0,
+                            'peers' => $info['peer_count'] ?? 0,
                         ]
                     );
                 }
