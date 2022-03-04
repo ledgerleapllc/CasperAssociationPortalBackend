@@ -1271,8 +1271,10 @@ class AdminController extends Controller
     public function getGraphInfo(Request $request)
     {
         $user = Auth::user();
-        $graphData = [];
+        $graphDataDay = $graphDataWeek = $graphDataMonth = $graphDataYear = [];
 
+        /*
+        $graphData = [];
         $items = TokenPrice::orderBy('created_at', 'desc')->limit(100)->get();
         if ($items && count($items)) {
             foreach ($items as $item) {
@@ -1280,8 +1282,51 @@ class AdminController extends Controller
                 $graphData[$name] = number_format($item->price, 4);
             }
         }
+        */
 
-        return $this->successResponse($graphData);
+        $timeDay = Carbon::now('UTC')->subHours(24);
+        $timeWeek = Carbon::now('UTC')->subDays(7);
+        $timeMonth = Carbon::now('UTC')->subDays(30);
+        $timeYear = Carbon::now('UTC')->subYear();
+
+        $items = TokenPrice::orderBy('created_at', 'desc')->where('created_at', '>=', $timeDay)->get();
+        if ($items && count($items)) {
+            foreach ($items as $item) {
+                $name = strtotime($item->created_at);
+                $graphDataDay[$name] = number_format($item->price, 4);
+            }
+        }
+
+        $items = TokenPrice::orderBy('created_at', 'desc')->where('created_at', '>=', $timeWeek)->get();
+        if ($items && count($items)) {
+            foreach ($items as $item) {
+                $name = strtotime($item->created_at);
+                $graphDataWeek[$name] = number_format($item->price, 4);
+            }
+        }
+
+        $items = TokenPrice::orderBy('created_at', 'desc')->where('created_at', '>=', $timeMonth)->get();
+        if ($items && count($items)) {
+            foreach ($items as $item) {
+                $name = strtotime($item->created_at);
+                $graphDataMonth[$name] = number_format($item->price, 4);
+            }
+        }
+
+        $items = TokenPrice::orderBy('created_at', 'desc')->where('created_at', '>=', $timeYear)->get();
+        if ($items && count($items)) {
+            foreach ($items as $item) {
+                $name = strtotime($item->created_at);
+                $graphDataYear[$name] = number_format($item->price, 4);
+            }
+        }
+
+        return $this->successResponse([
+            'day' => $graphDataDay,
+            'week' => $graphDataWeek,
+            'month' => $graphDataMonth,
+            'year' => $graphDataYear,
+        ]);
     }
 
     /**
