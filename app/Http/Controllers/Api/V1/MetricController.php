@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+
 use App\Models\Metric;
 use App\Models\MonitoringCriteria;
 use App\Models\Node;
 use App\Models\NodeInfo;
 use App\Models\User;
+use App\Models\Setting;
+
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -116,6 +119,14 @@ class MetricController extends Controller
         $metric->stake_amount = $stake_amount;
         $metric['node_status'] = $user->node_status;
         $metric['monitoring_criteria'] = $monitoringCriteria;
+
+        $setting = Setting::where('name', 'peers')->first();
+        if ($setting) {
+            $metric['peers_setting'] = (int) $setting->value;
+        } else {
+            $metric['peers_setting'] = 0;
+        }
+
         return $this->successResponse($metric);
     }
 

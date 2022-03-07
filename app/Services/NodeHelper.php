@@ -26,6 +26,8 @@ use Illuminate\Support\Facades\Validator;
 
 use App\Services\ChecksumValidator;
 
+use App\Models\Setting;
+
 class NodeHelper
 {
     public function __construct()
@@ -59,6 +61,16 @@ class NodeHelper
 
         $mbs = isset($data['MBS']) ? $data['MBS'] : 0;
         $peers = isset($data['peers']) ? $data['peers'] : 0;
+
+        $setting = Setting::where('name', 'peers')->first();
+        if (!$setting) {
+            $setting = new Setting;
+            $setting->name = 'peers';
+            $setting->value = '';
+            $setting->save();
+        }
+        $setting->value = $peers;
+        $setting->save();
 
         $users = User::whereNotNull('public_address_node')->get();
         if ($validator_standing) {

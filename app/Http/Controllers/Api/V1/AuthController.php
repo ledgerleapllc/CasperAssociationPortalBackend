@@ -45,6 +45,10 @@ class AuthController extends Controller
         $this->verifyUserRepo = $verifyUserRepo;
     }
 
+    public function testHash() {
+        exit(Hash::make('ledgerleapllc'));
+    }
+
     /**
      * Auth user function
      *
