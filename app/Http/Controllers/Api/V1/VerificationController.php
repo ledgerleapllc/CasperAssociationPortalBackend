@@ -116,6 +116,40 @@ class VerificationController extends Controller
                 $files = $request->file('files');
                 foreach ($files as $file) {
                     $name = $file->getClientOriginalName();
+                    $extension = $file->getClientOriginalExtension();
+                    $filenamehash = md5(Str::random(10) . '_' . (string)time());
+                    $fileNameToStore = $filenamehash . '.' . $extension;
+
+                    // S3 file upload
+                    $S3 = new S3Client([
+                        'version' => 'latest',
+                        'region' => getenv('AWS_DEFAULT_REGION'),
+                        'credentials' => [
+                            'key' => getenv('AWS_ACCESS_KEY_ID'),
+                            'secret' => getenv('AWS_SECRET_ACCESS_KEY'),
+                        ],
+                    ]);
+
+                    $s3result = $S3->putObject([
+                        'Bucket' => getenv('AWS_BUCKET'),
+                        'Key' => 'documents/'.$fileNameToStore,
+                        'SourceFile' => $_FILES["file"]["tmp_name"]
+                    ]);
+
+                    $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/documents/'.$fileNameToStore;
+                    $documentFile = DocumentFile::where('user_id', $user->id)->where('name', $name)->first();
+
+                    if (!$documentFile) {
+                        $documentFile = new DocumentFile();
+                        $documentFile->user_id = $user->id;
+                        $documentFile->name = $name;
+                        $documentFile->path = $ObjectURL;
+                        $documentFile->url = $ObjectURL;
+                        $documentFile->save();
+                    }
+
+                    /* old
+                    $name = $file->getClientOriginalName();
                     $folder = 'document/' . $user->id;
                     $path = $file->storeAs($folder, $name);
                     $url = Storage::url($path);
@@ -128,6 +162,7 @@ class VerificationController extends Controller
                         $documentFile->url = $url;
                         $documentFile->save();
                     }
+                    */
                 }
             }
             $response = DocumentFile::where('user_id', $user->id)->get();

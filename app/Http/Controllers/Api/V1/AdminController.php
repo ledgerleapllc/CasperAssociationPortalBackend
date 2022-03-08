@@ -316,6 +316,36 @@ class AdminController extends Controller
                 $files = $request->file('files');
                 foreach ($files as $file) {
                     $name = $file->getClientOriginalName();
+                    $extension = $file->getClientOriginalExtension();
+                    $filenamehash = md5(Str::random(10) . '_' . (string)time());
+                    $fileNameToStore = $filenamehash . '.' . $extension;
+
+                    // S3 file upload
+                    $S3 = new S3Client([
+                        'version' => 'latest',
+                        'region' => getenv('AWS_DEFAULT_REGION'),
+                        'credentials' => [
+                            'key' => getenv('AWS_ACCESS_KEY_ID'),
+                            'secret' => getenv('AWS_SECRET_ACCESS_KEY'),
+                        ],
+                    ]);
+
+                    $s3result = $S3->putObject([
+                        'Bucket' => getenv('AWS_BUCKET'),
+                        'Key' => 'perks/'.$fileNameToStore,
+                        'SourceFile' => $_FILES["file"]["tmp_name"]
+                    ]);
+
+                    $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/perks/'.$fileNameToStore;
+                    $ballotFile = new BallotFile();
+                    $ballotFile->ballot_id = $ballot->id;
+                    $ballotFile->name = $name;
+                    $ballotFile->path = $ObjectURL;
+                    $ballotFile->url = $ObjectURL;
+                    $ballotFile->save();
+
+                    /* old
+                    $name = $file->getClientOriginalName();
                     $folder = 'ballot/' . $ballot->id;
                     $path = $file->storeAs($folder, $name);
                     $url = Storage::url($path);
@@ -325,6 +355,7 @@ class AdminController extends Controller
                     $ballotFile->path = $path;
                     $ballotFile->url = $url;
                     $ballotFile->save();
+                    */
                 }
             }
 
@@ -399,6 +430,36 @@ class AdminController extends Controller
                 $files = $request->file('files');
                 foreach ($files as $file) {
                     $name = $file->getClientOriginalName();
+                    $extension = $file->getClientOriginalExtension();
+                    $filenamehash = md5(Str::random(10) . '_' . (string)time());
+                    $fileNameToStore = $filenamehash . '.' . $extension;
+
+                    // S3 file upload
+                    $S3 = new S3Client([
+                        'version' => 'latest',
+                        'region' => getenv('AWS_DEFAULT_REGION'),
+                        'credentials' => [
+                            'key' => getenv('AWS_ACCESS_KEY_ID'),
+                            'secret' => getenv('AWS_SECRET_ACCESS_KEY'),
+                        ],
+                    ]);
+
+                    $s3result = $S3->putObject([
+                        'Bucket' => getenv('AWS_BUCKET'),
+                        'Key' => 'perks/'.$fileNameToStore,
+                        'SourceFile' => $_FILES["file"]["tmp_name"]
+                    ]);
+
+                    $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/perks/'.$fileNameToStore;
+                    $ballotFile = new BallotFile();
+                    $ballotFile->ballot_id = $ballot->id;
+                    $ballotFile->name = $name;
+                    $ballotFile->path = $ObjectURL;
+                    $ballotFile->url = $ObjectURL;
+                    $ballotFile->save();
+
+                    /* old
+                    $name = $file->getClientOriginalName();
                     $folder = 'ballot/' . $ballot->id;
                     $path = $file->storeAs($folder, $name);
                     $url = Storage::url($path);
@@ -408,6 +469,7 @@ class AdminController extends Controller
                     $ballotFile->path = $path;
                     $ballotFile->url = $url;
                     $ballotFile->save();
+                    */
                 }
             }
             if ($request->file_ids_remove) {
