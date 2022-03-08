@@ -333,7 +333,7 @@ class AdminController extends Controller
                     $s3result = $S3->putObject([
                         'Bucket' => getenv('AWS_BUCKET'),
                         'Key' => 'perks/'.$fileNameToStore,
-                        'SourceFile' => $_FILES["file"]["tmp_name"]
+                        'SourceFile' => $file
                     ]);
 
                     $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/perks/'.$fileNameToStore;
@@ -447,7 +447,7 @@ class AdminController extends Controller
                     $s3result = $S3->putObject([
                         'Bucket' => getenv('AWS_BUCKET'),
                         'Key' => 'perks/'.$fileNameToStore,
-                        'SourceFile' => $_FILES["file"]["tmp_name"]
+                        'SourceFile' => $file
                     ]);
 
                     $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/perks/'.$fileNameToStore;
