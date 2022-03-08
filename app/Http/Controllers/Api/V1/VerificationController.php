@@ -12,6 +12,8 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
+use Aws\S3\S3Client;
+
 class VerificationController extends Controller
 {
     public function submitNode(Request $request) {     

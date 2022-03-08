@@ -66,6 +66,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
+use Aws\S3\S3Client;
+
 class UserController extends Controller
 {
     private $userRepo;
@@ -230,18 +232,49 @@ class UserController extends Controller
             $validator = Validator::make($request->all(), [
                 'file' => 'required|mimes:pdf,docx,doc,txt,rtf|max:20000',
             ]);
+
             if ($validator->fails()) {
                 return $this->validateResponse($validator->errors());
             }
+
             $user = auth()->user();
             $filenameWithExt = $request->file('file')->getClientOriginalName();
             //Get just filename
             $filename = pathinfo($filenameWithExt, PATHINFO_FILENAME);
             // Get just ext
             $extension = $request->file('file')->getClientOriginalExtension();
+            // new filename hash
+            $filenamehash = md5(Str::random(10) . '_' . (string)time());
             // Filename to store
-            $fileNameToStore = $filename . '_' . time() . '.' . $extension;
+            $fileNameToStore = $filenamehash . '.' . $extension;
+
+            // S3 file upload
+            $S3 = new S3Client([
+                'version' => 'latest',
+                'region' => getenv('AWS_DEFAULT_REGION'),
+                'credentials' => [
+                    'key' => getenv('AWS_ACCESS_KEY_ID'),
+                    'secret' => getenv('AWS_SECRET_ACCESS_KEY'),
+                ],
+            ]);
+
+            $s3result = $S3->putObject([
+                'Bucket' => getenv('AWS_BUCKET'),
+                'Key' => 'letters_of_motivation/'.$fileNameToStore,
+                'SourceFile' => $_FILES["file"]["tmp_name"]
+            ]);
+
+            $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/letters_of_motivation/'.$fileNameToStore;
+            $user->letter_file = $ObjectURL;
+            $user->letter_rejected_at = null;
+            $user->save();
+            $emailerData = EmailerHelper::getEmailerData();
+            EmailerHelper::triggerAdminEmail('User uploads a letter', $emailerData, $user);
+            EmailerHelper::triggerUserEmail($user->email, 'Your letter of motivation is received', $emailerData, $user);
+            return $this->metaSuccess();
+
             // Upload Image
+            /* old
             $path = $request->file('file')->storeAs('users', $fileNameToStore);
             $user->letter_file = $path;
             $user->letter_rejected_at = null;
@@ -250,6 +283,7 @@ class UserController extends Controller
             EmailerHelper::triggerAdminEmail('User uploads a letter', $emailerData, $user);
             EmailerHelper::triggerUserEmail($user->email, 'Your letter of motivation is received', $emailerData, $user);
             return $this->metaSuccess();
+            */
         } catch (\Exception $ex) {
             return $this->errorResponse(__('Failed upload file'), Response::HTTP_BAD_REQUEST, $ex->getMessage());
         }
@@ -422,6 +456,38 @@ class UserController extends Controller
                 );
                 // $verified = true;
                 if ($verified) {
+                    $filenamehash = md5(Str::random(10) . '_' . (string)time());
+
+                    // S3 file upload
+                    $S3 = new S3Client([
+                        'version' => 'latest',
+                        'region' => getenv('AWS_DEFAULT_REGION'),
+                        'credentials' => [
+                            'key' => getenv('AWS_ACCESS_KEY_ID'),
+                            'secret' => getenv('AWS_SECRET_ACCESS_KEY'),
+                        ],
+                    ]);
+
+                    $s3result = $S3->putObject([
+                        'Bucket' => getenv('AWS_BUCKET'),
+                        'Key' => 'signatures/'.$filenamehash,
+                        'SourceFile' => $_FILES["file"]["tmp_name"]
+                    ]);
+
+                    $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/signatures/'.$filenamehash;
+                    $user->signed_file = $ObjectURL;
+                    $user->node_verified_at = now();
+                    $user->save();
+                    $emailerData = EmailerHelper::getEmailerData();
+
+                    EmailerHelper::triggerUserEmail($user->email, 'Your Node is Verified', $emailerData, $user);
+
+                    if ($user->letter_verified_at && $user->signature_request_id && $user->node_verified_at) {
+                        EmailerHelper::triggerUserEmail($user->email, 'Congratulations', $emailerData, $user);
+                    }
+                    return $this->metaSuccess();
+
+                    /* old
                     $fullpath = 'sigfned_file/' . $user->id . '/signature';
                     Storage::disk('local')->put($fullpath,  trim($hexstring));
                     // $url = Storage::disk('local')->url($fullpath);
@@ -436,6 +502,7 @@ class UserController extends Controller
                         EmailerHelper::triggerUserEmail($user->email, 'Congratulations', $emailerData, $user);
                     }
                     return $this->metaSuccess();
+                    */
                 } else {
                     return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
                 }
@@ -785,10 +852,44 @@ class UserController extends Controller
             $validator = Validator::make($request->all(), [
                 'avatar' => 'sometimes|mimes:jpeg,jpg,png,gif,webp|max:100000',
             ]);
+
             if ($validator->fails()) {
                 return $this->validateResponse($validator->errors());
             }
+
             $user = auth()->user();
+            $filenameWithExt = $request->file('file')->getClientOriginalName();
+            //Get just filename
+            $filename = pathinfo($filenameWithExt, PATHINFO_FILENAME);
+            // Get just ext
+            $extension = $request->file('file')->getClientOriginalExtension();
+            // new filename hash
+            $filenamehash = md5(Str::random(10) . '_' . (string)time());
+            // Filename to store
+            $fileNameToStore = $filenamehash . '.' . $extension;
+
+            // S3 file upload
+            $S3 = new S3Client([
+                'version' => 'latest',
+                'region' => getenv('AWS_DEFAULT_REGION'),
+                'credentials' => [
+                    'key' => getenv('AWS_ACCESS_KEY_ID'),
+                    'secret' => getenv('AWS_SECRET_ACCESS_KEY'),
+                ],
+            ]);
+
+            $s3result = $S3->putObject([
+                'Bucket' => getenv('AWS_BUCKET'),
+                'Key' => 'client_uploads/'.$fileNameToStore,
+                'SourceFile' => $_FILES["file"]["tmp_name"]
+            ]);
+
+            $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/client_uploads/'.$fileNameToStore;
+            $user->avatar = $ObjectURL;
+            $user->save();
+            return $this->metaSuccess();
+
+            /* old
             $filenameWithExt = $request->file('avatar')->getClientOriginalName();
             //Get just filename
             $filename = pathinfo($filenameWithExt, PATHINFO_FILENAME);
@@ -801,6 +902,7 @@ class UserController extends Controller
             $user->avatar = $path;
             $user->save();
             return $this->metaSuccess();
+            */
         } catch (\Exception $ex) {
             return $this->errorResponse(__('Failed upload avatar'), Response::HTTP_BAD_REQUEST, $ex->getMessage());
         }

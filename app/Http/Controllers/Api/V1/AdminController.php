@@ -50,6 +50,8 @@ use Illuminate\Support\Str;
 
 use Carbon\Carbon;
 
+use Aws\S3\S3Client;
+
 class AdminController extends Controller
 {
     public function getUsers(Request $request)
@@ -1339,9 +1341,48 @@ class AdminController extends Controller
             $validator = Validator::make($request->all(), [
                 'file' => 'required|mimes:pdf,docx,doc,txt,rtf|max:100000',
             ]);
+
             if ($validator->fails()) {
                 return $this->validateResponse($validator->errors());
             }
+
+            $filenameWithExt = $request->file('file')->getClientOriginalName();
+            //Get just filename
+            $filename = pathinfo($filenameWithExt, PATHINFO_FILENAME);
+            // Get just ext
+            $extension = $request->file('file')->getClientOriginalExtension();
+            // new filename hash
+            $filenamehash = md5(Str::random(10) . '_' . (string)time());
+            // Filename to store
+            $fileNameToStore = $filenamehash . '.' . $extension;
+
+            // S3 file upload
+            $S3 = new S3Client([
+                'version' => 'latest',
+                'region' => getenv('AWS_DEFAULT_REGION'),
+                'credentials' => [
+                    'key' => getenv('AWS_ACCESS_KEY_ID'),
+                    'secret' => getenv('AWS_SECRET_ACCESS_KEY'),
+                ],
+            ]);
+
+            $s3result = $S3->putObject([
+                'Bucket' => getenv('AWS_BUCKET'),
+                'Key' => $fileNameToStore,
+                'SourceFile' => $_FILES["file"]["tmp_name"]
+            ]);
+
+            $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/'.$fileNameToStore;
+            MembershipAgreementFile::where('id', '>', 0)->delete();
+            $membershipAgreementFile = new MembershipAgreementFile();
+            $membershipAgreementFile->name = $filenameWithExt;
+            $membershipAgreementFile->path = $ObjectURL;
+            $membershipAgreementFile->url = $ObjectURL;
+            $membershipAgreementFile->save();
+            DB::table('users')->update(['membership_agreement' => 0]);
+            return $this->successResponse($membershipAgreementFile);
+
+            /* old
             $fileName = $request->file('file')->getClientOriginalName();
             $path = $request->file('file')->storeAs('membership', $fileName);
             $url = Storage::url($path);
@@ -1353,6 +1394,7 @@ class AdminController extends Controller
             $membershipAgreementFile->save();
             DB::table('users')->update(['membership_agreement' => 0]);
             return $this->successResponse($membershipAgreementFile);
+            */
         } catch (\Exception $ex) {
             return $this->errorResponse(__('Failed upload file'), Response::HTTP_BAD_REQUEST, $ex->getMessage());
         }
