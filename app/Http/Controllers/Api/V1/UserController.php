@@ -855,11 +855,11 @@ class UserController extends Controller
             }
 
             $user = auth()->user();
-            $filenameWithExt = $request->file('file')->getClientOriginalName();
+            $filenameWithExt = $request->file('avatar')->getClientOriginalName();
             //Get just filename
             $filename = pathinfo($filenameWithExt, PATHINFO_FILENAME);
             // Get just ext
-            $extension = $request->file('file')->getClientOriginalExtension();
+            $extension = $request->file('avatar')->getClientOriginalExtension();
             // new filename hash
             $filenamehash = md5(Str::random(10) . '_' . (string)time());
             // Filename to store
