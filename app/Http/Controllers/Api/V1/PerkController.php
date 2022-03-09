@@ -76,7 +76,7 @@ class PerkController extends Controller
         $s3result = $S3->putObject([
             'Bucket' => getenv('AWS_BUCKET'),
             'Key' => 'client_uploads/'.$fileNameToStore,
-            'SourceFile' => $_FILES["file"]["tmp_name"]
+            'SourceFile' => $request->file('image')
         ]);
 
         $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/client_uploads/'.$fileNameToStore;
@@ -222,7 +222,7 @@ class PerkController extends Controller
             $s3result = $S3->putObject([
                 'Bucket' => getenv('AWS_BUCKET'),
                 'Key' => 'client_uploads/'.$fileNameToStore,
-                'SourceFile' => $_FILES["file"]["tmp_name"]
+                'SourceFile' => $request->file('image')
             ]);
 
             $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/client_uploads/'.$fileNameToStore;

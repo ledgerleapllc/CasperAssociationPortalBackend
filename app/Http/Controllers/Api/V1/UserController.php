@@ -261,7 +261,7 @@ class UserController extends Controller
             $s3result = $S3->putObject([
                 'Bucket' => getenv('AWS_BUCKET'),
                 'Key' => 'letters_of_motivation/'.$fileNameToStore,
-                'SourceFile' => $_FILES["file"]["tmp_name"]
+                'SourceFile' => $request->file('file')
             ]);
 
             $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/letters_of_motivation/'.$fileNameToStore;
@@ -468,7 +468,7 @@ class UserController extends Controller
                     $s3result = $S3->putObject([
                         'Bucket' => getenv('AWS_BUCKET'),
                         'Key' => 'signatures/'.$filenamehash,
-                        'SourceFile' => $_FILES["file"]["tmp_name"]
+                        $request->file('file')
                     ]);
 
                     $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/signatures/'.$filenamehash;
@@ -878,7 +878,7 @@ class UserController extends Controller
             $s3result = $S3->putObject([
                 'Bucket' => getenv('AWS_BUCKET'),
                 'Key' => 'client_uploads/'.$fileNameToStore,
-                'SourceFile' => $_FILES["file"]["tmp_name"]
+                $request->file('avatar')
             ]);
 
             $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/client_uploads/'.$fileNameToStore;
