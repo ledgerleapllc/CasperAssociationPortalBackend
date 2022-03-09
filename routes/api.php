@@ -123,6 +123,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
                 Route::get('/users/verification/{id}', [AdminController::class, 'getVerificationDetail'])->where('id', '[0-9]+');
                 Route::post('/users/{id}/approve-kyc', [AdminController::class, 'approveKYC'])->where('id', '[0-9]+');
                 Route::post('/users/{id}/reset-kyc', [AdminController::class, 'resetKYC'])->where('id', '[0-9]+');
+                Route::post('/users/{id}/reset-intake-kyc', [AdminController::class, 'resetIntakeKYC'])->where('id', '[0-9]+');
                 Route::post('/users/{id}/approve-aml', [AdminController::class, 'approveAML'])->where('id', '[0-9]+');
                 Route::post('/users/{id}/reset-aml', [AdminController::class, 'resetAML'])->where('id', '[0-9]+');
                 Route::post('/users/{id}/deny-ban', [AdminController::class, 'banAndDenyUser'])->where('id', '[0-9]+');

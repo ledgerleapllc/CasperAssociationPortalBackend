@@ -905,6 +905,35 @@ class AdminController extends Controller
         return $this->successResponse($users);
     }
 
+    // Reset Intake KYC
+    public function resetIntakeKYC($id, Request $request) {
+        $admin = auth()->user();
+
+        $message = trim($request->get('message'));
+        if (!$message) {
+            return $this->errorResponse('please input message', Response::HTTP_BAD_REQUEST);
+        }
+
+        $user = User::with(['profile'])->where('id', $id)->first();
+        if ($user && $user->profile) {
+            $user->profile->status = null;
+            $user->profile->save();
+            
+            $user->reset_kyc = 1;
+            $user->save();
+            
+            Shuftipro::where('user_id', $user->id)->delete();
+            ShuftiproTemp::where('user_id', $user->id)->delete();
+            DocumentFile::where('user_id', $user->id)->delete();
+            
+            Mail::to($user->email)->send(new AdminAlert('You need to submit KYC again', $message));
+            
+            return $this->metaSuccess();
+        }
+
+        return $this->errorResponse('Fail Reset KYC', Response::HTTP_BAD_REQUEST);
+    }
+
     // Reset KYC
     public function resetKYC($id, Request $request)
     {

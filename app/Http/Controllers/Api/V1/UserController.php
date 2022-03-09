@@ -445,10 +445,7 @@ class UserController extends Controller
             $name = $file->getClientOriginalName();
             $hexstring = $file->get();
 
-            if (
-                $hexstring &&
-                $name == 'signature'
-            ) {
+            if ($hexstring && $name == 'signature') {
                 $verified = $casperSigVerify->verify(
                     trim($hexstring),
                     $public_validator_key,
