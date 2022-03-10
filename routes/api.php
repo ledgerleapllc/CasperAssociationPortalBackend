@@ -154,7 +154,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
 
             Route::get('/global-settings', [AdminController::class, 'getGlobalSettings']);
             Route::put('/global-settings', [AdminController::class, 'updateGlobalSettings']);
-
+            
             Route::prefix('/teams')->group(function () {
                 Route::get('/', [AdminController::class, 'getSubAdmins']);
                 Route::post('/invite', [AdminController::class, 'inviteSubAdmin']);
@@ -165,14 +165,14 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
                 Route::get('/{id}/ip-histories', [AdminController::class, 'getIpHistories']);
                 Route::post('/{id}/undo-revoke', [AdminController::class, 'undoRevokeSubAdmin']);
             });
-
+            
             // emailer
             Route::post('/emailer-admin', [AdminController::class, 'addEmailerAdmin']);
             Route::delete('/emailer-admin/{adminId}', [AdminController::class, 'deleteEmailerAdmin']);
             Route::get('/emailer-data', [AdminController::class, 'getEmailerData']);
             Route::put('/emailer-trigger-admin/{recordId}', [AdminController::class, 'updateEmailerTriggerAdmin']);
             Route::put('/emailer-trigger-user/{recordId}', [AdminController::class, 'updateEmailerTriggerUser']);
-
+            
             // metrics
             Route::get('/metrics/{id}',  [MetricController::class, 'getMetricUser']);
             Route::put('/metrics/{id}',  [MetricController::class, 'updateMetric']);

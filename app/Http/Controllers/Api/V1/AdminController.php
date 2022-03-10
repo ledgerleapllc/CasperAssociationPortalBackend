@@ -925,7 +925,7 @@ class AdminController extends Controller
             Shuftipro::where('user_id', $user->id)->delete();
             ShuftiproTemp::where('user_id', $user->id)->delete();
             DocumentFile::where('user_id', $user->id)->delete();
-            
+
             Mail::to($user->email)->send(new AdminAlert('You need to submit KYC again', $message));
             
             return $this->metaSuccess();
@@ -1049,10 +1049,7 @@ class AdminController extends Controller
             $data = $response->json();
             if (!$data || !is_array($data)) return;
 
-            if (
-                !isset($data['reference']) || 
-                !isset($data['event'])
-            ) {
+            if (!isset($data['reference']) || !isset($data['event'])) {
                 return $this->successResponse([
                     'success' => false,
                 ]);
@@ -1072,20 +1069,12 @@ class AdminController extends Controller
 
             $proofs = isset($data['proofs']) ? $data['proofs'] : null;
 
-            if (
-                $proofs && 
-                isset($proofs['document']) && 
-                isset($proofs['document']['proof'])
-            ) {
+            if ($proofs && isset($proofs['document']) && isset($proofs['document']['proof'])) {
                 $shuftipro->document_proof = $proofs['document']['proof'];
             }
       
             // Address Proof
-            if (
-                $proofs && 
-                isset($proofs['address']) && 
-                isset($proofs['address']['proof']) 
-            ) {
+            if ($proofs && isset($proofs['address']) && isset($proofs['address']['proof'])) {
                 $shuftipro->address_proof = $proofs['address']['proof'];
             }
 
@@ -1129,11 +1118,7 @@ class AdminController extends Controller
             ->where('banned', 0)
             ->first();
         if ($user) {
-            if (
-                isset($user->shuftipro) &&
-                isset($user->shuftipro->address_proof) &&
-                $user->shuftipro->address_proof
-            ) {
+            if (isset($user->shuftipro) && isset($user->shuftipro->address_proof) && $user->shuftipro->address_proof) {
                 $url = Storage::disk('local')->url($user->shuftipro->address_proof);
                 $user->shuftipro->address_proof_link = asset($url);
             }
@@ -1237,7 +1222,6 @@ class AdminController extends Controller
             $enabled = (int) $request->get('enabled');
             $record->enabled = $enabled;
             $record->save();
-
             return ['success' => true];
         }
 
@@ -1300,7 +1284,6 @@ class AdminController extends Controller
             $record->given_to_correct_value = $request->given_to_correct_value;
             $record->system_check_unit = $request->system_check_unit;
             $record->system_check_value = $request->system_check_value;
-
             $record->save();
 
             return ['success' => true];
