@@ -468,7 +468,7 @@ class UserController extends Controller
                     $s3result = $S3->putObject([
                         'Bucket' => getenv('AWS_BUCKET'),
                         'Key' => 'signatures/'.$filenamehash,
-                        $request->file('file')
+                        'SourceFile' => $request->file('file')
                     ]);
 
                     $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/signatures/'.$filenamehash;
@@ -877,12 +877,12 @@ class UserController extends Controller
 
             $s3result = $S3->putObject([
                 'Bucket' => getenv('AWS_BUCKET'),
-                'Key' => 'client_uploads/'.$fileNameToStore,
-                $request->file('avatar')
+                'Key' => 'client_uploads/' . $fileNameToStore,
+                'SourceFile' => $request->file('avatar'),
             ]);
 
-            $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/client_uploads/'.$fileNameToStore;
-            $user->avatar = $ObjectURL;
+            // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/client_uploads/'.$fileNameToStore;
+            $user->avatar = $s3result['ObjectURL'];
             $user->save();
             return $this->metaSuccess();
 

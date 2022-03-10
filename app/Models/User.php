@@ -133,7 +133,12 @@ class User extends Authenticatable
         if(!$this->avatar) {
             return null;
         }
-        $url = Storage::disk('local')->url($this->avatar);
+        $url = '';
+        if (strpos($this->avatar, 'http') !== false) {
+            $url = $this->avatar;
+        } else {
+            $url = Storage::disk('local')->url($this->avatar);
+        }
         return asset($url);
     }
 
