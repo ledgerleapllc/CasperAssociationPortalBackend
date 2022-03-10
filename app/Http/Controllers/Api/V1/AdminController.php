@@ -1444,7 +1444,7 @@ class AdminController extends Controller
 
             $s3result = $S3->putObject([
                 'Bucket' => getenv('AWS_BUCKET'),
-                'Key' => $fileNameToStore,
+                'Key' => 'client_uploads/'.$fileNameToStore,
                 'SourceFile' => $request->file('file')
             ]);
 
