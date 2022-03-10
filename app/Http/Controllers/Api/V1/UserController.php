@@ -264,7 +264,8 @@ class UserController extends Controller
                 'SourceFile' => $request->file('file')
             ]);
 
-            $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/letters_of_motivation/'.$fileNameToStore;
+            // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/letters_of_motivation/'.$fileNameToStore;
+            $ObjectURL = $s3result['ObjectURL'];
             $user->letter_file = $ObjectURL;
             $user->letter_rejected_at = null;
             $user->save();
@@ -471,7 +472,8 @@ class UserController extends Controller
                         'SourceFile' => $request->file('file')
                     ]);
 
-                    $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/signatures/'.$filenamehash;
+                    // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/signatures/'.$filenamehash;
+                    $ObjectURL = $s3result['ObjectURL'];
                     $user->signed_file = $ObjectURL;
                     $user->node_verified_at = now();
                     $user->save();
