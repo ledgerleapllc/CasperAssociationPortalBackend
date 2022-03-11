@@ -136,7 +136,8 @@ class VerificationController extends Controller
                         'SourceFile' => $file
                     ]);
 
-                    $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/documents/'.$fileNameToStore;
+                    // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/documents/'.$fileNameToStore;
+                    $ObjectURL = $s3result['ObjectURL'];
                     $documentFile = DocumentFile::where('user_id', $user->id)->where('name', $name)->first();
 
                     if (!$documentFile) {

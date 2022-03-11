@@ -336,7 +336,8 @@ class AdminController extends Controller
                         'SourceFile' => $file
                     ]);
 
-                    $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/perks/'.$fileNameToStore;
+                    // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/perks/'.$fileNameToStore;
+                    $ObjectURL = $s3result['ObjectURL'];
                     $ballotFile = new BallotFile();
                     $ballotFile->ballot_id = $ballot->id;
                     $ballotFile->name = $name;
@@ -450,7 +451,8 @@ class AdminController extends Controller
                         'SourceFile' => $file
                     ]);
 
-                    $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/perks/'.$fileNameToStore;
+                    // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/perks/'.$fileNameToStore;
+                    $ObjectURL = $s3result['ObjectURL'];
                     $ballotFile = new BallotFile();
                     $ballotFile->ballot_id = $ballot->id;
                     $ballotFile->name = $name;
@@ -1442,11 +1444,12 @@ class AdminController extends Controller
 
             $s3result = $S3->putObject([
                 'Bucket' => getenv('AWS_BUCKET'),
-                'Key' => $fileNameToStore,
+                'Key' => 'client_uploads/'.$fileNameToStore,
                 'SourceFile' => $request->file('file')
             ]);
 
-            $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/'.$fileNameToStore;
+            // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/'.$fileNameToStore;
+            $ObjectURL = $s3result['ObjectURL'];
             MembershipAgreementFile::where('id', '>', 0)->delete();
             $membershipAgreementFile = new MembershipAgreementFile();
             $membershipAgreementFile->name = $filenameWithExt;

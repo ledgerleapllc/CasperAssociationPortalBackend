@@ -81,7 +81,8 @@ class PerkController extends Controller
             'SourceFile' => $request->file('image')
         ]);
 
-        $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/client_uploads/'.$fileNameToStore;
+        // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/client_uploads/'.$fileNameToStore;
+        $ObjectURL = $s3result['ObjectURL'];
         $perk->image = $ObjectURL;
 
         /* old
@@ -227,7 +228,8 @@ class PerkController extends Controller
                 'SourceFile' => $request->file('image')
             ]);
 
-            $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/client_uploads/'.$fileNameToStore;
+            // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/client_uploads/'.$fileNameToStore;
+            $ObjectURL = $s3result['ObjectURL'];
             $perk->image = $ObjectURL;
         }
 
