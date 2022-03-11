@@ -938,7 +938,11 @@ class UserController extends Controller
                 }
             })
             ->select([
-                'users.*',
+                'users.id',
+                'users.created_at',
+                'users.first_name',
+                'users.last_name',
+                'users.kyc_verified_at',
                 'profile.status',
                 'node_info.uptime',
                 'node_info.delegation_rate',
@@ -971,8 +975,10 @@ class UserController extends Controller
             $latest_uptime = $latest_uptime_node ??  $latest_uptime_metric ?? 1;
             $latest_update_responsiveness = $latest_update_responsiveness_node ??  $latest_update_responsiveness_metric ?? 1;
 
-            $delegators_count = $user->delegators_count ? $user->nodeInfo->delegators_count : 0;
-            $total_staked_amount = $user->total_staked_amount ? $user->nodeInfo->total_staked_amount : 0;
+            // $delegators_count = $user->delegators_count ? $user->nodeInfo->delegators_count : 0;
+            $delegators_count = $user->delegators_count ? $user->delegators_count : 0;
+            // $total_staked_amount = $user->total_staked_amount ? $user->nodeInfo->total_staked_amount : 0;
+            $total_staked_amount = $user->total_staked_amount ? $user->total_staked_amount : 0;
 
             $uptime_score = ($slide_value_uptime * $latest_uptime) / 100;
             $update_responsiveness_score = ($slide_value_update_responsiveness * $latest_update_responsiveness) / 100;
@@ -982,7 +988,7 @@ class UserController extends Controller
             $totalScore =  $uptime_score + $update_responsiveness_score + $dellegator_score + $satke_amount_score + $delegation_rate_score;
 
             $user->totalScore = $totalScore;
-            $user->uptime = $user->uptime ?  $user->uptime : $metric->uptime;
+            $user->uptime = $user->uptime ? $user->uptime : $metric->uptime;
         }
         if ($sort_key == 'totalScore') {
             $users = $users->sortByDesc('totalScore')->values();
@@ -995,7 +1001,18 @@ class UserController extends Controller
 
     public function getMemberDetail($id)
     {
-        $user = User::where('id', $id)->first();
+        $user = User::select([
+                        'id',
+                        'role',
+                        'public_address_node',
+                        'node_status',
+                        'first_name',
+                        'last_name',
+                        'email_verified_at',
+                        'kyc_verified_at',
+                    ])
+                    ->where('id', $id)
+                    ->first();
         if (!$user || $user->role == 'admin') {
             return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
         }
