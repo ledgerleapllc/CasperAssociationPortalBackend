@@ -1001,6 +1001,7 @@ class UserController extends Controller
 
     public function getMemberDetail($id)
     {
+        /*
         $user = User::select([
                         'id',
                         'role',
@@ -1013,6 +1014,10 @@ class UserController extends Controller
                     ])
                     ->where('id', $id)
                     ->first();
+        */
+        
+        $user = User::where('id', $id)->first();
+
         if (!$user || $user->role == 'admin') {
             return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
         }
