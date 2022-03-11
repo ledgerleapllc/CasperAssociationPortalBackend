@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+
 use App\Models\Perk;
 use App\Models\PerkResult;
+
 use Carbon\Carbon;
+
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Validator;
@@ -14,8 +17,7 @@ use Aws\S3\S3Client;
 
 class PerkController extends Controller
 {
-    public function createPerk(Request $request)
-    {
+    public function createPerk(Request $request) {
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:70',
             'content' => 'required',
