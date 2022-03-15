@@ -265,7 +265,7 @@ class UserController extends Controller
             ]);
 
             // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/letters_of_motivation/'.$fileNameToStore;
-            $ObjectURL = $s3result['ObjectURL'];
+            $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL').'/not-found';
             $user->letter_file = $ObjectURL;
             $user->letter_rejected_at = null;
             $user->save();
@@ -473,7 +473,7 @@ class UserController extends Controller
                     ]);
 
                     // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/signatures/'.$filenamehash;
-                    $ObjectURL = $s3result['ObjectURL'];
+                    $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL').'/not-found';
                     $user->signed_file = $ObjectURL;
                     $user->node_verified_at = now();
                     $user->save();
@@ -884,7 +884,7 @@ class UserController extends Controller
             ]);
 
             // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/client_uploads/'.$fileNameToStore;
-            $user->avatar = $s3result['ObjectURL'];
+            $user->avatar = $s3result['ObjectURL'] ?? getenv('SITE_URL').'/not-found';
             $user->save();
             return $this->metaSuccess();
 

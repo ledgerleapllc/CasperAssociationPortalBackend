@@ -342,7 +342,7 @@ class AdminController extends Controller
                     ]);
 
                     // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/perks/'.$fileNameToStore;
-                    $ObjectURL = $s3result['ObjectURL'];
+                    $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL').'/not-found';
                     $ballotFile = new BallotFile();
                     $ballotFile->ballot_id = $ballot->id;
                     $ballotFile->name = $name;
@@ -457,7 +457,7 @@ class AdminController extends Controller
                     ]);
 
                     // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/perks/'.$fileNameToStore;
-                    $ObjectURL = $s3result['ObjectURL'];
+                    $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL').'/not-found';
                     $ballotFile = new BallotFile();
                     $ballotFile->ballot_id = $ballot->id;
                     $ballotFile->name = $name;
@@ -1494,7 +1494,7 @@ class AdminController extends Controller
             ]);
 
             // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/'.$fileNameToStore;
-            $ObjectURL = $s3result['ObjectURL'];
+            $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL').'/not-found';
             MembershipAgreementFile::where('id', '>', 0)->delete();
             $membershipAgreementFile = new MembershipAgreementFile();
             $membershipAgreementFile->name = $filenameWithExt;

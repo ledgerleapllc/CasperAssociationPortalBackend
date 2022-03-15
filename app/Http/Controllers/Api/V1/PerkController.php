@@ -82,7 +82,7 @@ class PerkController extends Controller
         ]);
 
         // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/client_uploads/'.$fileNameToStore;
-        $ObjectURL = $s3result['ObjectURL'];
+        $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL').'/not-found';
         $perk->image = $ObjectURL;
 
         /* old
@@ -229,7 +229,7 @@ class PerkController extends Controller
             ]);
 
             // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/client_uploads/'.$fileNameToStore;
-            $ObjectURL = $s3result['ObjectURL'];
+            $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL').'/not-found';
             $perk->image = $ObjectURL;
         }
 
