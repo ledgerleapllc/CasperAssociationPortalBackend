@@ -642,7 +642,8 @@ class AdminController extends Controller
         }
 
         $code = Str::random(6);
-        $url = $request->header('origin') ?? $request->root();
+        // $url = $request->header('origin') ?? $request->root();
+        $url = getenv('SITE_URL');
         $inviteUrl = $url . '/register-sub-admin?code=' . $code . '&email=' . urlencode($request->email);
         
         VerifyUser::where('email', $request->email)->where('type', VerifyUser::TYPE_INVITE_ADMIN)->delete();
@@ -749,7 +750,8 @@ class AdminController extends Controller
             return $this->errorResponse('No admin to be send invite link', Response::HTTP_BAD_REQUEST);
 
         $code = Str::random(6);
-        $url = $request->header('origin') ?? $request->root();
+        // $url = $request->header('origin') ?? $request->root();
+        $url = getenv('SITE_URL');
         $inviteUrl = $url . '/register-sub-admin?code=' . $code . '&email=' . urlencode($admin->email);
         
         VerifyUser::where('email', $admin->email)->where('type', VerifyUser::TYPE_INVITE_ADMIN)->delete();
@@ -773,7 +775,8 @@ class AdminController extends Controller
             return $this->errorResponse('No admin to be revoked', Response::HTTP_BAD_REQUEST);
 
         $code = Str::random(6);
-        $url = $request->header('origin') ?? $request->root();
+        // $url = $request->header('origin') ?? $request->root();
+        $url = getenv('SITE_URL');
         $resetUrl = $url . '/update-password?code=' . $code . '&email=' . urlencode($admin->email);
         
         VerifyUser::where('email', $admin->email)->where('type', VerifyUser::TYPE_RESET_PASSWORD)->delete();
