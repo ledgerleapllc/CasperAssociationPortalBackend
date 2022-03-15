@@ -1156,8 +1156,10 @@ class UserController extends Controller
 
     public function confirmChangeEmail(Request $request)
     {
-        $verify = VerifyUser::where('email', $request->email)->where('type', VerifyUser::TYPE_CONFIRM_EMAIL)
-            ->where('code', $request->code)->first();
+        $verify = VerifyUser::where('email', $request->email)
+                            ->where('type', VerifyUser::TYPE_CONFIRM_EMAIL)
+                            ->where('code', $request->code)
+                            ->first();
         if ($verify) {
             $user = User::where('new_email', $request->email)->first();
             if ($user) {
@@ -1176,8 +1178,10 @@ class UserController extends Controller
     public function checkLogin2FA(Request $request)
     {
         $user = auth()->user();
-        $verify = VerifyUser::where('email', $user->email)->where('type', VerifyUser::TYPE_LOGIN_TWO_FA)
-            ->where('code', $request->code)->first();
+        $verify = VerifyUser::where('email', $user->email)
+                            ->where('type', VerifyUser::TYPE_LOGIN_TWO_FA)
+                            ->where('code', $request->code)
+                            ->first();
         if ($verify) {
             $verify->delete();
             $user->twoFA_login_active = 0;
@@ -1339,6 +1343,7 @@ class UserController extends Controller
         if ($validator->fails()) {
             return $this->validateResponse($validator->errors());
         }
+
         $donation = new Donation();
         $donation->first_name = $request->first_name;
         $donation->last_name = $request->last_name;

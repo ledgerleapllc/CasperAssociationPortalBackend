@@ -3,13 +3,16 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Console\Helper;
-use App\Models\NodeInfo;
+
 use App\Http\Controllers\Controller;
 use App\Http\EmailerHelper;
+
 use App\Mail\AdminAlert;
 use App\Mail\ResetKYC;
 use App\Mail\ResetPasswordMail;
 use App\Mail\InvitationMail;
+
+use App\Models\NodeInfo;
 use App\Models\Ballot;
 use App\Models\BallotFile;
 use App\Models\BallotFileView;
@@ -40,6 +43,7 @@ use App\Models\VoteResult;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -165,13 +169,14 @@ class AdminController extends Controller
                     ->orWhere('users.signature_request_id', null);
             })->count();
 
-        $totalUserVerification = User::where('users.role', 'member')->where('banned', 0)
-            ->join('profile', function ($query) {
-                $query->on('profile.user_id', '=', 'users.id')
-                    ->where('profile.status', 'pending');
-            })
-            ->join('shuftipro', 'shuftipro.user_id', '=', 'users.id')
-            ->count();
+        $totalUserVerification = User::where('users.role', 'member')
+                                    ->where('banned', 0)
+                                    ->join('profile', function ($query) {
+                                        $query->on('profile.user_id', '=', 'users.id')
+                                                ->where('profile.status', 'pending');
+                                    })
+                                    ->join('shuftipro', 'shuftipro.user_id', '=', 'users.id')
+                                    ->count();
         $totalFailNode = User::where('banned', 0)->whereNotNull('public_address_node')->where('is_fail_node', 1)->count();
 
         $totalPerksActive = Perk::where('status', 'active')->where('created_at', '>=', $timeframe_perk)->count();
@@ -525,9 +530,10 @@ class AdminController extends Controller
                             ->orderBy($sort_key, $sort_direction)
                             ->paginate($limit);
         } else if ($status && $status != 'active' && $status != 'scheduled') {
-            $ballots = Ballot::with(['user', 'vote'])->where('ballot.status', '!=', 'active')
-                ->orderBy($sort_key, $sort_direction)
-                ->paginate($limit);
+            $ballots = Ballot::with(['user', 'vote'])
+                            ->where('ballot.status', '!=', 'active')
+                            ->orderBy($sort_key, $sort_direction)
+                            ->paginate($limit);
         } else {
             $ballots = Ballot::with(['user', 'vote'])->orderBy($sort_key, $sort_direction)->paginate($limit);
         }
@@ -638,7 +644,9 @@ class AdminController extends Controller
         $code = Str::random(6);
         $url = $request->header('origin') ?? $request->root();
         $inviteUrl = $url . '/register-sub-admin?code=' . $code . '&email=' . urlencode($request->email);
+        
         VerifyUser::where('email', $request->email)->where('type', VerifyUser::TYPE_INVITE_ADMIN)->delete();
+        
         $verify = new VerifyUser();
         $verify->email = $request->email;
         $verify->type = VerifyUser::TYPE_INVITE_ADMIN;
@@ -743,7 +751,9 @@ class AdminController extends Controller
         $code = Str::random(6);
         $url = $request->header('origin') ?? $request->root();
         $inviteUrl = $url . '/register-sub-admin?code=' . $code . '&email=' . urlencode($admin->email);
+        
         VerifyUser::where('email', $admin->email)->where('type', VerifyUser::TYPE_INVITE_ADMIN)->delete();
+        
         $verify = new VerifyUser();
         $verify->email = $admin->email;
         $verify->type = VerifyUser::TYPE_INVITE_ADMIN;
@@ -765,7 +775,9 @@ class AdminController extends Controller
         $code = Str::random(6);
         $url = $request->header('origin') ?? $request->root();
         $resetUrl = $url . '/update-password?code=' . $code . '&email=' . urlencode($admin->email);
+        
         VerifyUser::where('email', $admin->email)->where('type', VerifyUser::TYPE_RESET_PASSWORD)->delete();
+        
         $verify = new VerifyUser();
         $verify->email = $admin->email;
         $verify->type = VerifyUser::TYPE_RESET_PASSWORD;
@@ -954,8 +966,10 @@ class AdminController extends Controller
             Shuftipro::where('user_id', $user->id)->delete();
             ShuftiproTemp::where('user_id', $user->id)->delete();
             DocumentFile::where('user_id', $user->id)->delete();
+
             $user->reset_kyc = 1;
             $user->save();
+            
             Mail::to($user->email)->send(new AdminAlert('You need to submit KYC again', $message));
             return $this->metaSuccess();
         }
@@ -992,11 +1006,16 @@ class AdminController extends Controller
     {
         $admin = auth()->user();
 
-        $user = User::with(['shuftipro', 'profile'])->where('id', $id)
-            ->where('users.role', 'member')->where('banned', 0)->first();
+        $user = User::with(['shuftipro', 'profile'])
+                    ->where('id', $id)
+                    ->where('users.role', 'member')
+                    ->where('banned', 0)
+                    ->first();
+
         if ($user && $user->profile) {
             $user->profile->status = 'approved';
             $user->profile->save();
+
             if ($user->shuftipro) {
                 $user->shuftipro->status = 'approved';
                 $user->shuftipro->reviewed = 1;
@@ -1005,11 +1024,13 @@ class AdminController extends Controller
                 $user->shuftipro->manual_reviewer = $admin->email;
                 $user->shuftipro->save();
             }
+
             $user->kyc_verified_at = now();
             $user->approve_at = now();
             $user->save();
             return $this->metaSuccess();
         }
+
         return $this->errorResponse('Fail approve KYC', Response::HTTP_BAD_REQUEST);
     }
 
@@ -1018,8 +1039,12 @@ class AdminController extends Controller
     {
         $admin = auth()->user();
 
-        $user = User::with(['shuftipro', 'profile'])->where('id', $id)
-            ->where('users.role', 'member')->where('banned', 0)->first();
+        $user = User::with(['shuftipro', 'profile'])
+                    ->where('id', $id)
+                    ->where('users.role', 'member')
+                    ->where('banned', 0)
+                    ->first();
+
         if ($user && $user->profile && $user->shuftipro) {
             $user->shuftipro->background_checks_result = 1;
             $user->shuftipro->save();
@@ -1031,6 +1056,7 @@ class AdminController extends Controller
             $user->save();
             return $this->metaSuccess();
         }
+
         return $this->errorResponse('Fail approve AML', Response::HTTP_BAD_REQUEST);
     }
 
@@ -1094,8 +1120,12 @@ class AdminController extends Controller
 
     public function banAndDenyUser($id)
     {
-        $user = User::with(['shuftipro', 'profile'])->where('id', $id)
-            ->where('users.role', 'member')->where('banned', 0)->first();
+        $user = User::with(['shuftipro', 'profile'])
+                    ->where('id', $id)
+                    ->where('users.role', 'member')
+                    ->where('banned', 0)
+                    ->first();
+
         if ($user && $user->profileT) {
             $user->profile->status = 'denied';
             $user->profile->save();
@@ -1103,22 +1133,24 @@ class AdminController extends Controller
             $user->save();
             return $this->metaSuccess();
         }
+
         return $this->errorResponse('Fail deny and ban user', Response::HTTP_BAD_REQUEST);
     }
 
     public function getVerificationDetail($id)
     {
         $user = User::with(['shuftipro', 'profile', 'documentFiles'])
-            ->leftJoin('shuftipro', 'shuftipro.user_id', '=', 'users.id')
-            ->where('users.id', $id)
-            ->select([
-                'users.*',
-                'shuftipro.status as kyc_status',
-                'shuftipro.background_checks_result',
-            ])
-            ->where('users.role', 'member')
-            ->where('banned', 0)
-            ->first();
+                    ->leftJoin('shuftipro', 'shuftipro.user_id', '=', 'users.id')
+                    ->where('users.id', $id)
+                    ->select([
+                        'users.*',
+                        'shuftipro.status as kyc_status',
+                        'shuftipro.background_checks_result',
+                    ])
+                    ->where('users.role', 'member')
+                    ->where('banned', 0)
+                    ->first();
+
         if ($user) {
             if (isset($user->shuftipro) && isset($user->shuftipro->address_proof) && $user->shuftipro->address_proof) {
                 $url = Storage::disk('local')->url($user->shuftipro->address_proof);
@@ -1126,25 +1158,35 @@ class AdminController extends Controller
             }
             return $this->successResponse($user);
         }
+
         return $this->errorResponse('Fail get verification user', Response::HTTP_BAD_REQUEST);
     }
 
     public function approveDocument($id)
     {
-        $user = User::with(['profile'])->where('id', $id)
-            ->where('users.role', 'member')->where('banned', 0)->first();
+        $user = User::with(['profile'])
+                    ->where('id', $id)
+                    ->where('users.role', 'member')
+                    ->where('banned', 0)
+                    ->first();
+
         if ($user && $user->profile) {
             $user->profile->document_verified_at = now();
             $user->profile->save();
             return $this->metaSuccess();
         }
+
         return $this->errorResponse('Fail approve document', Response::HTTP_BAD_REQUEST);
     }
 
     public function activeUser($id)
     {
-        $user = User::with(['profile'])->where('id', $id)
-            ->where('users.role', 'member')->where('banned', 0)->first();
+        $user = User::with(['profile'])
+                    ->where('id', $id)
+                    ->where('users.role', 'member')
+                    ->where('banned', 0)
+                    ->first();
+        
         if ($user && $user->profile) {
             $user->profile->status = 'approved';
             $user->profile->save();
@@ -1152,6 +1194,7 @@ class AdminController extends Controller
             $user->save();
             return $this->metaSuccess();
         }
+
         return $this->errorResponse('Fail active document', Response::HTTP_BAD_REQUEST);
     }
 
@@ -1189,8 +1232,6 @@ class AdminController extends Controller
         $user = Auth::user();
         EmailerAdmin::where('id', $adminId)->delete();
         return ['success' => true];
-
-        return ['success' => false];
     }
 
     // Get Emailer Data
@@ -1202,6 +1243,7 @@ class AdminController extends Controller
         $admins = EmailerAdmin::where('id', '>', 0)->orderBy('email', 'asc')->get();
         $triggerAdmin = EmailerTriggerAdmin::where('id', '>', 0)->orderBy('id', 'asc')->get();
         $triggerUser = EmailerTriggerUser::where('id', '>', 0)->orderBy('id', 'asc')->get();
+
         $data = [
             'admins' => $admins,
             'triggerAdmin' => $triggerAdmin,
@@ -1254,7 +1296,6 @@ class AdminController extends Controller
     public function getMonitoringCriteria(Request $request)
     {
         $data = MonitoringCriteria::get();
-
         return $this->successResponse($data);
     }
 
@@ -1308,6 +1349,7 @@ class AdminController extends Controller
 
         $rule->is_lock = $request->is_lock;
         $rule->save();
+
         return ['success' => true];
     }
 
@@ -1318,7 +1360,10 @@ class AdminController extends Controller
         $ruleStatusIsPoor = LockRules::where('type', 'status_is_poor')
             ->orderBy('id', 'ASC')->select(['id', 'screen', 'is_lock'])->get();
 
-        $data = ['kyc_not_verify' => $ruleKycNotVerify, 'status_is_poor' => $ruleStatusIsPoor];
+        $data = [
+            'kyc_not_verify' => $ruleKycNotVerify,
+            'status_is_poor' => $ruleStatusIsPoor,
+        ];
         return $this->successResponse($data);
     }
 
@@ -1432,7 +1477,7 @@ class AdminController extends Controller
             // Filename to store
             $fileNameToStore = $filenamehash . '.' . $extension;
 
-            // S3 file upload
+            // S3 File Upload
             $S3 = new S3Client([
                 'version' => 'latest',
                 'region' => getenv('AWS_DEFAULT_REGION'),
