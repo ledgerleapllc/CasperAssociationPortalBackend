@@ -60,15 +60,12 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::post('users/verify-file-casper-signer', [UserController::class, 'verifyFileCasperSigner']);
             Route::post('users/submit-kyc', [UserController::class, 'functionSubmitKYC']);
             Route::post('users/verify-owner-node', [UserController::class, 'verifyOwnerNode']);
-            Route::post('users/owner-node', [UserController::class, 'addOwnerNode']);
             Route::get('users/owner-node', [UserController::class, 'getOwnerNodes']);
             Route::post('users/resend-invite-owner', [UserController::class, 'resendEmailOwnerNodes']);
             Route::get('users/message-content', [UserController::class, 'getMessageContent']);
             Route::post('users/shuftipro-temp',  [UserController::class, 'saveShuftiproTemp']);
             Route::put('users/shuftipro-temp', [UserController::class, 'updateShuftiproTemp']);
             Route::put('users/shuftipro-temp/delete', [UserController::class, 'deleteShuftiproTemp']);
-            Route::put('/users/type-owner-node',  [UserController::class, 'updateTypeOwnerNode']);
-            Route::post('users/verify-bypass',  [UserController::class, 'verifyBypass']);
             Route::post('/users/upload-letter',  [UserController::class, 'uploadLetter']);
             Route::get('users/votes', [UserController::class, 'getVotes']);
             Route::get('users/my-votes', [UserController::class, 'getMyVotes']);
@@ -121,11 +118,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::middleware([])->group(function () {
                 Route::get('/users/verification', [AdminController::class, 'getVerificationUsers']);
                 Route::get('/users/verification/{id}', [AdminController::class, 'getVerificationDetail'])->where('id', '[0-9]+');
-                Route::post('/users/{id}/approve-kyc', [AdminController::class, 'approveKYC'])->where('id', '[0-9]+');
                 Route::post('/users/{id}/reset-kyc', [AdminController::class, 'resetKYC'])->where('id', '[0-9]+');
-                Route::post('/users/{id}/reset-intake-kyc', [AdminController::class, 'resetIntakeKYC'])->where('id', '[0-9]+');
-                Route::post('/users/{id}/approve-aml', [AdminController::class, 'approveAML'])->where('id', '[0-9]+');
-                Route::post('/users/{id}/reset-aml', [AdminController::class, 'resetAML'])->where('id', '[0-9]+');
                 Route::post('/users/{id}/deny-ban', [AdminController::class, 'banAndDenyUser'])->where('id', '[0-9]+');
                 Route::post('/users/{id}/approve-document', [AdminController::class, 'approveDocument'])->where('id', '[0-9]+');
                 Route::post('/users/{id}/active', [AdminController::class, 'activeUser'])->where('id', '[0-9]+');

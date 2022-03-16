@@ -6,6 +6,7 @@ use App\Models\KeyPeer;
 use App\Models\Node;
 use App\Models\NodeInfo;
 use App\Models\User;
+use App\Models\Setting;
 
 use Carbon\Carbon;
 
@@ -16,17 +17,15 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Validator;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Exception\ServerException;
 use GuzzleHttp\Exception\BadResponseException;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Validator;
 
 use App\Services\ChecksumValidator;
-
-use App\Models\Setting;
 
 class NodeHelper
 {
@@ -58,10 +57,10 @@ class NodeHelper
         $data = $this->getValidatorStanding();
         
         $validator_standing = isset($data['validator_standing']) ? $data['validator_standing'] : null;
-
+        
         $mbs = isset($data['MBS']) ? $data['MBS'] : 0;
         $peers = isset($data['peers']) ? $data['peers'] : 0;
-
+        
         $setting = Setting::where('name', 'peers')->first();
         if (!$setting) {
             $setting = new Setting;
@@ -83,7 +82,7 @@ class NodeHelper
             foreach ($users as $user) {
                 $validatorid = strtolower($user->public_address_node);
                 // $validatorid = (new ChecksumValidator())->do($validatorid);
-
+                
                 if (isset($validator_standing[$validatorid])) {
                     $info = $validator_standing[$validatorid];
                     $fee = (float) $info['delegation_rate'];
