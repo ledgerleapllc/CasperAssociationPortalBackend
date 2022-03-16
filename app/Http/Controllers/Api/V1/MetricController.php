@@ -108,9 +108,11 @@ class MetricController extends Controller
         
         $delegators = 0;
         $stake_amount = 0;
+        $self_stake_amount = 0;
         if ($nodeInfo) {
             $delegators = $nodeInfo->delegators_count;
             $stake_amount = $nodeInfo->total_staked_amount;
+            $self_stake_amount = $nodeInfo->self_staked_amount;
         }
         $mbs = NodeInfo::max('mbs');
         $metric->mbs = $mbs;
@@ -118,6 +120,7 @@ class MetricController extends Controller
         $metric->totalCount = $totalCount;
         $metric->delegators = $delegators;
         $metric->stake_amount = $stake_amount;
+        $metric->self_stake_amount = $self_stake_amount;
         $metric['node_status'] = $user->node_status;
         $metric['monitoring_criteria'] = $monitoringCriteria;
 
@@ -260,9 +263,11 @@ class MetricController extends Controller
         
         $delegators = 0;
         $stake_amount = 0;
+        $self_stake_amount = 0;
         if ($nodeInfo) {
             $delegators = $nodeInfo->delegators_count;
             $stake_amount = $nodeInfo->total_staked_amount;
+            $self_stake_amount = $nodeInfo->self_staked_amount;
         }
         $mbs = NodeInfo::max('mbs');
         $metric->mbs = $mbs;
@@ -270,6 +275,7 @@ class MetricController extends Controller
         $metric->totalCount = $totalCount;
         $metric->delegators = $delegators;
         $metric->stake_amount = $stake_amount;
+        $metric->self_stake_amount = $self_stake_amount;
         $metric['node_status'] = $user->node_status;
         $metric['monitoring_criteria'] = $monitoringCriteria;
 
@@ -364,10 +370,12 @@ class MetricController extends Controller
             $rank = 5 ;// dummy
             $delegators = 0;
             $stake_amount = 0;
+            $self_stake_amount = 0;
             $is_open_port = 0;
             if ($nodeInfo) {
                 $delegators = $nodeInfo->delegators_count;
                 $stake_amount = $nodeInfo->total_staked_amount;
+                $self_stake_amount = $nodeInfo->self_staked_amount;
                 $is_open_port = $nodeInfo->is_open_port;
             }
             $mbs = NodeInfo::max('mbs');
@@ -375,7 +383,7 @@ class MetricController extends Controller
             $metric->rank = $rank;
             $metric->is_open_port = $is_open_port;
             $metric->delegators = $delegators;
-            $metric->stake_amount = $stake_amount;
+            $metric->self_stake_amount = $self_stake_amount;
             $metric['node_status'] = $user->node_status;
             $metric['monitoring_criteria'] = $monitoringCriteria;
             return $this->successResponse($metric);

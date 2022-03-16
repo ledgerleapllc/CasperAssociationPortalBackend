@@ -31,7 +31,7 @@ class NodeHelper
 {
     public function __construct()
     {
-        $this->SEENA_API_KEY = '48454d73487700a29f50719d69be47d4';
+        $this->SEENA_API_KEY = getenv('SEENA_API_KEY');
     }
 
     public function getValidatorStanding()
