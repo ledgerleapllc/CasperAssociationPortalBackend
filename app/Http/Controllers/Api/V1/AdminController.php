@@ -332,31 +332,18 @@ class AdminController extends Controller
 
                     $s3result = $S3->putObject([
                         'Bucket' => getenv('AWS_BUCKET'),
-                        'Key' => 'perks/'.$fileNameToStore,
+                        'Key' => 'perks/' . $fileNameToStore,
                         'SourceFile' => $file
                     ]);
 
-                    // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/perks/'.$fileNameToStore;
-                    $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL').'/not-found';
+                    // $ObjectURL = 'https://'.getenv('AWS_BUCKET') . '.s3.amazonaws.com/perks/'.$fileNameToStore;
+                    $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL') . '/not-found';
                     $ballotFile = new BallotFile();
                     $ballotFile->ballot_id = $ballot->id;
                     $ballotFile->name = $name;
                     $ballotFile->path = $ObjectURL;
                     $ballotFile->url = $ObjectURL;
                     $ballotFile->save();
-
-                    /* old
-                    $name = $file->getClientOriginalName();
-                    $folder = 'ballot/' . $ballot->id;
-                    $path = $file->storeAs($folder, $name);
-                    $url = Storage::url($path);
-                    $ballotFile = new BallotFile();
-                    $ballotFile->ballot_id = $ballot->id;
-                    $ballotFile->name = $name;
-                    $ballotFile->path = $path;
-                    $ballotFile->url = $url;
-                    $ballotFile->save();
-                    */
                 }
             }
 
@@ -459,19 +446,6 @@ class AdminController extends Controller
                     $ballotFile->path = $ObjectURL;
                     $ballotFile->url = $ObjectURL;
                     $ballotFile->save();
-
-                    /* old
-                    $name = $file->getClientOriginalName();
-                    $folder = 'ballot/' . $ballot->id;
-                    $path = $file->storeAs($folder, $name);
-                    $url = Storage::url($path);
-                    $ballotFile = new BallotFile();
-                    $ballotFile->ballot_id = $ballot->id;
-                    $ballotFile->name = $name;
-                    $ballotFile->path = $path;
-                    $ballotFile->url = $url;
-                    $ballotFile->save();
-                    */
                 }
             }
             if ($request->file_ids_remove) {
@@ -1378,7 +1352,7 @@ class AdminController extends Controller
 
             $s3result = $S3->putObject([
                 'Bucket' => getenv('AWS_BUCKET'),
-                'Key' => 'client_uploads/'.$fileNameToStore,
+                'Key' => 'client_uploads/' . $fileNameToStore,
                 'SourceFile' => $request->file('file')
             ]);
 
@@ -1392,20 +1366,6 @@ class AdminController extends Controller
             $membershipAgreementFile->save();
             DB::table('users')->update(['membership_agreement' => 0]);
             return $this->successResponse($membershipAgreementFile);
-
-            /* old
-            $fileName = $request->file('file')->getClientOriginalName();
-            $path = $request->file('file')->storeAs('membership', $fileName);
-            $url = Storage::url($path);
-            MembershipAgreementFile::where('id', '>', 0)->delete();
-            $membershipAgreementFile = new MembershipAgreementFile();
-            $membershipAgreementFile->name = $fileName;
-            $membershipAgreementFile->path = $path;
-            $membershipAgreementFile->url = $url;
-            $membershipAgreementFile->save();
-            DB::table('users')->update(['membership_agreement' => 0]);
-            return $this->successResponse($membershipAgreementFile);
-            */
         } catch (\Exception $ex) {
             return $this->errorResponse(__('Failed upload file'), Response::HTTP_BAD_REQUEST, $ex->getMessage());
         }

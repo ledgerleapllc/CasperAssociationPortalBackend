@@ -429,23 +429,6 @@ class UserController extends Controller
                         EmailerHelper::triggerUserEmail($user->email, 'Congratulations', $emailerData, $user);
                     }
                     return $this->metaSuccess();
-
-                    /* old
-                    $fullpath = 'sigfned_file/' . $user->id . '/signature';
-                    Storage::disk('local')->put($fullpath,  trim($hexstring));
-                    // $url = Storage::disk('local')->url($fullpath);
-                    $user->signed_file = $fullpath;
-                    $user->node_verified_at = now();
-                    $user->save();
-                    $emailerData = EmailerHelper::getEmailerData();
-
-                    EmailerHelper::triggerUserEmail($user->email, 'Your Node is Verified', $emailerData, $user);
-
-                    if ($user->letter_verified_at && $user->signature_request_id && $user->node_verified_at) {
-                        EmailerHelper::triggerUserEmail($user->email, 'Congratulations', $emailerData, $user);
-                    }
-                    return $this->metaSuccess();
-                    */
                 } else {
                     return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
                 }
@@ -763,7 +746,7 @@ class UserController extends Controller
             ]);
 
             // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/client_uploads/'.$fileNameToStore;
-            $user->avatar = $s3result['ObjectURL'] ?? getenv('SITE_URL').'/not-found';
+            $user->avatar = $s3result['ObjectURL'] ?? getenv('SITE_URL') . '/not-found';
             $user->save();
             return $this->metaSuccess();
 

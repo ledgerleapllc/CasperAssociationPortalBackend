@@ -127,8 +127,9 @@ class User extends Authenticatable
         if(!$this->letter_file) {
             return null;
         }
-        $url = Storage::disk('local')->url($this->letter_file);
-        return asset($url);
+        // $url = Storage::disk('local')->url($this->letter_file);
+        // return asset($url);
+        return $this->letter_file;
     }
 
     public function getAvatarUrlAttribute()
