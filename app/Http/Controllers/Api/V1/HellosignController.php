@@ -16,8 +16,8 @@ class HelloSignController extends Controller
         if (!$payload) return "error";
 
         $data = json_decode($payload, true);
-        $api_key = 'e0c85dde1ba2697d4236a6bc6c98ed2d3ca7e3b1cb375f35b286f2c0d07b22d8';
-
+        $api_key = env('HELLOSIGN_API_KEY_HOOK');
+        
         if (!is_array($data)) return "error";
 
         $md5_header_check = base64_encode(hash_hmac('md5', $payload, $api_key));
