@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Laravel\Passport\Token;
 
 class AuthController extends Controller
 {
@@ -347,6 +348,9 @@ class AuthController extends Controller
 
     public function createTokenFromUser($user, $info = [])
     {
+        Token::where([
+            'user_id' => $user->id
+        ])->delete();
         $token = $user->createToken(config('auth.secret_code'));
         return $this->responseToken($token, $user->toArray());
     }
