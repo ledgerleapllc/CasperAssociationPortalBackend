@@ -143,7 +143,7 @@ class User extends Authenticatable
         } else {
             $url = Storage::disk('local')->url($this->avatar);
         }
-        return asset($url);
+        return $url;
     }
 
 
