@@ -17,6 +17,6 @@ class MembershipAgreementFile extends Model
 
     public function getFileUrlAttribute()
     {
-        return asset($this->url);
+        return $this->url;
     }
 }

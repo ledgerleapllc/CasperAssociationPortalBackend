@@ -1357,7 +1357,7 @@ class AdminController extends Controller
             ]);
 
             // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/'.$fileNameToStore;
-            $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL').'/not-found';
+            $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL') . '/not-found';
             MembershipAgreementFile::where('id', '>', 0)->delete();
             $membershipAgreementFile = new MembershipAgreementFile();
             $membershipAgreementFile->name = $filenameWithExt;
