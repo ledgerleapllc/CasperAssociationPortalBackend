@@ -305,8 +305,8 @@ class UserController extends Controller
 
             $request->enableTestMode();
             $request->setTemplateId($template_id);
-            $request->setSubject('User Agreement');
-            $request->setSigner('User', $user->email, $user->first_name . ' ' . $user->last_name);
+            $request->setSubject('Member Agreement');
+            $request->setSigner('Member', $user->email, $user->first_name . ' ' . $user->last_name);
             $request->setCustomFieldValue('FullName', $user->first_name . ' ' . $user->last_name);
             $request->setCustomFieldValue('FullName2', $user->first_name . ' ' . $user->last_name);
             $request->setClientId($client_id);
