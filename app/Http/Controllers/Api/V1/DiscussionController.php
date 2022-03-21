@@ -70,6 +70,7 @@ class DiscussionController extends Controller
         }
     }
 
+    // Get Discussions
     public function getDiscussions(Request $request)
     {
         $data = array();

@@ -93,6 +93,59 @@ class UserController extends Controller
         $this->ownerNodeRepo = $ownerNodeRepo;
     }
 
+    public function getMemberCountInfo() {
+        $data = [
+            'total' => 0,
+            'verified' => 0,
+        ];
+
+        $data['total'] = User::count();
+        $data['verified'] = User::join('profile', 'profile.user_id', '=', 'users.id')
+                            ->where('profile.status', 'approved')
+                            ->whereNotNull('users.public_address_node')
+                            ->get()
+                            ->count();
+
+        return $this->successResponse($data);
+    }
+
+    // Get Verified Members
+    public function getVerifiedMembers() {
+        $data = [];
+        $limit = $request->limit ?? 50;
+        $user = auth()->user();
+
+        $data = User::select([
+                    'users.pseudonym',
+                    'users.public_address_node',
+                    'users.node_status',
+                    'profile.extra_status',
+                ])
+                ->join('profile', 'profile.user_id', '=', 'users.id')
+                ->where('profile.status', 'approved')
+                ->whereNotNull('users.public_address_node')
+                ->paginate($limit);
+
+        /*
+        $data = Discussion::with(['user', 'user.profile'])->where('discussions.is_draft', 0)
+            ->leftJoin('discussion_pins', function ($query) use ($user) {
+                $query->on('discussion_pins.discussion_id', '=', 'discussions.id')
+                    ->where('discussion_pins.user_id', $user->id);
+            })
+            ->leftJoin('discussion_votes', function ($query) use ($user) {
+                $query->on('discussion_votes.discussion_id', '=', 'discussions.id')
+                    ->where('discussion_votes.user_id', $user->id);;
+            })
+            ->select([
+                'discussions.*',
+                'discussion_pins.id as is_pin',
+                'discussion_votes.id as is_vote',
+                'discussion_votes.is_like as is_like',
+            ])->orderBy('discussions.created_at', 'DESC')->paginate($limit);
+        */
+        return $this->successResponse($data);
+    }
+
     // Shuftipro Webhook
     public function updateShuftiproStatus() {
         $json = file_get_contents('php://input');

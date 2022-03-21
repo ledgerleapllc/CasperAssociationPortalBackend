@@ -192,7 +192,10 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('/membership-file',  [AdminController::class, 'getMembershipFile']);
             Route::post('/membership-file',  [AdminController::class, 'uploadMembershipFile']);
         });
-
+        
+        Route::get('/verified-members/all', [UserController::class, 'getVerifiedMembers']);
+        Route::get('/member-count-info', [UserController::class, 'getMemberCountInfo']);
+        
         Route::prefix('discussions')->group(function () {
             Route::get('/trending', [DiscussionController::class, 'getTrending']);
             Route::get('/all', [DiscussionController::class, 'getDiscussions']);
