@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Laravel\Passport\Token;
 
 class AuthController extends Controller
 {
@@ -64,7 +65,7 @@ class AuthController extends Controller
                 return $this->errorResponse('User banned', Response::HTTP_BAD_REQUEST);
             }
             if ($user->twoFA_login) {
-                $code = Str::random(6);
+                $code = strtoupper(Str::random(6));
                 $user->twoFA_login_active = 1;
                 $user->save();
                 VerifyUser::where('email', $user->email)->where('type', VerifyUser::TYPE_LOGIN_TWO_FA)->delete();
@@ -224,7 +225,8 @@ class AuthController extends Controller
                 return $this->errorResponse(__('api.error.email_not_found'), Response::HTTP_BAD_REQUEST);
             }
             $code = Str::random(60);
-            $url = $request->header('origin') ?? $request->root();
+            // $url = $request->header('origin') ?? $request->root();
+            $url = getenv('SITE_URL');
             $resetUrl = $url . '/update-password?code=' . $code . '&email=' . urlencode($request->email);
             $passwordReset = $this->verifyUserRepo->updateOrCreate(
                 [
@@ -346,6 +348,9 @@ class AuthController extends Controller
 
     public function createTokenFromUser($user, $info = [])
     {
+        Token::where([
+            'user_id' => $user->id
+        ])->delete();
         $token = $user->createToken(config('auth.secret_code'));
         return $this->responseToken($token, $user->toArray());
     }

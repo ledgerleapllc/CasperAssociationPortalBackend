@@ -7,11 +7,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
+
 use Laravel\Passport\HasApiTokens;
+
 use App\Models\Discussion;
 use App\Models\DiscussionRemoveNew;
+
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
 {
@@ -124,8 +127,9 @@ class User extends Authenticatable
         if(!$this->letter_file) {
             return null;
         }
-        $url = Storage::disk('local')->url($this->letter_file);
-        return asset($url);
+        // $url = Storage::disk('local')->url($this->letter_file);
+        // return asset($url);
+        return $this->letter_file;
     }
 
     public function getAvatarUrlAttribute()
@@ -139,7 +143,7 @@ class User extends Authenticatable
         } else {
             $url = Storage::disk('local')->url($this->avatar);
         }
-        return asset($url);
+        return $url;
     }
 
 

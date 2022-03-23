@@ -93,6 +93,59 @@ class UserController extends Controller
         $this->ownerNodeRepo = $ownerNodeRepo;
     }
 
+    public function getMemberCountInfo() {
+        $data = [
+            'total' => 0,
+            'verified' => 0,
+        ];
+
+        $data['total'] = User::count();
+        $data['verified'] = User::join('profile', 'profile.user_id', '=', 'users.id')
+                            ->where('profile.status', 'approved')
+                            ->whereNotNull('users.public_address_node')
+                            ->get()
+                            ->count();
+
+        return $this->successResponse($data);
+    }
+
+    // Get Verified Members
+    public function getVerifiedMembers() {
+        $data = [];
+        $limit = $request->limit ?? 50;
+        $user = auth()->user();
+
+        $data = User::select([
+                    'users.pseudonym',
+                    'users.public_address_node',
+                    'users.node_status',
+                    'profile.extra_status',
+                ])
+                ->join('profile', 'profile.user_id', '=', 'users.id')
+                ->where('profile.status', 'approved')
+                ->whereNotNull('users.public_address_node')
+                ->paginate($limit);
+
+        /*
+        $data = Discussion::with(['user', 'user.profile'])->where('discussions.is_draft', 0)
+            ->leftJoin('discussion_pins', function ($query) use ($user) {
+                $query->on('discussion_pins.discussion_id', '=', 'discussions.id')
+                    ->where('discussion_pins.user_id', $user->id);
+            })
+            ->leftJoin('discussion_votes', function ($query) use ($user) {
+                $query->on('discussion_votes.discussion_id', '=', 'discussions.id')
+                    ->where('discussion_votes.user_id', $user->id);;
+            })
+            ->select([
+                'discussions.*',
+                'discussion_pins.id as is_pin',
+                'discussion_votes.id as is_vote',
+                'discussion_votes.is_like as is_like',
+            ])->orderBy('discussions.created_at', 'DESC')->paginate($limit);
+        */
+        return $this->successResponse($data);
+    }
+
     // Shuftipro Webhook
     public function updateShuftiproStatus() {
         $json = file_get_contents('php://input');
@@ -305,8 +358,8 @@ class UserController extends Controller
 
             $request->enableTestMode();
             $request->setTemplateId($template_id);
-            $request->setSubject('User Agreement');
-            $request->setSigner('User', $user->email, $user->first_name . ' ' . $user->last_name);
+            $request->setSubject('Member Agreement');
+            $request->setSigner('Member', $user->email, $user->first_name . ' ' . $user->last_name);
             $request->setCustomFieldValue('FullName', $user->first_name . ' ' . $user->last_name);
             $request->setCustomFieldValue('FullName2', $user->first_name . ' ' . $user->last_name);
             $request->setClientId($client_id);
@@ -336,62 +389,6 @@ class UserController extends Controller
             ]);
         }
         return $this->errorResponse(__('Hellosign request fail'), Response::HTTP_BAD_REQUEST);
-    }
-    /**
-     * verify bypass
-     */
-    public function verifyBypass(Request $request)
-    {
-        $user = auth()->user();
-        // Validator
-        $validator = Validator::make($request->all(), [
-            'type' => 'required'
-        ]);
-        if ($validator->fails()) {
-            return $this->validateResponse($validator->errors());
-        }
-        if ($request->type == 'hellosign') {
-            $user->signature_request_id = 'signature_'  . $user->id . '._id';
-            $user->hellosign_form = 'hellosign_form_' . $user->id;
-            // $user->letter_file = 'leteter_file.pdf';
-            $user->save();
-        }
-
-        if ($request->type == 'verify-node') {
-            $user->public_address_node = 'public_address_node'  . $user->id;
-            $user->node_verified_at = now();
-            $user->message_content = 'message_content';
-            $user->signed_file = 'signture';
-            $user->save();
-        }
-
-        if ($request->type == 'submit-kyc') {
-            $user->kyc_verified_at = now();
-            $user->save();
-            if (!$user->profile) {
-                $profile = new Profile();
-                $profile->user_id = $user->id;
-                $profile->first_name = $user->first_name;
-                $profile->last_name = $user->last_name;
-                $profile->dob = '1990-01-01';
-                $profile->country_citizenship = 'United States';
-                $profile->country_residence = 'United States';
-                $profile->address = 'New York';
-                $profile->city = 'New York';
-                $profile->zip = '10025';
-                $profile->type_owner_node = 1;
-                $profile->type = $user->type;
-                $profile->save();
-            }
-        }
-
-        if ($request->type == 'letter-upload') {
-            $user->letter_file = 'letter_file.pdf';
-            $user->letter_verified_at = now();
-            $user->save();
-        }
-
-        return $this->metaSuccess();
     }
 
     /**
@@ -485,23 +482,6 @@ class UserController extends Controller
                         EmailerHelper::triggerUserEmail($user->email, 'Congratulations', $emailerData, $user);
                     }
                     return $this->metaSuccess();
-
-                    /* old
-                    $fullpath = 'sigfned_file/' . $user->id . '/signature';
-                    Storage::disk('local')->put($fullpath,  trim($hexstring));
-                    // $url = Storage::disk('local')->url($fullpath);
-                    $user->signed_file = $fullpath;
-                    $user->node_verified_at = now();
-                    $user->save();
-                    $emailerData = EmailerHelper::getEmailerData();
-
-                    EmailerHelper::triggerUserEmail($user->email, 'Your Node is Verified', $emailerData, $user);
-
-                    if ($user->letter_verified_at && $user->signature_request_id && $user->node_verified_at) {
-                        EmailerHelper::triggerUserEmail($user->email, 'Congratulations', $emailerData, $user);
-                    }
-                    return $this->metaSuccess();
-                    */
                 } else {
                     return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
                 }
@@ -543,45 +523,6 @@ class UserController extends Controller
             ['user_id' => $user->id]
         );
         return $this->metaSuccess();
-    }
-
-    /**
-     * add owner node
-     */
-    public function addOwnerNode(AddOwnerNodeRequest $request)
-    {
-        try {
-            $user = auth()->user();
-            $data = $request->validated();
-            $ownerNodes = [];
-            $percents = 0;
-            foreach ($data as $value) {
-                $percents += $value['percent'];
-                $value['user_id'] = $user->id;
-                $value['created_at'] = now();
-                array_push($ownerNodes, $value);
-            }
-            if ($percents >= 100) {
-                return $this->errorResponse(__('Total percent must less 100'), Response::HTTP_BAD_REQUEST);
-            }
-
-            OwnerNode::where('user_id', $user->id)->delete();
-            OwnerNode::insert($ownerNodes);
-            $user->update(['kyc_verified_at' => now()]);
-
-            $url = $request->header('origin') ?? $request->root();
-            $resetUrl = $url . '/register-type';
-            foreach ($ownerNodes as $node) {
-                $email = $node['email'];
-                $user = User::where('email', $email)->first();
-                if (!$user) {
-                    Mail::to($email)->send(new AddNodeMail($resetUrl));
-                }
-            }
-            return $this->metaSuccess();
-        } catch (\Exception $ex) {
-            return $this->errorResponse(__('api.error.internal_error'), Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
     }
 
     /**
@@ -706,32 +647,6 @@ class UserController extends Controller
             return $this->metaSuccess();
         }
         return $this->errorResponse('Fail submit AML', Response::HTTP_BAD_REQUEST);
-    }
-
-    // Updateq Temp Status
-    public function updateTypeOwnerNode(Request $request)
-    {
-        $user = auth()->user();
-        // Validator
-        $validator = Validator::make($request->all(), [
-            'type' => [
-                'required',
-                Rule::in([1, 2]),
-            ],
-        ]);
-        if ($validator->fails()) {
-            return $this->validateResponse($validator->errors());
-        }
-        if ($user->profile) {
-            $user->profile->type_owner_node = $request->type;
-            $user->profile->save();
-            if ($request->type == 1) {
-                $user->kyc_verified_at = now();
-                $user->save();
-            }
-            return $this->metaSuccess();
-        }
-        return $this->errorResponse('Fail update type', Response::HTTP_BAD_REQUEST);
     }
 
     // get vote list
@@ -884,7 +799,7 @@ class UserController extends Controller
             ]);
 
             // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/client_uploads/'.$fileNameToStore;
-            $user->avatar = $s3result['ObjectURL'] ?? getenv('SITE_URL').'/not-found';
+            $user->avatar = $s3result['ObjectURL'] ?? getenv('SITE_URL') . '/not-found';
             $user->save();
             return $this->metaSuccess();
 
@@ -1001,21 +916,6 @@ class UserController extends Controller
 
     public function getMemberDetail($id)
     {
-        /*
-        $user = User::select([
-                        'id',
-                        'role',
-                        'public_address_node',
-                        'node_status',
-                        'first_name',
-                        'last_name',
-                        'email_verified_at',
-                        'kyc_verified_at',
-                    ])
-                    ->where('id', $id)
-                    ->first();
-        */
-        
         $user = User::where('id', $id)->first();
 
         if (!$user || $user->role == 'admin') {

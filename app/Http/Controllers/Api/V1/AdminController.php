@@ -77,15 +77,12 @@ class AdminController extends Controller
                         ])
                         ->get();
         foreach ($users as $user) {
-            $status = 'Onboarding';
-            if ($user->profile && $user->profile->status == 'pending') {
-                $status = 'Not verified';
-            } else if ($user->profile && $user->profile->status == 'approved') {
+            $status = 'Not Verified';
+            if ($user->profile && $user->profile->status == 'approved') {
                 $status = 'Verified';
-            } else if (!$user->node_verified_at || !$user->letter_verified_at || !$user->signature_request_id) {
-                $status = 'Onboarding';
-            } else if ($user->node_verified_at && $user->letter_verified_at && $user->signature_request_id && !$user->profile) {
-                $status = 'Not verified';
+                if ($user->profile->extra_status) {
+                    $status = $user->profile->extra_status;
+                }
             }
             $user->membership_status = $status;
         }
@@ -107,15 +104,13 @@ class AdminController extends Controller
             return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
         }
         $user = $user->load(['profile', 'shuftipro', 'shuftiproTemp']);
-        $status = 'Onboarding';
-        if ($user->profile && $user->profile->status == 'pending') {
-            $status = 'Not verified';
-        } else if ($user->profile && $user->profile->status == 'approved') {
+
+        $status = 'Not Verified';
+        if ($user->profile && $user->profile->status == 'approved') {
             $status = 'Verified';
-        } else if (!$user->node_verified_at || !$user->letter_verified_at || !$user->signature_request_id) {
-            $status = 'Onboarding';
-        } else if ($user->node_verified_at && $user->letter_verified_at && $user->signature_request_id && !$user->profile) {
-            $status = 'Not verified';
+            if ($user->profile->extra_status) {
+                $status = $user->profile->extra_status;
+            }
         }
         $user->membership_status = $status;
         $user->metric = Helper::getNodeInfo($user);
@@ -337,31 +332,18 @@ class AdminController extends Controller
 
                     $s3result = $S3->putObject([
                         'Bucket' => getenv('AWS_BUCKET'),
-                        'Key' => 'perks/'.$fileNameToStore,
+                        'Key' => 'perks/' . $fileNameToStore,
                         'SourceFile' => $file
                     ]);
 
-                    // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/perks/'.$fileNameToStore;
-                    $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL').'/not-found';
+                    // $ObjectURL = 'https://'.getenv('AWS_BUCKET') . '.s3.amazonaws.com/perks/'.$fileNameToStore;
+                    $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL') . '/not-found';
                     $ballotFile = new BallotFile();
                     $ballotFile->ballot_id = $ballot->id;
                     $ballotFile->name = $name;
                     $ballotFile->path = $ObjectURL;
                     $ballotFile->url = $ObjectURL;
                     $ballotFile->save();
-
-                    /* old
-                    $name = $file->getClientOriginalName();
-                    $folder = 'ballot/' . $ballot->id;
-                    $path = $file->storeAs($folder, $name);
-                    $url = Storage::url($path);
-                    $ballotFile = new BallotFile();
-                    $ballotFile->ballot_id = $ballot->id;
-                    $ballotFile->name = $name;
-                    $ballotFile->path = $path;
-                    $ballotFile->url = $url;
-                    $ballotFile->save();
-                    */
                 }
             }
 
@@ -464,19 +446,6 @@ class AdminController extends Controller
                     $ballotFile->path = $ObjectURL;
                     $ballotFile->url = $ObjectURL;
                     $ballotFile->save();
-
-                    /* old
-                    $name = $file->getClientOriginalName();
-                    $folder = 'ballot/' . $ballot->id;
-                    $path = $file->storeAs($folder, $name);
-                    $url = Storage::url($path);
-                    $ballotFile = new BallotFile();
-                    $ballotFile->ballot_id = $ballot->id;
-                    $ballotFile->name = $name;
-                    $ballotFile->path = $path;
-                    $ballotFile->url = $url;
-                    $ballotFile->save();
-                    */
                 }
             }
             if ($request->file_ids_remove) {
@@ -642,7 +611,8 @@ class AdminController extends Controller
         }
 
         $code = Str::random(6);
-        $url = $request->header('origin') ?? $request->root();
+        // $url = $request->header('origin') ?? $request->root();
+        $url = getenv('SITE_URL');
         $inviteUrl = $url . '/register-sub-admin?code=' . $code . '&email=' . urlencode($request->email);
         
         VerifyUser::where('email', $request->email)->where('type', VerifyUser::TYPE_INVITE_ADMIN)->delete();
@@ -749,7 +719,8 @@ class AdminController extends Controller
             return $this->errorResponse('No admin to be send invite link', Response::HTTP_BAD_REQUEST);
 
         $code = Str::random(6);
-        $url = $request->header('origin') ?? $request->root();
+        // $url = $request->header('origin') ?? $request->root();
+        $url = getenv('SITE_URL');
         $inviteUrl = $url . '/register-sub-admin?code=' . $code . '&email=' . urlencode($admin->email);
         
         VerifyUser::where('email', $admin->email)->where('type', VerifyUser::TYPE_INVITE_ADMIN)->delete();
@@ -773,7 +744,8 @@ class AdminController extends Controller
             return $this->errorResponse('No admin to be revoked', Response::HTTP_BAD_REQUEST);
 
         $code = Str::random(6);
-        $url = $request->header('origin') ?? $request->root();
+        // $url = $request->header('origin') ?? $request->root();
+        $url = getenv('SITE_URL');
         $resetUrl = $url . '/update-password?code=' . $code . '&email=' . urlencode($admin->email);
         
         VerifyUser::where('email', $admin->email)->where('type', VerifyUser::TYPE_RESET_PASSWORD)->delete();
@@ -840,8 +812,8 @@ class AdminController extends Controller
         $user = User::where('id', $id)->where('banned', 0)->where('role', 'member')->first();
         if ($user && $user->letter_file) {
             $user->letter_verified_at = now();
-            $user->kyc_verified_at = now();
             $user->save();
+
             $emailerData = EmailerHelper::getEmailerData();
             EmailerHelper::triggerUserEmail($user->email, 'Your letter of motivation is APPROVED', $emailerData, $user);
             if ($user->letter_verified_at && $user->node_verified_at) {
@@ -919,35 +891,6 @@ class AdminController extends Controller
         return $this->successResponse($users);
     }
 
-    // Reset Intake KYC
-    public function resetIntakeKYC($id, Request $request) {
-        $admin = auth()->user();
-
-        $message = trim($request->get('message'));
-        if (!$message) {
-            return $this->errorResponse('please input message', Response::HTTP_BAD_REQUEST);
-        }
-
-        $user = User::with(['profile'])->where('id', $id)->first();
-        if ($user && $user->profile) {
-            $user->profile->status = null;
-            $user->profile->save();
-            
-            $user->reset_kyc = 1;
-            $user->save();
-            
-            Shuftipro::where('user_id', $user->id)->delete();
-            ShuftiproTemp::where('user_id', $user->id)->delete();
-            DocumentFile::where('user_id', $user->id)->delete();
-
-            Mail::to($user->email)->send(new AdminAlert('You need to submit KYC again', $message));
-            
-            return $this->metaSuccess();
-        }
-
-        return $this->errorResponse('Fail Reset KYC', Response::HTTP_BAD_REQUEST);
-    }
-
     // Reset KYC
     public function resetKYC($id, Request $request)
     {
@@ -960,13 +903,16 @@ class AdminController extends Controller
 
         $user = User::with(['profile'])->where('id', $id)->first();
         if ($user && $user->profile) {
-            // $user->profile->status = 'pending';
-            // $user->profile->save();
+            $user->profile->status = null;
+            $user->profile->save();
+            
             Profile::where('user_id', $user->id)->delete();
             Shuftipro::where('user_id', $user->id)->delete();
             ShuftiproTemp::where('user_id', $user->id)->delete();
             DocumentFile::where('user_id', $user->id)->delete();
 
+            $user->kyc_verified_at = null;
+            $user->approve_at = null;
             $user->reset_kyc = 1;
             $user->save();
             
@@ -975,89 +921,6 @@ class AdminController extends Controller
         }
 
         return $this->errorResponse('Fail Reset KYC', Response::HTTP_BAD_REQUEST);
-    }
-
-    // Reset AML
-    public function resetAML($id, Request $request)
-    {
-        $admin = auth()->user();
-
-        $message = trim($request->get('message'));
-        if (!$message) {
-            return $this->errorResponse('please input message', Response::HTTP_BAD_REQUEST);
-        }
-
-        $user = User::with(['profile'])->where('id', $id)->first();
-        if ($user && $user->profile) {
-            Profile::where('user_id', $user->id)->delete();
-            Shuftipro::where('user_id', $user->id)->delete();
-            ShuftiproTemp::where('user_id', $user->id)->delete();
-            DocumentFile::where('user_id', $user->id)->delete();
-
-            Mail::to($user->email)->send(new AdminAlert('You need to submit AML again', $message));
-            return $this->metaSuccess();
-        }
-
-        return $this->errorResponse('Fail Reset AML', Response::HTTP_BAD_REQUEST);
-    }
-
-    // Approve kyc 
-    public function approveKYC($id, Request $request)
-    {
-        $admin = auth()->user();
-
-        $user = User::with(['shuftipro', 'profile'])
-                    ->where('id', $id)
-                    ->where('users.role', 'member')
-                    ->where('banned', 0)
-                    ->first();
-
-        if ($user && $user->profile) {
-            $user->profile->status = 'approved';
-            $user->profile->save();
-
-            if ($user->shuftipro) {
-                $user->shuftipro->status = 'approved';
-                $user->shuftipro->reviewed = 1;
-                $user->shuftipro->background_checks_result = 1;
-                $user->shuftipro->manual_approved_at = now();
-                $user->shuftipro->manual_reviewer = $admin->email;
-                $user->shuftipro->save();
-            }
-
-            $user->kyc_verified_at = now();
-            $user->approve_at = now();
-            $user->save();
-            return $this->metaSuccess();
-        }
-
-        return $this->errorResponse('Fail approve KYC', Response::HTTP_BAD_REQUEST);
-    }
-
-    // Approve AML
-    public function approveAML($id)
-    {
-        $admin = auth()->user();
-
-        $user = User::with(['shuftipro', 'profile'])
-                    ->where('id', $id)
-                    ->where('users.role', 'member')
-                    ->where('banned', 0)
-                    ->first();
-
-        if ($user && $user->profile && $user->shuftipro) {
-            $user->shuftipro->background_checks_result = 1;
-            $user->shuftipro->save();
-            if ($user->shuftipro->status = 'approved') {
-                $user->profile->status = 'approved';
-                $user->profile->save();
-            }
-            $user->kyc_verified_at = now();
-            $user->save();
-            return $this->metaSuccess();
-        }
-
-        return $this->errorResponse('Fail approve AML', Response::HTTP_BAD_REQUEST);
     }
 
     public function refreshLinks($id)
@@ -1307,12 +1170,12 @@ class AdminController extends Controller
             $validator = Validator::make($request->all(), [
                 'warning_level' => 'required|integer',
                 'probation_start' => 'required',
-                'frame_calculate_unit' => 'required|in:Weeks,Days,Hours',
-                'frame_calculate_value' => 'required|integer',
+                // 'frame_calculate_unit' => 'required|in:Weeks,Days,Hours',
+                // 'frame_calculate_value' => 'required|integer',
                 'given_to_correct_unit' => 'required|in:Weeks,Days,Hours',
                 'given_to_correct_value' => 'required|integer',
-                'system_check_unit' => 'required|in:Weeks,Days,Hours',
-                'system_check_value' => 'required|integer',
+                // 'system_check_unit' => 'required|in:Weeks,Days,Hours',
+                // 'system_check_value' => 'required|integer',
             ]);
 
             if ($validator->fails()) {
@@ -1321,12 +1184,12 @@ class AdminController extends Controller
 
             $record->warning_level = $request->warning_level;
             $record->probation_start = $request->probation_start;
-            $record->frame_calculate_unit = $request->frame_calculate_unit;
-            $record->frame_calculate_value = $request->frame_calculate_value;
+            // $record->frame_calculate_unit = $request->frame_calculate_unit;
+            // $record->frame_calculate_value = $request->frame_calculate_value;
             $record->given_to_correct_unit = $request->given_to_correct_unit;
             $record->given_to_correct_value = $request->given_to_correct_value;
-            $record->system_check_unit = $request->system_check_unit;
-            $record->system_check_value = $request->system_check_value;
+            // $record->system_check_unit = $request->system_check_unit;
+            // $record->system_check_value = $request->system_check_value;
             $record->save();
 
             return ['success' => true];
@@ -1489,12 +1352,12 @@ class AdminController extends Controller
 
             $s3result = $S3->putObject([
                 'Bucket' => getenv('AWS_BUCKET'),
-                'Key' => 'client_uploads/'.$fileNameToStore,
+                'Key' => 'client_uploads/' . $fileNameToStore,
                 'SourceFile' => $request->file('file')
             ]);
 
             // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/'.$fileNameToStore;
-            $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL').'/not-found';
+            $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL') . '/not-found';
             MembershipAgreementFile::where('id', '>', 0)->delete();
             $membershipAgreementFile = new MembershipAgreementFile();
             $membershipAgreementFile->name = $filenameWithExt;
@@ -1503,20 +1366,6 @@ class AdminController extends Controller
             $membershipAgreementFile->save();
             DB::table('users')->update(['membership_agreement' => 0]);
             return $this->successResponse($membershipAgreementFile);
-
-            /* old
-            $fileName = $request->file('file')->getClientOriginalName();
-            $path = $request->file('file')->storeAs('membership', $fileName);
-            $url = Storage::url($path);
-            MembershipAgreementFile::where('id', '>', 0)->delete();
-            $membershipAgreementFile = new MembershipAgreementFile();
-            $membershipAgreementFile->name = $fileName;
-            $membershipAgreementFile->path = $path;
-            $membershipAgreementFile->url = $url;
-            $membershipAgreementFile->save();
-            DB::table('users')->update(['membership_agreement' => 0]);
-            return $this->successResponse($membershipAgreementFile);
-            */
         } catch (\Exception $ex) {
             return $this->errorResponse(__('Failed upload file'), Response::HTTP_BAD_REQUEST, $ex->getMessage());
         }

@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 use Aws\S3\S3Client;
 
@@ -77,21 +78,13 @@ class PerkController extends Controller
 
         $s3result = $S3->putObject([
             'Bucket' => getenv('AWS_BUCKET'),
-            'Key' => 'client_uploads/'.$fileNameToStore,
+            'Key' => 'client_uploads/' . $fileNameToStore,
             'SourceFile' => $request->file('image')
         ]);
 
         // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/client_uploads/'.$fileNameToStore;
-        $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL').'/not-found';
+        $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL') . '/not-found';
         $perk->image = $ObjectURL;
-
-        /* old
-        // Filename to store
-        $fileNameToStore = $filename . '_' . time() . '.' . $extension;
-        // Upload Image
-        $path = $request->file('image')->storeAs('perk', $fileNameToStore);
-        $perk->image = $path;
-        */
 
         // check visibility and status
         if ($setting == 1) {
@@ -195,19 +188,6 @@ class PerkController extends Controller
             $perk->setting = $request->setting;
         }
         if ($request->hasFile('image')) {
-            /* old
-            $filenameWithExt = $request->file('image')->getClientOriginalName();
-            //Get just filename
-            $filename = pathinfo($filenameWithExt, PATHINFO_FILENAME);
-            // Get just ext
-            $extension = $request->file('image')->getClientOriginalExtension();
-            // Filename to store
-            $fileNameToStore = $filename . '_' . time() . '.' . $extension;
-            // Upload Image
-            $path = $request->file('image')->storeAs('perk', $fileNameToStore);
-            $perk->image = $path;
-            */
-
             $extension = $request->file('image')->getClientOriginalExtension();
             $filenamehash = md5(Str::random(10) . '_' . (string)time());
             $fileNameToStore = $filenamehash . '.' . $extension;

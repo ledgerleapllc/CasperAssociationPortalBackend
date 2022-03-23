@@ -30,7 +30,8 @@ class Perk extends Model
         if(!$this->image) {
             return null;
         }
-        $url = Storage::disk('local')->url($this->image);
-        return asset($url);
+        // $url = Storage::disk('local')->url($this->image);
+        // return asset($url);
+        return $this->image;
     }
 }
