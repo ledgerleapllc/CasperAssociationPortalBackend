@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\NodeHelper;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
 use Carbon\Carbon;
 
@@ -152,9 +153,12 @@ class NodeInfo extends Command
         $max_delegators = ModelsNodeInfo::max('delegators_count');
         $max_stake_amount = ModelsNodeInfo::max('total_staked_amount');
 
+        DB::table('users')->update(['rank' => null]);
+
         $users = User::with(['metric'])->where('role', 'member')
             ->leftJoin('node_info', 'users.public_address_node', '=', 'node_info.node_address')
             ->where('banned', 0)
+            ->whereNotNull('users.public_address_node')
             ->select([
                 'users.*',
                 'node_info.delegation_rate',

@@ -595,7 +595,7 @@ class AdminController extends Controller
 
         return $this->successResponse($admins);
     }
-
+    
     public function inviteSubAdmin(Request $request)
     {
         $validator = Validator::make($request->all(), [

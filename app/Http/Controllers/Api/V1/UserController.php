@@ -317,7 +317,6 @@ class UserController extends Controller
                 'SourceFile' => $request->file('file')
             ]);
 
-            // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/letters_of_motivation/'.$fileNameToStore;
             $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL').'/not-found';
             $user->letter_file = $ObjectURL;
             $user->letter_rejected_at = null;
@@ -326,18 +325,6 @@ class UserController extends Controller
             EmailerHelper::triggerAdminEmail('User uploads a letter', $emailerData, $user);
             EmailerHelper::triggerUserEmail($user->email, 'Your letter of motivation is received', $emailerData, $user);
             return $this->metaSuccess();
-
-            // Upload Image
-            /* old
-            $path = $request->file('file')->storeAs('users', $fileNameToStore);
-            $user->letter_file = $path;
-            $user->letter_rejected_at = null;
-            $user->save();
-            $emailerData = EmailerHelper::getEmailerData();
-            EmailerHelper::triggerAdminEmail('User uploads a letter', $emailerData, $user);
-            EmailerHelper::triggerUserEmail($user->email, 'Your letter of motivation is received', $emailerData, $user);
-            return $this->metaSuccess();
-            */
         } catch (\Exception $ex) {
             return $this->errorResponse(__('Failed upload file'), Response::HTTP_BAD_REQUEST, $ex->getMessage());
         }
@@ -406,6 +393,11 @@ class UserController extends Controller
         $correct_checksum = (int) (new ChecksumValidator($public_address_temp))->do();
         if (!$correct_checksum) {
             return $this->errorResponse(__('Please provide valid address'), Response::HTTP_BAD_REQUEST);
+        }
+
+        $tempUser = User::where('public_address_node', $public_address)->first();
+        if ($tempUser) {
+            return $this->errorResponse(__('The address is already used by other user'), Response::HTTP_BAD_REQUEST);
         }
 
         $user->update(['public_address_node' => $public_address]);
