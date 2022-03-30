@@ -367,7 +367,7 @@ class MetricController extends Controller
 
             $monitoringCriteria = MonitoringCriteria::get();
             $nodeInfo = NodeInfo::where('node_address', strtolower($user->public_address_node))->first();
-            $rank = 5 ;// dummy
+            $rank = $user->rank;
             $delegators = 0;
             $stake_amount = 0;
             $self_stake_amount = 0;

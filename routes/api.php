@@ -92,7 +92,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('/nodes/{node}/chart', [UserController::class, 'getChartEarningByNode']);
 
             Route::post('/users/contact-us',  [ContactController::class, 'submitContact']);
-
+            
             Route::get('/users/membership-file',  [UserController::class, 'getMembershipFile']);
             Route::post('/users/membership-agreement',  [UserController::class, 'membershipAgreement']);
             Route::post('/users/check-reset-kyc',  [UserController::class, 'checkResetKyc']);
@@ -145,7 +145,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
                 Route::delete('/perks/{id}',  [PerkController::class, 'deletePerk']);
                 Route::post('/perks',  [PerkController::class, 'createPerk']);
             });
-
+            
             Route::get('/global-settings', [AdminController::class, 'getGlobalSettings']);
             Route::put('/global-settings', [AdminController::class, 'updateGlobalSettings']);
             
@@ -181,11 +181,11 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('/notification',  [NotificationController::class, 'getNotification']);
             Route::get('/notification/{id}/view-logs',  [NotificationController::class, 'getUserViewLogs']);
             Route::get('/notification/high-priority',  [NotificationController::class, 'getHighPriority']);
-
+            
             // rules lock
             Route::get('/lock-rules',  [AdminController::class, 'getLockRules']);
             Route::put('/lock-rules/{id}',  [AdminController::class, 'updateLockRules'])->where('id', '[0-9]+');
-
+            
             // contact recipients
             Route::get('/contact-recipients',  [ContactController::class, 'getContactRecipients']);
             Route::post('/contact-recipients',  [ContactController::class, 'addContactRecipients']);
