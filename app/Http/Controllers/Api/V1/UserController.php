@@ -818,6 +818,86 @@ class UserController extends Controller
     {
         $search = $request->search;
         $limit = $request->limit ?? 50;
+
+        $slide_value_uptime = $request->uptime ?? 0;
+        $slide_value_update_responsiveness = $request->update_responsiveness ?? 0;
+        $slide_value_delegotors = $request->delegators ?? 0;
+        $slide_value_stake_amount = $request->stake_amount ?? 0;
+        $slide_delegation_rate = $request->delegation_rate ?? 0;
+
+        $max_uptime = Node::max('uptime');
+        $max_uptime = $max_uptime * 100;
+        
+        $max_delegators = NodeInfo::max('delegators_count');
+        if(!$max_delegators || $max_delegators < 1) $max_delegators = 1;
+        
+        $max_stake_amount = NodeInfo::max('total_staked_amount');
+        if(!$max_stake_amount || $max_stake_amount < 1) $max_stake_amount = 1;
+
+        $sort_key = $request->sort_key ?? 'created_at';
+        
+        $users = User::with(['metric', 'nodeInfo', 'profile'])
+                    ->whereHas('nodeInfo')
+                    ->where('role', 'member')
+                    ->where(function ($query) use ($search) {
+                        if ($search) {
+                            $query->where('users.first_name', 'like', '%' . $search . '%')
+                                ->orWhere('users.last_name', 'like', '%' . $search . '%');
+                        }
+                    })
+                    ->get();
+
+        foreach ($users as $user) {
+            $latest = Node::where('node_address', strtolower($user->public_address_node))
+                            ->whereNotnull('protocol_version')
+                            ->orderBy('created_at', 'desc')
+                            ->first();
+            if (!$latest) {
+                $latest = new Node();
+            }
+
+            $user->status = isset($user->profile) && isset($user->profile->status) ? $user->profile->status : '';
+
+            $uptime_nodeInfo = $user->nodeInfo->uptime;
+            $uptime_node = isset($latest->uptime) && $latest->uptime ? $latest->uptime * 100 : null;
+            $uptime_metric = isset($user->metric) && isset($user->metric->uptime) ? $user->metric->uptime : null;
+
+            $res_nodeInfo = $user->nodeInfo->update_responsiveness ?? null;
+            $res_node = $latest->update_responsiveness ?? null;
+            $res_metric = $metric->update_responsiveness ?? null;
+
+            $uptime = $uptime_nodeInfo ? $uptime_nodeInfo : ($uptime_node ? $uptime_node : ($uptime_metric ? $uptime_metric : 1));
+            $res = $res_nodeInfo ? $res_nodeInfo : ($res_node ? $res_node : ($res_metric ? $res_metric : 0));
+
+            $delegation_rate = isset($user->nodeInfo->delegation_rate) && $user->nodeInfo->delegation_rate ? $user->nodeInfo->delegation_rate / 100 : 1;
+            if ($delegation_rate > 1) {
+                $delegation_rate = 1;
+            }
+            $delegators_count = isset($user->nodeInfo->delegators_count) && $user->nodeInfo->delegators_count ? $user->nodeInfo->delegators_count : 0;
+            $total_staked_amount = isset($user->nodeInfo->total_staked_amount) && $user->nodeInfo->total_staked_amount ? $user->nodeInfo->total_staked_amount : 0;
+
+            $uptime_score = (float) (($slide_value_uptime * $uptime) / 100);
+            $delegation_rate_score = (float) (($slide_delegation_rate * (1 - $delegation_rate)) / 100);
+            $delegators_count_score = (float) ($delegators_count / $max_delegators) * $slide_value_delegotors;
+            $total_staked_amount_score = (float) ($total_staked_amount / $max_stake_amount) * $slide_value_stake_amount;
+            $res_score = (float) (($slide_value_update_responsiveness * $res) / 100);
+
+            $user->uptime = $uptime;
+            $user->delegation_rate = $delegation_rate;
+            $user->delegators_count = $delegators_count;
+            $user->total_staked_amount = $total_staked_amount;
+            $user->totalScore = $uptime_score + $delegation_rate_score + $delegators_count_score + $total_staked_amount_score + $res_score;
+        }
+
+        $users = $users->sortByDesc($sort_key)->values();
+        $users = Helper::paginate($users, $limit, $request->page);
+        return $this->successResponse($users);
+    }
+
+    public function getMembersOld(Request $request)
+    {
+        $search = $request->search;
+        $limit = $request->limit ?? 50;
         $slide_value_uptime = $request->uptime ?? 0;
         $slide_value_update_responsiveness = $request->update_responsiveness ?? 0;
         $slide_value_delegotors = $request->delegators ?? 0;
@@ -835,30 +915,38 @@ class UserController extends Controller
         $sort_direction = $request->sort_direction ?? '';
         if (!$sort_key) $sort_key = 'created_at';
         if (!$sort_direction) $sort_direction = 'desc';
-        $users = User::with(['metric'])->where('role', 'member')
-            ->leftJoin('node_info', 'users.public_address_node', '=', 'node_info.node_address')
-            ->leftJoin('profile', 'users.id', '=', 'profile.user_id')
-            ->where(function ($query) use ($search) {
-                if ($search) {
-                    $query->where('users.first_name', 'like', '%' . $search . '%')
-                        ->orWhere('users.last_name', 'like', '%' . $search . '%');
-                }
-            })
-            ->select([
-                'users.id',
-                'users.created_at',
-                'users.first_name',
-                'users.last_name',
-                'users.kyc_verified_at',
-                'users.pseudonym',
-                'profile.status',
-                'node_info.uptime',
-                'node_info.delegation_rate',
-                'node_info.delegators_count',
-                'node_info.total_staked_amount',
-            ])
-            ->get();
+
+        $users = User::with(['metric'])
+                    ->where('role', 'member')
+                    ->leftJoin('node_info', 'users.public_address_node', '=', 'node_info.node_address')
+                    ->leftJoin('profile', 'users.id', '=', 'profile.user_id')
+                    ->where(function ($query) use ($search) {
+                        if ($search) {
+                            $query->where('users.first_name', 'like', '%' . $search . '%')
+                                ->orWhere('users.last_name', 'like', '%' . $search . '%');
+                        }
+                    })
+                    ->select([
+                        'users.id',
+                        'users.created_at',
+                        'users.first_name',
+                        'users.last_name',
+                        'users.kyc_verified_at',
+                        'users.pseudonym',
+                        'profile.status',
+                        'node_info.uptime',
+                        'node_info.delegation_rate',
+                        'node_info.delegators_count',
+                        'node_info.total_staked_amount',
+                    ])
+                    ->get();
+
         foreach ($users as $user) {
+            if (!$user->metric && !$user->nodeInfo) {
+                $user->totalScore = 0;
+                continue;
+            }
+
             $latest = Node::where('node_address', strtolower($user->public_address_node))
                             ->whereNotnull('protocol_version')
                             ->orderBy('created_at', 'desc')
@@ -866,11 +954,9 @@ class UserController extends Controller
             if (!$latest) {
                 $latest = new Node();
             }
-            $delegation_rate = $user->delegation_rate ?  $user->delegation_rate / 100 : 1;
-            if (!$user->metric && !$user->nodeInfo) {
-                $user->totalScore = null;
-                continue;
-            }
+
+            $delegation_rate = $user->delegation_rate ? $user->delegation_rate / 100 : 1;
+            
             $latest_uptime_node = isset($latest->uptime) ? $latest->uptime * 100 : null;
             $latest_update_responsiveness_node = $latest->update_responsiveness ?? null;
             $metric = $user->metric;
@@ -880,7 +966,7 @@ class UserController extends Controller
             $latest_uptime_metric = $metric->uptime ? $metric->uptime : null;
             $latest_update_responsiveness_metric = $metric->update_responsiveness ? $metric->update_responsiveness : null;
 
-            $latest_uptime = $latest_uptime_node ??  $latest_uptime_metric ?? 1;
+            $latest_uptime = $latest_uptime_node ?? $latest_uptime_metric ?? 1;
             $latest_update_responsiveness = $latest_update_responsiveness_node ??  $latest_update_responsiveness_metric ?? 1;
 
             // $delegators_count = $user->delegators_count ? $user->nodeInfo->delegators_count : 0;
