@@ -850,6 +850,7 @@ class UserController extends Controller
                 'users.first_name',
                 'users.last_name',
                 'users.kyc_verified_at',
+                'users.pseudonym',
                 'profile.status',
                 'node_info.uptime',
                 'node_info.delegation_rate',
