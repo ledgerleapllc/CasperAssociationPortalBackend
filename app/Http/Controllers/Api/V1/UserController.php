@@ -1321,6 +1321,30 @@ class UserController extends Controller
         return $this->metaSuccess();
     }
 
+    public function getDonationSessionId(Request $request)
+    {
+        $sessionId = $request->get('sessionId');
+        $flag = false;
+
+        if ($sessionId) {
+            \Stripe\Stripe::setApiKey(env('STRIPE_SEC_KEY'));
+            $sessionData = \Stripe\Checkout\Session::retrieve($sessionId);
+
+            if ($sessionData && isset($sessionData->id) && isset($sessionData->status) && $sessionData->status == 'complete') {
+                $donation = Donation::where('checkout_session_id', $sessionId)->first();
+                if ($donation) {
+                    $donation->status = 'complete';
+                    $donation->save();
+                }
+                $flag = true;
+            }
+        }
+
+        return $this->successResponse([
+            'success' => $flag,
+        ]);
+    }
+
     public function submitDonation(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -1335,13 +1359,69 @@ class UserController extends Controller
             return $this->validateResponse($validator->errors());
         }
 
-        $donation = new Donation();
-        $donation->first_name = $request->first_name;
-        $donation->last_name = $request->last_name;
-        $donation->email = $request->email;
-        $donation->amount = $request->amount;
-        $donation->message = $request->message;
-        $donation->save();
-        return $this->metaSuccess();
+        \Stripe\Stripe::setApiKey(env('STRIPE_SEC_KEY'));
+
+        $productId = env('STRIPE_PRODUCTION_ID');
+        $amount = (int) $request->amount * 100;
+
+        $allPrices = \Stripe\Price::all();
+        $priceId = null;
+
+        if ($allPrices && isset($allPrices['data']) && count($allPrices['data'])) {
+            foreach ($allPrices['data'] as $item) {
+                if ((int) $item->unit_price == $amount) {
+                    $priceId = $item->id;
+                    break;
+                }
+            }
+        }
+
+        try {
+            if (!$priceId) {
+                $priceObject = \Stripe\Price::create([
+                    'unit_amount' => $amount,
+                    'currency' => 'usd',
+                    'product' => $productId,
+                ]);
+                $priceId = $priceObject->id;
+            }
+
+            $url = $request->header('origin') ?? $request->root();
+            $checkoutSession = \Stripe\Checkout\Session::create([
+                'success_url' => $url . '/donate?session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url' => $url . '/donate',
+                'customer_email' => $request->email,
+                'mode' => 'payment',
+                'line_items' => [[
+                    'price' => $priceId,
+                    'quantity' => 1,
+                ]]
+            ]);
+
+            if ($checkoutSession && isset($checkoutSession->url) && isset($checkoutSession->id)) {
+                $checkoutSessionId = $checkoutSession->id;
+
+                $donation = Donation::where('checkout_session_id', $checkoutSessionId)->first();
+                if (!$donation) {
+                    $donation = new Donation();
+                    $donation->first_name = $request->first_name;
+                    $donation->last_name = $request->last_name;
+                    $donation->email = $request->email;
+                    $donation->amount = $request->amount;
+                    $donation->message = $request->message;
+                    $donation->checkout_session_id = $checkoutSessionId;
+                    $donation->status = 'pending';
+                    $donation->save();
+                }
+                
+                return $this->successResponse([
+                    'url' => $checkoutSession->url,
+                ]);
+            } else {
+                return $this->errorResponse(__('Invalid payment request'), Response::HTTP_BAD_REQUEST);
+            }
+        } catch (\Exception $ex) {
+            return $this->errorResponse(__('Invalid payment request'), Response::HTTP_BAD_REQUEST);
+        }
     }
 }

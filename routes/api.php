@@ -45,6 +45,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
     Route::post('/users/cancel-change-email', [UserController::class, 'cancelChangeEmail']);
     Route::post('/users/confirm-change-email', [UserController::class, 'confirmChangeEmail']);
     Route::get('/graph-info', [AdminController::class, 'getGraphInfo']);
+    Route::get('/donation', [UserController::class, 'getDonationSessionId']);
     Route::post('/donation', [UserController::class, 'submitDonation']);
     Route::post('/contact-us',  [ContactController::class, 'submitContact']);
     Route::middleware(['auth:api'])->group(function () {
