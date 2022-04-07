@@ -1014,6 +1014,14 @@ class UserController extends Controller
         }
         $user->metric = Helper::getNodeInfo($user);
         $response = $user->load(['profile']);
+
+        unset($response->last_login_at);
+        unset($response->last_login_ip_address);
+        unset($response->profile->dob);
+        unset($response->profile->address);
+        unset($response->profile->city);
+        unset($response->profile->zip);
+
         return $this->successResponse($response);
     }
 
