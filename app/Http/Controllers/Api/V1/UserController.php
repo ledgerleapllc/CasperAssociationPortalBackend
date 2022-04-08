@@ -116,6 +116,7 @@ class UserController extends Controller
         $user = auth()->user();
 
         $data = User::select([
+                    'users.id',
                     'users.pseudonym',
                     'users.public_address_node',
                     'users.node_status',
@@ -126,23 +127,6 @@ class UserController extends Controller
                 ->whereNotNull('users.public_address_node')
                 ->paginate($limit);
 
-        /*
-        $data = Discussion::with(['user', 'user.profile'])->where('discussions.is_draft', 0)
-            ->leftJoin('discussion_pins', function ($query) use ($user) {
-                $query->on('discussion_pins.discussion_id', '=', 'discussions.id')
-                    ->where('discussion_pins.user_id', $user->id);
-            })
-            ->leftJoin('discussion_votes', function ($query) use ($user) {
-                $query->on('discussion_votes.discussion_id', '=', 'discussions.id')
-                    ->where('discussion_votes.user_id', $user->id);;
-            })
-            ->select([
-                'discussions.*',
-                'discussion_pins.id as is_pin',
-                'discussion_votes.id as is_vote',
-                'discussion_votes.is_like as is_like',
-            ])->orderBy('discussions.created_at', 'DESC')->paginate($limit);
-        */
         return $this->successResponse($data);
     }
 
@@ -1014,13 +998,6 @@ class UserController extends Controller
         }
         $user->metric = Helper::getNodeInfo($user);
         $response = $user->load(['profile']);
-
-        unset($response->last_login_at);
-        unset($response->last_login_ip_address);
-        unset($response->profile->dob);
-        unset($response->profile->address);
-        unset($response->profile->city);
-        unset($response->profile->zip);
 
         return $this->successResponse($response);
     }
