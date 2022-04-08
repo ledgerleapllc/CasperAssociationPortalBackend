@@ -1037,7 +1037,7 @@ class UserController extends Controller
             LEFT JOIN users AS b
             ON a.user_id = b.id
             WHERE a.reference_id = '$hash'
-        ")->first();
+        ");
 
         return $this->successResponse($selection);
     }
