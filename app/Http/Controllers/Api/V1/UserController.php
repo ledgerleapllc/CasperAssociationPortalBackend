@@ -116,6 +116,7 @@ class UserController extends Controller
         $user = auth()->user();
 
         $data = User::select([
+                    'users.id',
                     'users.pseudonym',
                     'users.public_address_node',
                     'users.node_status',
@@ -126,23 +127,6 @@ class UserController extends Controller
                 ->whereNotNull('users.public_address_node')
                 ->paginate($limit);
 
-        /*
-        $data = Discussion::with(['user', 'user.profile'])->where('discussions.is_draft', 0)
-            ->leftJoin('discussion_pins', function ($query) use ($user) {
-                $query->on('discussion_pins.discussion_id', '=', 'discussions.id')
-                    ->where('discussion_pins.user_id', $user->id);
-            })
-            ->leftJoin('discussion_votes', function ($query) use ($user) {
-                $query->on('discussion_votes.discussion_id', '=', 'discussions.id')
-                    ->where('discussion_votes.user_id', $user->id);;
-            })
-            ->select([
-                'discussions.*',
-                'discussion_pins.id as is_pin',
-                'discussion_votes.id as is_vote',
-                'discussion_votes.is_like as is_like',
-            ])->orderBy('discussions.created_at', 'DESC')->paginate($limit);
-        */
         return $this->successResponse($data);
     }
 
@@ -1014,7 +998,28 @@ class UserController extends Controller
         }
         $user->metric = Helper::getNodeInfo($user);
         $response = $user->load(['profile']);
+
         return $this->successResponse($response);
+    }
+
+    public function getCaKycHash($hash)
+    {
+        if(!ctype_xdigit($hash)) {
+            return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
+        }
+
+        $selection = DB::select("
+            SELECT a.casper_association_kyc_hash as proof_hash, b.reference_id, b.status, c.pseudonym
+            FROM profile as a
+            LEFT JOIN shuftipro AS b
+            ON a.user_id = b.user_id
+            LEFT JOIN users AS c
+            ON b.user_id = c.id
+            WHERE a.casper_association_kyc_hash = '$hash'
+        ");
+        $selection = $selection[0] ?? array();
+
+        return $this->successResponse($selection);
     }
 
     public function getMyVotes(Request $request)
