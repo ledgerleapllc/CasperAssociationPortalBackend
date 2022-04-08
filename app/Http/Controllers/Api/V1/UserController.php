@@ -1025,6 +1025,23 @@ class UserController extends Controller
         return $this->successResponse($response);
     }
 
+    public function getCaKycHash($hash)
+    {
+        if(!ctype_xdigit($hash)) {
+            return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
+        }
+
+        $selection = DB::select("
+            SELECT a.reference_id, a.status, b.pseudonym
+            FROM shuftipro AS a
+            LEFT JOIN users AS b
+            ON a.user_id = b.id
+            WHERE a.reference_id = '$hash'
+        ")->first();
+
+        return $this->successResponse($selection);
+    }
+
     public function getMyVotes(Request $request)
     {
         $limit = $request->limit ?? 50;

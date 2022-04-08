@@ -41,6 +41,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
     Route::post('/auth/send-reset-password', [AuthController::class, 'sendResetLinkEmail']);
     Route::post('auth/reset-password', [AuthController::class, 'resetPassword']);
     Route::get('/members', [UserController::class, 'getMembers']);
+    Route::get('/members/ca-kyc-hash/{hash}', [UserController::class, 'getCaKycHash'])->where('hash', '[0-9a-zA-Z]+');
     Route::get('/members/{id}', [UserController::class, 'getMemberDetail'])->where('id', '[0-9]+');
     Route::post('/users/cancel-change-email', [UserController::class, 'cancelChangeEmail']);
     Route::post('/users/confirm-change-email', [UserController::class, 'confirmChangeEmail']);
