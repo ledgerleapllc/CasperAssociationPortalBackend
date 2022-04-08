@@ -1039,7 +1039,8 @@ class UserController extends Controller
             LEFT JOIN users AS c
             ON b.user_id = c.id
             WHERE a.casper_association_kyc_hash = '$hash'
-        ")->get();
+        ");
+        $selection = $selection[0] ?? array();
 
         return $this->successResponse($selection);
     }
