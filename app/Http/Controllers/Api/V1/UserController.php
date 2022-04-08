@@ -1014,7 +1014,35 @@ class UserController extends Controller
         }
         $user->metric = Helper::getNodeInfo($user);
         $response = $user->load(['profile']);
+
+        unset($response->last_login_at);
+        unset($response->last_login_ip_address);
+        unset($response->profile->dob);
+        unset($response->profile->address);
+        unset($response->profile->city);
+        unset($response->profile->zip);
+
         return $this->successResponse($response);
+    }
+
+    public function getCaKycHash($hash)
+    {
+        if(!ctype_xdigit($hash)) {
+            return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
+        }
+
+        $selection = DB::select("
+            SELECT a.casper_association_kyc_hash as proof_hash, b.reference_id, b.status, c.pseudonym
+            FROM profile as a
+            LEFT JOIN shuftipro AS b
+            ON a.user_id = b.user_id
+            LEFT JOIN users AS c
+            ON b.user_id = c.id
+            WHERE a.casper_association_kyc_hash = '$hash'
+        ");
+        $selection = $selection[0] ?? array();
+
+        return $this->successResponse($selection);
     }
 
     public function getMyVotes(Request $request)
