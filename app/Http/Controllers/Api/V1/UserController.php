@@ -1032,11 +1032,13 @@ class UserController extends Controller
         }
 
         $selection = DB::select("
-            SELECT a.reference_id, a.status, b.pseudonym
-            FROM shuftipro AS a
-            LEFT JOIN users AS b
-            ON a.user_id = b.id
-            WHERE a.reference_id = '$hash'
+            SELECT a.casper_association_kyc_hash, b.reference_id, b.status, c.pseudonym
+            FROM profile as a
+            LEFT JOIN shuftipro AS b
+            ON a.user_id = b.user_id
+            LEFT JOIN users AS c
+            ON b.user_id = c.id
+            WHERE b.reference_id = '$hash'
         ");
 
         return $this->successResponse($selection);
