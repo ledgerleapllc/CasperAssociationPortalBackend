@@ -1032,7 +1032,7 @@ class UserController extends Controller
         }
 
         $selection = DB::select("
-            SELECT a.casper_association_kyc_hash, b.reference_id, b.status, c.pseudonym
+            SELECT a.casper_association_kyc_hash as proof_hash, b.reference_id, b.status, c.pseudonym
             FROM profile as a
             LEFT JOIN shuftipro AS b
             ON a.user_id = b.user_id
