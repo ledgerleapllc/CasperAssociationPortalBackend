@@ -992,6 +992,7 @@ class UserController extends Controller
     public function getMemberDetail($id)
     {
         $user = User::where('id', $id)->first();
+        Helper::getAccountInfoStandard($user);
 
         if (!$user || $user->role == 'admin') {
             return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
@@ -1005,8 +1006,6 @@ class UserController extends Controller
         unset($response->profile->address);
         unset($response->profile->city);
         unset($response->profile->zip);
-
-        Helper::getAccountInfoStandard($user);
 
         return $this->successResponse($response);
     }

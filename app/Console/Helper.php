@@ -37,8 +37,12 @@ class Helper
 			'verify' => false,
 		])->get('https://seena.ledgerleap.com/account-info-standard?validator_id='.$vid);
 
-		$json = $response->json();
-		info($json);
+		try {
+			$json = json_decode($response);
+		} catch (Exception $e) {
+			$json = array();
+		}
+
 		$blockchain_name = $json->message->owner->name ?? null;
 		$blockchain_desc = $json->message->owner->description ?? null;
 		$blockchain_logo = $json->message->owner->branding->logo->png_256 ?? null;
