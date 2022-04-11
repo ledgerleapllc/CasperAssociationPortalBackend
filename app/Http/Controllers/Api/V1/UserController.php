@@ -1006,6 +1006,8 @@ class UserController extends Controller
         unset($response->profile->city);
         unset($response->profile->zip);
 
+        Helper::getAccountInfoStandard($user);
+
         return $this->successResponse($response);
     }
 
