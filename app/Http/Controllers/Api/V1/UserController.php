@@ -246,6 +246,7 @@ class UserController extends Controller
     public function getProfile()
     {
         $user = auth()->user()->load(['profile', 'permissions', 'shuftipro', 'shuftiproTemp']);
+        Helper::getAccountInfoStandard($user);
         $user->metric = Helper::getNodeInfo($user);
         return $this->successResponse($user);
     }
