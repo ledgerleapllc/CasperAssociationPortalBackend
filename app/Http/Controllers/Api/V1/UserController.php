@@ -246,6 +246,7 @@ class UserController extends Controller
     public function getProfile()
     {
         $user = auth()->user()->load(['profile', 'permissions', 'shuftipro', 'shuftiproTemp']);
+        Helper::getAccountInfoStandard($user);
         $user->metric = Helper::getNodeInfo($user);
         return $this->successResponse($user);
     }
@@ -992,12 +993,20 @@ class UserController extends Controller
     public function getMemberDetail($id)
     {
         $user = User::where('id', $id)->first();
+        Helper::getAccountInfoStandard($user);
 
         if (!$user || $user->role == 'admin') {
             return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
         }
         $user->metric = Helper::getNodeInfo($user);
         $response = $user->load(['profile']);
+
+        unset($response->last_login_at);
+        unset($response->last_login_ip_address);
+        unset($response->profile->dob);
+        unset($response->profile->address);
+        unset($response->profile->city);
+        unset($response->profile->zip);
 
         return $this->successResponse($response);
     }
