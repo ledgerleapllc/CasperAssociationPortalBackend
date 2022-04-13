@@ -49,13 +49,20 @@ class Helper
 
 		$profile = Profile::where('user_id', $uid)->first();
 
-		if($profile) {
+		if($profile && $json) {
 			if($blockchain_name) {
 				$profile->blockchain_name = $blockchain_name;
 			}
 
 			if($blockchain_desc) {
 				$profile->blockchain_desc = $blockchain_desc;
+			}
+
+			if(
+				$blockchain_logo &&
+				$user->avatar == null
+			) {
+				$user->avatar = $blockchain_logo;
 			}
 
 			$profile->save();
