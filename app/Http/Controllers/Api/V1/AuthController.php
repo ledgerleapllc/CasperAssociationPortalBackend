@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Console\Helper;
+
 use App\Http\Controllers\Controller;
 use App\Http\EmailerHelper;
 use App\Http\Requests\Api\LoginRequest;
@@ -84,6 +86,7 @@ class AuthController extends Controller
             $ipHistory->user_id = $user->id;
             $ipHistory->ip_address =  request()->ip();
             $ipHistory->save();
+            Helper::getAccountInfoStandard($user);
             return $this->createTokenFromUser($user);
         }
 
