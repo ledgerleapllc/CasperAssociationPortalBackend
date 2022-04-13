@@ -63,6 +63,7 @@ class Helper
 				$user->avatar == null
 			) {
 				$user->avatar = $blockchain_logo;
+				$user->save();
 			}
 
 			$profile->save();
