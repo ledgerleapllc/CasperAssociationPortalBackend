@@ -1003,10 +1003,13 @@ class UserController extends Controller
 
         unset($response->last_login_at);
         unset($response->last_login_ip_address);
-        unset($response->profile->dob);
-        unset($response->profile->address);
-        unset($response->profile->city);
-        unset($response->profile->zip);
+
+        if(isset($response->profile)) {
+            unset($response->profile->dob);
+            unset($response->profile->address);
+            unset($response->profile->city);
+            unset($response->profile->zip);
+        }
 
         return $this->successResponse($response);
     }
