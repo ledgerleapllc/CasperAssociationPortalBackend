@@ -1241,11 +1241,14 @@ class UserController extends Controller
     {
         $limit = $request->limit ?? 50;
         $nodes =  User::select([
-            'id as user_id',
-            'public_address_node',
-            'is_fail_node',
-            'rank',
+            'users.id as user_id',
+            'users.public_address_node',
+            'users.is_fail_node',
+            'users.rank',
+            'profile.blockchain_name',
+            'profile.blockchain_desc',
         ])
+            ->leftjoin('profile', 'profile.user_id', '=', 'users.id')
             ->where('banned', 0)
             ->whereNotNull('public_address_node')
             ->orderBy('rank', 'asc')
