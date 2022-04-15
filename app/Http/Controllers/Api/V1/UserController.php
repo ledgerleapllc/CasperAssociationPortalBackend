@@ -1250,9 +1250,9 @@ class UserController extends Controller
             'profile.blockchain_desc',
         ])
             ->leftjoin('profile', 'profile.user_id', '=', 'users.id')
-            ->where('banned', 0)
-            ->whereNotNull('public_address_node')
-            ->orderBy('rank', 'asc')
+            ->where('users.banned', 0)
+            ->whereNotNull('users.public_address_node')
+            ->orderBy('users.rank', 'asc')
             ->paginate($limit);
 
         return $this->successResponse($nodes);
