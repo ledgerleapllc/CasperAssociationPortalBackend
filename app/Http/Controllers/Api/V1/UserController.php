@@ -1003,10 +1003,13 @@ class UserController extends Controller
 
         unset($response->last_login_at);
         unset($response->last_login_ip_address);
-        unset($response->profile->dob);
-        unset($response->profile->address);
-        unset($response->profile->city);
-        unset($response->profile->zip);
+
+        if(isset($response->profile)) {
+            unset($response->profile->dob);
+            unset($response->profile->address);
+            unset($response->profile->city);
+            unset($response->profile->zip);
+        }
 
         return $this->successResponse($response);
     }
@@ -1241,14 +1244,18 @@ class UserController extends Controller
     {
         $limit = $request->limit ?? 50;
         $nodes =  User::select([
-            'id as user_id',
-            'public_address_node',
-            'is_fail_node',
-            'rank',
+            'users.id as user_id',
+            'users.public_address_node',
+            'users.is_fail_node',
+            'users.pseudonym',
+            'users.rank',
+            'profile.blockchain_name',
+            'profile.blockchain_desc',
         ])
-            ->where('banned', 0)
-            ->whereNotNull('public_address_node')
-            ->orderBy('rank', 'asc')
+            ->leftjoin('profile', 'profile.user_id', '=', 'users.id')
+            ->where('users.banned', 0)
+            ->whereNotNull('users.public_address_node')
+            ->orderBy('users.rank', 'asc')
             ->paginate($limit);
 
         return $this->successResponse($nodes);
