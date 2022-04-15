@@ -1244,6 +1244,7 @@ class UserController extends Controller
             'users.id as user_id',
             'users.public_address_node',
             'users.is_fail_node',
+            'users.pseudonym',
             'users.rank',
             'profile.blockchain_name',
             'profile.blockchain_desc',
