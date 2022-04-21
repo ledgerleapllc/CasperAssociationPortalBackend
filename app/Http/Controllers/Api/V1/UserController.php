@@ -53,7 +53,6 @@ use App\Services\ChecksumValidator;
 use App\Services\ShuftiproCheck as ServicesShuftiproCheck;
 
 use Carbon\Carbon;
-use Exception;
 
 use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
@@ -67,6 +66,8 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 use Aws\S3\S3Client;
+
+use Exception;
 
 class UserController extends Controller
 {
