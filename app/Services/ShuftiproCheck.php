@@ -7,10 +7,14 @@ use App\Models\Shuftipro;
 use App\Models\ShuftiproTemp;
 use App\Models\User;
 
-use Exception;
-
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Mail;
+
+use App\Mail\KYCApproved;
+use App\Mail\KYCDenied;
+
+use Exception;
 
 class ShuftiproCheck
 {
@@ -28,10 +32,7 @@ class ShuftiproCheck
         $data = $response->json();
         if (!$data || !is_array($data)) return;
 
-        if (
-            !isset($data['reference']) ||
-            !isset($data['event'])
-        ) {
+        if (!isset($data['reference']) || !isset($data['event'])) {
             return "error";
         }
 
@@ -61,11 +62,7 @@ class ShuftiproCheck
         $aml_declined_reason  = null;
         $hit  = null;
 
-        if (
-            isset($verification_data['background_checks']) &&
-            $verification_data['background_checks']['aml_data'] &&
-            $verification_data['background_checks']['aml_data']['hits']
-        ) {
+        if (isset($verification_data['background_checks']) && $verification_data['background_checks']['aml_data'] && $verification_data['background_checks']['aml_data']['hits']) {
             $hits =  $verification_data['background_checks']['aml_data']['hits'];
             if (count($hits) > 0 && isset($hits[0]['fields']['Enforcement Type'])) {
                 $type = $hits[0]['fields']['Enforcement Type'];
@@ -90,28 +87,17 @@ class ShuftiproCheck
         $document_result = $address_result = $background_checks_result = 0;
 
         // Document Proof
-        if (
-            $proofs &&
-            isset($proofs['document']) &&
-            isset($proofs['document']['proof'])
-        ) {
+        if ($proofs && isset($proofs['document']) && isset($proofs['document']['proof'])) {
             $document_proof = $proofs['document']['proof'];
         }
 
         // Address Proof
-        if (
-            $proofs &&
-            isset($proofs['address']) &&
-            isset($proofs['address']['proof'])
-        ) {
+        if ($proofs && isset($proofs['address']) && isset($proofs['address']['proof'])) {
             $address_proof = $proofs['address']['proof'];
         }
 
         // Document Result
-        if (
-            $verification_result &&
-            isset($verification_result['document'])
-        ) {
+        if ($verification_result && isset($verification_result['document'])) {
             $zeroCount = $oneCount = 0;
             foreach ($verification_result['document'] as $key => $value) {
                 if ($key == 'document_proof') continue;
@@ -129,10 +115,7 @@ class ShuftiproCheck
         }
 
         // Address Result
-        if (
-            $verification_result &&
-            isset($verification_result['address'])
-        ) {
+        if ($verification_result && isset($verification_result['address'])) {
             $zeroCount = $oneCount = 0;
             foreach ($verification_result['address'] as $key => $value) {
                 if ($key == 'address_document_proof') continue;
@@ -193,9 +176,15 @@ class ShuftiproCheck
                 $user->kyc_verified_at = now();
                 $user->approve_at = now();
                 $user->save();
+
+                Mail::to($user->email)->send(new KYCApproved);
             }
             return 'success';
         } else {
+            $user = User::find($user_id);
+            if ($user) {
+                Mail::to($user->email)->send(new KYCDenied);
+            }
             return 'fail';
         }
     }
@@ -215,10 +204,7 @@ class ShuftiproCheck
         $data = $response->json();
         if (!$data || !is_array($data)) return;
 
-        if (
-            !isset($data['reference']) ||
-            !isset($data['event'])
-        ) {
+        if (!isset($data['reference']) || !isset($data['event'])) {
             return "error";
         }
 
@@ -275,39 +261,26 @@ class ShuftiproCheck
         $data = json_encode([
             'declined_reason' => $declined_reason,
             'event' => $event,
-            // 'proofs' => $proofs,
             'verification_result' => $verification_result,
             'aml_declined_reason' => $aml_declined_reason,
             'hit' => $hit,
-            // 'verification_data' => $verification_data
         ]);
 
         $document_proof = $address_proof = null;
         $document_result = $address_result = $background_checks_result = 0;
 
         // Document Proof
-        if (
-            $proofs &&
-            isset($proofs['document']) &&
-            isset($proofs['document']['proof'])
-        ) {
+        if ($proofs && isset($proofs['document']) && isset($proofs['document']['proof'])) {
             $document_proof = $proofs['document']['proof'];
         }
 
         // Address Proof
-        if (
-            $proofs &&
-            isset($proofs['address']) &&
-            isset($proofs['address']['proof'])
-        ) {
+        if ($proofs && isset($proofs['address']) && isset($proofs['address']['proof'])) {
             $address_proof = $proofs['address']['proof'];
         }
 
         // Document Result
-        if (
-            $verification_result &&
-            isset($verification_result['document'])
-        ) {
+        if ($verification_result && isset($verification_result['document'])) {
             $zeroCount = $oneCount = 0;
             foreach ($verification_result['document'] as $key => $value) {
                 if ($key == 'document_proof') continue;
@@ -325,10 +298,7 @@ class ShuftiproCheck
         }
 
         // Address Result
-        if (
-            $verification_result &&
-            isset($verification_result['address'])
-        ) {
+        if ($verification_result && isset($verification_result['address'])) {
             $zeroCount = $oneCount = 0;
             foreach ($verification_result['address'] as $key => $value) {
                 if ($key == 'address_document_proof') continue;
@@ -346,11 +316,7 @@ class ShuftiproCheck
         }
 
         // Background Checks Result
-        if (
-            $verification_result &&
-            isset($verification_result['background_checks']) &&
-            (int) $verification_result['background_checks'] === 1
-        ) {
+        if ($verification_result && isset($verification_result['background_checks']) && (int) $verification_result['background_checks'] === 1) {
             $background_checks_result = 1;
         }
 
@@ -369,33 +335,9 @@ class ShuftiproCheck
 
         if ($document_proof) {
             $record->document_proof = $document_proof;
-            /*
-            try {
-                $url = strtok($document_proof, '?');
-                $pathinfo = pathinfo($url);
-                $contents = file_get_contents($url);
-                $name = 'document_proof/document_' . time() . '.' . $pathinfo['extension'];
-                Storage::put($name, $contents);
-                $record->document_proof = $name;
-            } catch (Exception $e) {
-                $record->document_proof = $document_proof;
-            }
-            */
         }
         if ($address_proof) {
             $record->address_proof = $address_proof;
-            /*
-            try {
-                $url = strtok($document_proof, '?');
-                $pathinfo = pathinfo($url);
-                $contents = file_get_contents($url);
-                $name = 'address_proof/address_' . time() . '.' . $pathinfo['extension'];
-                Storage::put($name, $contents);
-                $record->address_proof = $name;
-            } catch (Exception $e) {
-                $record->address_proof = $address_proof;
-            }
-            */
         }
         $record->save();
 
@@ -415,9 +357,15 @@ class ShuftiproCheck
                 $user->kyc_verified_at = now();
                 $user->approve_at = now();
                 $user->save();
+
+                Mail::to($user->email)->send(new KYCApproved);
             }
             return 'success';
         } else {
+            $user = User::find($user_id);
+            if ($user) {
+                Mail::to($user->email)->send(new KYCDenied);
+            }
             return 'fail';
         }
     }
