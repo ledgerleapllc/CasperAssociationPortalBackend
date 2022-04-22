@@ -52,6 +52,13 @@ class Kernel extends ConsoleKernel
         $schedule->command('refresh:address')
             ->everyFiveMinutes()
             ->runInBackground();
+
+        /**
+         * Added by blockchainthomas. Cron for alerting admins of members stuck at KYC on a daily basis
+         */
+        $schedule->command('kyc:report')
+            ->dailyAt('10:02')
+            ->runInBackground();
     }
 
     /**
