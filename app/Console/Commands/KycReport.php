@@ -110,7 +110,11 @@ class KycReport extends Command
         $index = 1;
 
         if($persons_stuck_denied) {
-            $body .= "<br><br>Members denied by Shufti. Not reviewed yet:<br>";
+            if($persons_stuck_in_pending) {
+                $body .= "<br><br>";
+            }
+
+            $body .= "Members denied by Shufti. Not reviewed yet:<br>";
 
             foreach($persons_stuck_denied as $p) {
                 $body .= '<b>'.(string)$index.'. </b>';
