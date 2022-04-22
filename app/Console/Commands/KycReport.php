@@ -93,14 +93,14 @@ class KycReport extends Command
         $index = 1;
 
         foreach($persons_stuck_in_pending as $p) {
-            $body .= '<b>'.(string)$index.'. </b>'
+            $body .= '<b>'.(string)$index.'. </b>';
             $body .= $p['name'].', '.$p['email'].'<br>';
             $body .= $p['stuck_reason'].$p['shufti_timestamp'].' Shufti reference: '.$p['shufti_reference_id'].'<br><br>';
             $index += 1;
         }
 
         foreach($persons_stuck_denied as $p) {
-            $body .= '<b>'.(string)$index.'. </b>'
+            $body .= '<b>'.(string)$index.'. </b>';
             $body .= $p['name'].', '.$p['email'].'<br>';
             $body .= $p['stuck_reason'].$p['shufti_timestamp'].' Shufti reference: '.$p['shufti_reference_id'].'<br><br>';
             $index += 1;
