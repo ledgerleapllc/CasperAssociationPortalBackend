@@ -46,7 +46,7 @@ class KycReport extends Command
     {
         // first do shufti temp records
         $now = Carbon::now();
-        $yesterday = Carbon::now()->subHours(24);
+        $yesterday = Carbon::now()->subHours(12);
         $records_temp = ShuftiproTemp::where('status', 'pending')
             ->where('created_at', '<=', $yesterday)
             ->limit(10)
