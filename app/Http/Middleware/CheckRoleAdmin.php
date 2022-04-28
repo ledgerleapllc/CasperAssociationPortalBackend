@@ -21,7 +21,7 @@ class CheckRoleAdmin
     public function handle(Request $request, Closure $next)
     {
         $user = Auth::user();
-        if ($user->role == 'admin') {
+        if ($user->role == 'admin' || $user->role == 'sub-admin') {
             return $next($request);
         }
         return $this->errorResponse(__('api.error.forbidden'), Response::HTTP_FORBIDDEN);

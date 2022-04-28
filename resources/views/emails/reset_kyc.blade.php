@@ -15,7 +15,7 @@
 </head>
 
 <body class="clean-body" style="margin: 0; padding: 0; -webkit-text-size-adjust: 100%; background-color: #FFFFFF;">
-    <p>We could not complete processing of your KYC data. You will have to submit again. Please carefully follow the instructions below to avoid this happening again.</p>
+    <p>We could not complete processing of your data. You will have to submit again. Please carefully follow the instructions below to avoid this happening again.</p>
     <h3>{{ $text }}</h3>
 </body>
 

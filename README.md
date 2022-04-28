@@ -1,11 +1,80 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
-
 <p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+	<img src="https://caspermember.com/images/logo.png" width="400">
 </p>
+
+# Casper Association Member Portal
+
+The Casper Association's member portal.
+
+This is the backend repo of the portal. To see the frontend repo, visit https://github.com/ledgerleapllc/CasperAssociationPortal
+
+## Prerequisites
+
+ - Apache/2.4.29+ (Ubuntu)
+ - PHP 7.4+
+ - MySql Ver 14.14 Distrib 5.7.37
+ - Laravel Framework 8.47.0
+
+## Setup
+
+We generally would use the latest version of Ubuntu for testing installs. Example hosting server: AWS ec2 t2 medium with at least 10Gb SSD.
+
+```bash
+sudo apt -y install apache2
+sudo a2enmod rewrite
+sudo a2enmod headers
+sudo a2enmod ssl
+sudo apt -y install software-properties-common
+sudo add-apt-repository ppa:ondrej/php
+sudo apt-get update
+sudo apt-get install -y php7.4
+sudo apt-get install -y php7.4-{bcmath,bz2,intl,gd,mbstring,mysql,zip,common,curl,xml}
+php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+sudo php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+php -r "unlink('composer-setup.php');"
+```
+
+Setup the repo according to our VHOST path. Note, the actual VHOST path in this case should be set to **/var/www/CasperAssociationPortalBackend/public**
+
+```bash
+cd /var/www/
+git clone https://github.com/ledgerleapllc/CasperAssociationPortalBackend
+cd CasperAssociationPortalBackend
+```
+
+Install packages and setup environment
+
+```bash
+composer install
+composer update
+cp .env.example .env
+```
+
+After adjusting .env with your variables, run Artisan to finish setup
+
+```bash
+php artisan key:generate
+php artisan migrate
+php artisan passport:install
+php artisan config:clear
+php artisan route:clear
+php artisan cache:clear
+(crontab -l 2>>/dev/null; echo "* * * * * cd /var/www/CasperAssociationPortalBackend && php artisan schedule:run >> /dev/null 2>&1") | crontab -
+```
+
+You may also have to authorize Laravel to write to the storage directory
+
+```bash
+sudo chown -R www-data:www-data storage/
+```
+
+Last, you need to setup roles and admins to start using the portal and see it work. Visit the URL of the backend with the path **/install**. This will install these things for you. You will find your admin credentials generated in the Laravel log file. You may want to disable this endpoint after the initial install to prevent this install endpoint from being used again if you are planning on deploying to a production environment in the future. This is easily done by switching ENV variable **INSTALL_PATH_ENABLED** to 0, or false. You may need to run the following command if Laravel caching is on.
+
+```bash
+php artisan config:clear
+```
+
+<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
 
 ## About Laravel
 

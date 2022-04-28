@@ -7,13 +7,20 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
+
 use Laravel\Passport\HasApiTokens;
+
+use App\Models\Discussion;
+use App\Models\DiscussionRemoveNew;
+
+use Carbon\Carbon;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasApiTokens, SoftDeletes;
-    const TYPE_INDIVIDUAL = 'Individual';
-    const TYPE_ENTITY = 'Entity';
+    use HasFactory, Notifiable, HasApiTokens;
+    const TYPE_INDIVIDUAL = 'individual';
+    const TYPE_ENTITY = 'entity';
 
     const STATUS_INCOMPLETE = 'Incomplete';
     const STATUS_INTAKE = 'Intake';
@@ -52,6 +59,14 @@ class User extends Authenticatable
         'signed_file',
         'hellosign_form',
         'letter_file',
+        'banned',
+        'letter_verified_at',
+        'letter_rejected_at',
+        'avatar',
+        'average_peers',
+        'validator_fee',
+        'cspr_delegated',
+        'cspr_self_staked',
     ];
 
     /**
@@ -72,7 +87,11 @@ class User extends Authenticatable
      */
     protected $appends = [
         'full_name',
-        'signed_file_url'
+        'signed_file_url',
+        'pinned',
+        'new_threads',
+        'letter_file_url',
+        'avatar_url',
     ];
 
     /**
@@ -85,6 +104,7 @@ class User extends Authenticatable
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'node_verified_at' => 'datetime',
+        'permissions' => 'array'
     ];
 
     /**
@@ -96,6 +116,36 @@ class User extends Authenticatable
     {
         return "{$this->first_name} {$this->last_name}";
     }
+
+    /**
+     * Get the user's full name.
+     *
+     * @return string
+     */
+    public function getLetterFileUrlAttribute()
+    {
+        if(!$this->letter_file) {
+            return null;
+        }
+        // $url = Storage::disk('local')->url($this->letter_file);
+        // return asset($url);
+        return $this->letter_file;
+    }
+
+    public function getAvatarUrlAttribute()
+    {
+        if(!$this->avatar) {
+            return null;
+        }
+        $url = '';
+        if (strpos($this->avatar, 'http') !== false) {
+            $url = $this->avatar;
+        } else {
+            $url = Storage::disk('local')->url($this->avatar);
+        }
+        return $url;
+    }
+
 
     public function getSignedFileUrlAttribute()
     {
@@ -118,4 +168,46 @@ class User extends Authenticatable
     public function ownerNodes() {
         return $this->hasMany('App\Models\OwnerNode', 'user_id');
     }
+
+    public function pinnedDiscussionsList() {
+        return $this->hasMany('App\Models\DiscussionPin');
+    }
+
+    public function myDiscussionsList() {
+        return $this->hasMany('App\Models\Discussion');
+    }
+
+    public function getPinnedAttribute() {
+        return $this->pinnedDiscussionsList()->count();
+    }
+
+    public function permissions() {
+        return $this->hasMany('App\Models\Permission', 'user_id');
+    }
+
+    public function ipHistories() {
+        return $this->hasMany('App\Models\IpHistory', 'user_id');
+    }
+
+    public function metric() {
+        return $this->hasOne('App\Models\Metric', 'user_id');
+    }
+
+    public function nodeInfo() {
+        return $this->hasOne('App\Models\NodeInfo', 'node_address', 'public_address_node');
+    }
+
+    public function getNewThreadsAttribute() {
+        $removedNews = DiscussionRemoveNew::where(['user_id' => $this->id])->pluck('discussion_id');
+        $count = Discussion::whereNotIn('id', $removedNews)
+                ->whereDate('created_at', '>',  Carbon::now()->subDays(3))
+                ->count();
+        
+        return $count;
+    }
+
+    public function documentFiles() {
+        return $this->hasMany('App\Models\DocumentFile');
+    }
+
 }
