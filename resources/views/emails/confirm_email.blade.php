@@ -162,19 +162,13 @@
 				<label>Thanks for being a part of Casper's future.<br/><br/>Casper Association Team</label>
 			</div>
 		</div>
-		<!-- <div style="width: 100%;">
-			<ul>
-				<li><a href="#">Unsubscribe</a></li>
-				<li><span></span></li>
-				<li><a href="#">Contact Us</a></li>
-				<li><span></span></li>
-				<li><a href="#">Privacy Policy</a></li>
-			</ul>
-		</div> -->
 		<div id="content-footer">
-			<!-- <label>Any terms and details that should be expressed on all emails sent by the company.
-				<br/><br/>Company name<br/><br/>Company email
-			</label> -->
+			<label>&copy; 2022 Casper Association</label>
+			<ul>
+				<li><a href="{{ config('app.site_url') }}/privacy-policy">Privacy Policy</a></li>
+				<li><span></span></li>
+				<li><a href="{{ config('app.site_url') }}/terms-of-service">Terms of Service</a></li>
+			</ul>
 		</div>
 	</div>
 </body>
