@@ -16,7 +16,7 @@ class AccountInfoStandard extends Migration
         Schema::table('profile', function ($table) {
             $table->string('casper_association_kyc_hash')->nullable();
             $table->string('blockchain_name')->nullable();
-            $table->string('blockchain_desc')->nullable();
+            $table->text('blockchain_desc')->nullable();
         });
     }
 
