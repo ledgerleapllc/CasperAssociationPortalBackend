@@ -89,7 +89,7 @@
 			display: inline-block;
 		}
 		ul li a {
-			color: #FF473E;;
+			color: #FF473E;
 		}
 		ul li span {
 			display: block;
@@ -106,6 +106,7 @@
 			margin: 5px 0;
 		}
 		#content-footer {
+			width: 100%;
 			text-align: center;
 		}
 		#content-footer label {
@@ -113,6 +114,15 @@
 			font-size: 12px;
 			margin-top: 30px;
 			text-align: center;
+		}
+		a,
+		a:hover,
+		a:link,
+		a:active,
+		a:visited {
+			color: #FF473E;
+			font-size: 12px;
+			text-decoration: none;
 		}
 		#button-link {
 			display: inline-block;
