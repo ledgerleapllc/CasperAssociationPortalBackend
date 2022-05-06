@@ -150,7 +150,7 @@
 	<div id="wrapper">
 		<div id="content-section">
 			<div id="top-logo">
-				<img src="{{ url('logo/casper-logo.png') }}" alt="logo"/>
+				<img src="{{ config('app.url') }}/logo/casper-logo.png" alt="logo"/>
 			</div>
 			<h2 id="title">Reset Pasword</h2>
 			<div class="divider"></div>
@@ -162,7 +162,7 @@
 					Reset Pasword
 				</a>
 			</div>
-			
+
 			<div class="divider"></div>
 			<div id="content-sectionFooter">
 				<label>Thanks for being a part of Casper's future.<br/><br/>Casper Association Team</label>
@@ -170,11 +170,11 @@
 		</div>
 		<div id="content-footer">
 			<label>&copy; 2022 Casper Association</label>
-			<ul>
-				<li><a href="{{ config('app.site_url') }}/privacy-policy">Privacy Policy</a></li>
-				<li><span></span></li>
-				<li><a href="{{ config('app.site_url') }}/terms-of-service">Terms of Service</a></li>
-			</ul>
+			<label>
+				<a href="{{ config('app.site_url') }}/privacy-policy">Privacy Policy</a>
+				<span style="margin-left:10px;margin-right:10px;">|</span>
+				<a href="{{ config('app.site_url') }}/terms-of-service">Terms of Service</a>
+			</label>
 		</div>
 	</div>
 </body>
