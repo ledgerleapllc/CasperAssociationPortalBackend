@@ -14,6 +14,7 @@ This is the backend repo of the portal. To see the frontend repo, visit https://
  - PHP 7.4+
  - MySql Ver 14.14 Distrib 5.7.37
  - Laravel Framework 8.47.0
+ - Git Version 2+
 
 ## Setup
 
