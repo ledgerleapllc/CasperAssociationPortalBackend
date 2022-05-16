@@ -9,6 +9,7 @@ use App\Models\MonitoringCriteria;
 use App\Models\Node;
 use App\Models\NodeInfo;
 use App\Models\User;
+use App\Models\UserAddress;
 use App\Models\Setting;
 
 use Illuminate\Http\Request;
@@ -20,9 +21,12 @@ use Illuminate\Support\Facades\Validator;
 
 class MetricController extends Controller
 {
-    public function getMetric()
+    public function getMetric(Request $request)
     {
         $user = auth()->user();
+        $public_address_node = $request->get('public_address_node');
+        if (!$public_address_node) $public_address_node = $user->public_address_node;
+
         $max_update_responsiveness = DB::select("SELECT max(update_responsiveness) as max_update_responsiveness FROM
             (
             SELECT MAX(update_responsiveness) as update_responsiveness FROM metric
@@ -48,28 +52,22 @@ class MetricController extends Controller
         SELECT MAX(uptime) as uptime FROM node_info
         ) AS results
         ;");
-        $max_uptime =  $max_uptime[0]->max_uptime ?? 0;
-        $latest = Node::where('node_address', strtolower($user->public_address_node))->whereNotnull('protocol_version')->orderBy('created_at', 'desc')->first();
-        if (!$latest) {
-            $latest = new Node();
-        }
+        $max_uptime = $max_uptime[0]->max_uptime ?? 0;
+        $latest = Node::where('node_address', strtolower($public_address_node))->whereNotnull('protocol_version')->orderBy('created_at', 'desc')->first();
+        if (!$latest) $latest = new Node();
         $latest_block_height = $latest->block_height ?? null;
         $latest_update_responsiveness = $latest->update_responsiveness ?? null;
         $latest_peers = $latest->peers ?? null;
 
         $metric = Metric::where('user_id', $user->id)->first();
-        if (!$metric) {
-            $metric = new Metric();
-        }
+        if (!$metric) $metric = new Metric();
         $metric_uptime = $metric->uptime ?? null;
         $metric_block_height = $metric->block_height_average  ?  ($max_block_height - $metric->block_height_average)  : null;
         $metric_update_responsiveness = $metric->update_responsiveness ?? null;
         $metric_peers = $metric->peers ?? null;
 
-        $nodeInfo = NodeInfo::where('node_address', strtolower($user->public_address_node))->first();
-        if (!$nodeInfo) {
-			$nodeInfo = new NodeInfo();
-		}
+        $nodeInfo = NodeInfo::where('node_address', strtolower($public_address_node))->first();
+        if (!$nodeInfo) $nodeInfo = new NodeInfo();
         $latest_uptime = $nodeInfo->uptime ?? null;
         $nodeInfo_uptime = $nodeInfo->uptime ?? null;
         $nodeInfo_block_height = $nodeInfo->block_height ?? null;
@@ -80,7 +78,7 @@ class MetricController extends Controller
         $metric->avg_block_height_average = $nodeInfo_block_height ?? $metric_block_height;
         $metric->avg_update_responsiveness = $nodeInfo_update_responsiveness ?? $metric_update_responsiveness;
         $metric->avg_peers = $nodeInfo_peers ?? $metric_peers;
-
+        
         $metric->max_peers = $max_peers;
         $metric->max_update_responsiveness = $max_update_responsiveness;
         $metric->max_block_height_average = $max_block_height;
@@ -89,26 +87,30 @@ class MetricController extends Controller
         $metric->peers = $latest_peers ?? $metric_peers;
         $metric->update_responsiveness = $latest_update_responsiveness ?? $metric_update_responsiveness;
         $metric->block_height_average = $latest_block_height ?? $metric_block_height;
-        $metric->uptime = $latest_uptime  ?? $metric_uptime;
+        $metric->uptime = $latest_uptime ?? $metric_uptime;
 
         $monitoringCriteria = MonitoringCriteria::get();
-        $nodeInfo = NodeInfo::where('node_address', strtolower($user->public_address_node))->first();
+        $nodeInfo = NodeInfo::where('node_address', strtolower($public_address_node))->first();
         
+        $userAddress = UserAddress::where('public_address_node', strtolower($public_address_node))
+                                    ->where('user_id', $user->id)
+                                    ->first();
         $rank = $user->rank;
-        $totalCount =  User::select([
-                            'id as user_id',
-                            'public_address_node',
-                            'is_fail_node',
-                            'rank',
+        if ($userAddress) $rank = $userAddress->rank;
+
+        $totalCount = UserAddress::select([
+                            'users.id as user_id',
+                            'user_addresses.public_address_node',
+                            'user_addresses.is_fail_node',
+                            'user_addresses.rank'
                         ])
-                            ->where('banned', 0)
-                            ->whereNotNull('public_address_node')
-                            ->get()
-                            ->count();
-        
-        $delegators = 0;
-        $stake_amount = 0;
-        $self_stake_amount = 0;
+                        ->join('users', 'users.id', '=', 'user_addresses.user_id')
+                        ->where('users.banned', 0)
+                        ->whereNotNull('user_addresses.public_address_node')
+                        ->get()
+                        ->count();
+
+        $delegators = $stake_amount = $self_stake_amount = 0;
         if ($nodeInfo) {
             $delegators = $nodeInfo->delegators_count;
             $stake_amount = $nodeInfo->total_staked_amount;
@@ -125,12 +127,9 @@ class MetricController extends Controller
         $metric['monitoring_criteria'] = $monitoringCriteria;
 
         $setting = Setting::where('name', 'peers')->first();
-        if ($setting) {
-            $metric['peers_setting'] = (int) $setting->value;
-        } else {
-            $metric['peers_setting'] = 0;
-        }
-
+        if ($setting) $metric['peers_setting'] = (int) $setting->value;
+        else $metric['peers_setting'] = 0;
+        
         return $this->successResponse($metric);
     }
 
@@ -139,30 +138,21 @@ class MetricController extends Controller
         $validator = Validator::make($request->all(), [
             'uptime' => 'nullable|numeric|between:0,100',
         ]);
-        if ($validator->fails()) {
-            return $this->validateResponse($validator->errors());
-        }
+        if ($validator->fails()) return $this->validateResponse($validator->errors());
 
         $user = User::where('id', $id)->where('role', 'member')->first();
-        if (!$user) {
-            return $this->errorResponse('User not found', Response::HTTP_BAD_REQUEST);
-        }
+        if (!$user) return $this->errorResponse('User not found', Response::HTTP_BAD_REQUEST);
+        
         $metric = Metric::where('user_id', $id)->first();
-        if (!$metric) {
-            $metric = new Metric();
-        }
-        if (isset($request->uptime) && $request->uptime != null) {
+        if (!$metric) $metric = new Metric();
+        if (isset($request->uptime) && $request->uptime != null)
             $metric->uptime = $request->uptime;
-        }
-        if (isset($request->block_height_average) && $request->block_height_average != null) {
+        if (isset($request->block_height_average) && $request->block_height_average != null)
             $metric->block_height_average = $request->block_height_average;
-        }
-        if (isset($request->update_responsiveness) && $request->update_responsiveness != null) {
+        if (isset($request->update_responsiveness) && $request->update_responsiveness != null)
             $metric->update_responsiveness = $request->update_responsiveness;
-        }
-        if (isset($request->peers) && $request->peers != null) {
+        if (isset($request->peers) && $request->peers != null)
             $metric->peers = $request->peers;
-        }
         $metric->user_id = $id;
         $metric->save();
         return $this->successResponse($metric);
@@ -171,9 +161,7 @@ class MetricController extends Controller
     public function getMetricUser($id)
     {
         $user = User::find($id);
-        if (!$user) {
-            return $this->successResponse([]);
-        }
+        if (!$user) return $this->successResponse([]);
 
         $max_update_responsiveness = DB::select("SELECT max(update_responsiveness) as max_update_responsiveness FROM
             (
@@ -200,31 +188,27 @@ class MetricController extends Controller
         SELECT MAX(uptime) as uptime FROM node_info
         ) AS results
         ;");
-        $max_uptime =  $max_uptime[0]->max_uptime ?? 0;
+        $max_uptime = $max_uptime[0]->max_uptime ?? 0;
         $latest = Node::where('node_address', strtolower($user->public_address_node))
                         ->whereNotnull('protocol_version')
                         ->orderBy('created_at', 'desc')
                         ->first();
-        if (!$latest) {
-            $latest = new Node();
-        }
+        if (!$latest) $latest = new Node();
         $latest_block_height = $latest->block_height ?? null;
         $latest_update_responsiveness = $latest->update_responsiveness ?? null;
         $latest_peers = $latest->peers ?? null;
 
         $metric = Metric::where('user_id', $user->id)->first();
-        if (!$metric) {
-            $metric = new Metric();
-        }
+        if (!$metric) $metric = new Metric();
+
         $metric_uptime = $metric->uptime ?? null;
         $metric_block_height = $metric->block_height_average  ?  ($max_block_height - $metric->block_height_average)  : null;
         $metric_update_responsiveness = $metric->update_responsiveness ?? null;
         $metric_peers = $metric->peers ?? null;
 
         $nodeInfo = NodeInfo::where('node_address', strtolower($user->public_address_node))->first();
-        if (!$nodeInfo) {
-            $nodeInfo = new NodeInfo();
-        }
+        if (!$nodeInfo) $nodeInfo = new NodeInfo();
+        
         $latest_uptime = $nodeInfo->uptime ?? null;
         $nodeInfo_uptime = $nodeInfo->uptime ?? null;
         $nodeInfo_block_height = $nodeInfo->block_height ?? null;
@@ -250,7 +234,8 @@ class MetricController extends Controller
         $nodeInfo = NodeInfo::where('node_address', strtolower($user->public_address_node))->first();
         
         $rank = $user->rank;
-        $totalCount =  User::select([
+
+        $totalCount = User::select([
                             'id as user_id',
                             'public_address_node',
                             'is_fail_node',
@@ -261,9 +246,7 @@ class MetricController extends Controller
                             ->get()
                             ->count();
         
-        $delegators = 0;
-        $stake_amount = 0;
-        $self_stake_amount = 0;
+        $delegators = $stake_amount = $self_stake_amount = 0;
         if ($nodeInfo) {
             $delegators = $nodeInfo->delegators_count;
             $stake_amount = $nodeInfo->total_staked_amount;
@@ -282,20 +265,18 @@ class MetricController extends Controller
         return $this->successResponse($metric);
     }
 
-    public function getMetricUserOld($id)
-    {
-        $metric = Metric::where('user_id', $id)->first();
-        if (!$metric) {
-            return $this->successResponse([]);
-        }
-        return $this->successResponse($metric);
-    }
-
     public function getMetricUserByNodeName($node)
     {
         $node = strtolower($node);
-        $user = User::where('public_address_node', $node)->first();
-        if ($user) {
+        $userAddress = UserAddress::with('user')
+                                ->has('user')
+                                ->where('public_address_node', $node)
+                                ->first();
+
+        if ($userAddress && isset($userAddress->user) && $userAddress->user) {
+            $user = $userAddress->user;
+            $public_address_node = strtolower($userAddress->public_address_node);
+
             $max_update_responsiveness = DB::select("SELECT max(update_responsiveness) as max_update_responsiveness FROM
                 (
                 SELECT MAX(update_responsiveness) as update_responsiveness FROM metric
@@ -323,27 +304,23 @@ class MetricController extends Controller
             ;");
             $max_uptime =  $max_uptime[0]->max_uptime ?? 0;
 
-            $latest = Node::where('node_address', strtolower($user->public_address_node))->whereNotnull('protocol_version')->orderBy('created_at', 'desc')->first();
-            if (!$latest) {
-                $latest = new Node();
-            }
+            $latest = Node::where('node_address', strtolower($public_address_node))->whereNotnull('protocol_version')->orderBy('created_at', 'desc')->first();
+            if (!$latest) $latest = new Node();
+
             $latest_block_height = $latest->block_height ?? null;
             $latest_update_responsiveness = $latest->update_responsiveness ?? null;
             $latest_peers = $latest->peers ?? null;
-
+            
             $metric = Metric::where('user_id', $user->id)->first();
-            if (!$metric) {
-                $metric = new Metric();
-            }
+            if (!$metric) $metric = new Metric();
             $metric_uptime = $metric->uptime ?? null;
             $metric_block_height = $metric->block_height_average  ?  ($max_block_height - $metric->block_height_average)  : null;
             $metric_update_responsiveness = $metric->update_responsiveness ?? null;
             $metric_peers = $metric->peers ?? null;
 
-            $nodeInfo = NodeInfo::where('node_address', strtolower($user->public_address_node))->first();
-            if (!$nodeInfo) {
-                $nodeInfo = new NodeInfo();
-            }
+            $nodeInfo = NodeInfo::where('node_address', strtolower($public_address_node))->first();
+            if (!$nodeInfo) $nodeInfo = new NodeInfo();
+
             $latest_uptime = $nodeInfo->uptime ?? null;
             $nodeInfo_uptime = $nodeInfo->uptime ?? null;
             $nodeInfo_block_height = $nodeInfo->block_height ?? null;
@@ -362,12 +339,12 @@ class MetricController extends Controller
     
             $metric->peers = $latest_peers ?? $metric_peers;
             $metric->update_responsiveness = $latest_update_responsiveness ?? $metric_update_responsiveness;
-            $metric->block_height_average = $latest_block_height ??  $metric_block_height;
+            $metric->block_height_average = $latest_block_height ?? $metric_block_height;
             $metric->uptime = $latest_uptime  ?? $metric_uptime;
 
             $monitoringCriteria = MonitoringCriteria::get();
-            $nodeInfo = NodeInfo::where('node_address', strtolower($user->public_address_node))->first();
-            $rank = $user->rank;
+            $nodeInfo = NodeInfo::where('node_address', strtolower($public_address_node))->first();
+            $rank = $userAddress->rank;
             $delegators = 0;
             $stake_amount = 0;
             $self_stake_amount = 0;
