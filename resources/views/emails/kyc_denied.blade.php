@@ -89,7 +89,7 @@
 			display: inline-block;
 		}
 		ul li a {
-			color: #FF473E;;
+			color: #FF473E;
 		}
 		ul li span {
 			display: block;
@@ -106,6 +106,7 @@
 			margin: 5px 0;
 		}
 		#content-footer {
+			width: 100%;
 			text-align: center;
 		}
 		#content-footer label {
@@ -113,6 +114,15 @@
 			font-size: 12px;
 			margin-top: 30px;
 			text-align: center;
+		}
+		a,
+		a:hover,
+		a:link,
+		a:active,
+		a:visited {
+			color: #FF473E;
+			font-size: 12px;
+			text-decoration: none;
 		}
 		#button-link {
 			display: inline-block;
@@ -140,7 +150,7 @@
 	<div id="wrapper">
 		<div id="content-section">
 			<div id="top-logo">
-				<img src="{{ url('logo/casper-logo.png') }}" alt="logo"/>
+				<img src="{{ config('app.url') }}/logo/casper-logo.png" alt="logo"/>
 			</div>
 			<h2 id="title">Your KYC is denied</h2>
 			<div class="divider"></div>
@@ -160,11 +170,11 @@
 		</div>
 		<div id="content-footer">
 			<label>&copy; 2022 Casper Association</label>
-			<ul>
-				<li><a href="{{ config('app.site_url') }}/privacy-policy">Privacy Policy</a></li>
-				<li><span></span></li>
-				<li><a href="{{ config('app.site_url') }}/terms-of-service">Terms of Service</a></li>
-			</ul>
+			<label>
+				<a href="{{ config('app.site_url') }}/privacy-policy">Privacy Policy</a>
+				<span style="margin-left:10px;margin-right:10px;">|</span>
+				<a href="{{ config('app.site_url') }}/terms-of-service">Terms of Service</a>
+			</label>
 		</div>
 	</div>
 </body>
