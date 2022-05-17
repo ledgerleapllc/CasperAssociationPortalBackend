@@ -496,9 +496,7 @@ class UserController extends Controller
 
                     $emailerData = EmailerHelper::getEmailerData();
 
-                    EmailerHelper::triggerUserEmail($user->email, 'Your Node is Verified', $emailerData, $user);
-                    if ($user->letter_verified_at && $user->signature_request_id && $userAddress->node_verified_at)
-                        EmailerHelper::triggerUserEmail($user->email, 'Congratulations', $emailerData, $user);
+                    EmailerHelper::triggerUserEmail($user->email, 'Your Node is Verified', $emailerData, $user, $userAddress);
                     return $this->metaSuccess();
                 } else {
                     return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
