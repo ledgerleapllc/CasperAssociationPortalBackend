@@ -21,18 +21,27 @@ This is the backend repo of the portal. To see the frontend repo, visit https://
 We generally would use the latest version of Ubuntu for testing installs. Example hosting server: AWS ec2 t2 medium with at least 10Gb SSD.
 
 ```bash
+# Apache install
 sudo apt -y install apache2
+
+# Enable mods
 sudo a2enmod rewrite
 sudo a2enmod headers
 sudo a2enmod ssl
-sudo apt -y install software-properties-common
+
+# Install required software
 sudo add-apt-repository ppa:ondrej/php
 sudo apt-get update
+sudo apt -y install software-properties-common
 sudo apt-get install -y php7.4
 sudo apt-get install -y php7.4-{bcmath,bz2,intl,gd,mbstring,mysql,zip,common,curl,xml,gmp}
-php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-sudo php composer-setup.php --install-dir=/usr/local/bin --filename=composer
-php -r "unlink('composer-setup.php');"
+
+# Install composer
+curl -sS https://getcomposer.org/installer | sudo php -- --install-dir=/usr/local/bin --filename=composer
+
+# Load php_gmp extension
+echo "extension=php_gmp.so" | sudo tee /etc/php/7.4/mods-available/ext_gmp.ini
+sudo ln -s /etc/php/7.4/mods-available/ext_gmp.ini /etc/php/7.4/cli/conf.d/20-ext_gmp.ini
 ```
 
 Setup the repo according to our VHOST path. Note, the actual VHOST path in this case should be set to **/var/www/CasperAssociationPortalBackend/public**
