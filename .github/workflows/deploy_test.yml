@@ -1,0 +1,44 @@
+name: Deployment test
+
+
+#Run workflow on successful merge to development
+on:
+  - push
+  - pull_request
+
+
+jobs:
+  test-deployment:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Get branch name (merge)
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr / -)" >> $GITHUB_ENV
+
+      - name: Get branch name (pull request)
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF} | tr / -)" >> $GITHUB_ENV
+
+      # Run a test deployment on the runner with ansible
+      - name: Run playbook
+        uses: dawidd6/action-ansible-playbook@v2
+        with:
+          # Required, playbook filepath
+          playbook: play.yml
+          # Optional, directory where playbooks live
+          directory: ./ansible
+          # Optional, literal inventory file contents
+          inventory: |
+            [casper-mem-port-backend]
+            localhost ansible_connection=local
+
+          # Optional, additional flags to pass to ansible-playbook
+          options: |
+            --limit casper-mem-port-backend
+            --verbose
+            --extra-vars "version=${{ env.BRANCH_NAME }}"
