@@ -47,7 +47,7 @@ class Kernel extends ConsoleKernel
             ->everyThirtyMinutes()
             ->runInBackground();
         $schedule->command('node-info')
-            ->everyThirtyMinutes()
+            ->everyFifteenMinutes()
             ->runInBackground();
         $schedule->command('refresh:address')
             ->everyFiveMinutes()
@@ -69,7 +69,6 @@ class Kernel extends ConsoleKernel
     protected function commands()
     {
         $this->load(__DIR__ . '/Commands');
-
         require base_path('routes/console.php');
     }
 }

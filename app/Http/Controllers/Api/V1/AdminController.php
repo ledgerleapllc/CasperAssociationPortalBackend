@@ -37,6 +37,7 @@ use App\Models\Shuftipro;
 use App\Models\ShuftiproTemp;
 use App\Models\TokenPrice;
 use App\Models\User;
+use App\Models\UserAddress;
 use App\Models\VerifyUser;
 use App\Models\Vote;
 use App\Models\VoteResult;
@@ -80,17 +81,13 @@ class AdminController extends Controller
             $status = 'Not Verified';
             if ($user->profile && $user->profile->status == 'approved') {
                 $status = 'Verified';
-                if ($user->profile->extra_status) {
+                if ($user->profile->extra_status)
                     $status = $user->profile->extra_status;
-                }
             }
             $user->membership_status = $status;
         }
-        if ($sort_direction == 'desc') {
-            $users = $users->sortByDesc($sort_key)->values();
-        } else {
-            $users = $users->sortBy($sort_key)->values();
-        }
+        if ($sort_direction == 'desc') $users = $users->sortByDesc($sort_key)->values();
+        else $users = $users->sortBy($sort_key)->values();
         $users = Helper::paginate($users, $limit, $request->page);
         $users = $users->toArray();
         $users['data'] = (collect($users['data'])->values());
@@ -100,17 +97,15 @@ class AdminController extends Controller
     public function getUserDetail($id)
     {
         $user = User::where('id', $id)->first();
-        if (!$user || $user->role == 'admin') {
+        if (!$user || $user->role == 'admin')
             return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
-        }
         $user = $user->load(['profile', 'shuftipro', 'shuftiproTemp']);
-
+        
         $status = 'Not Verified';
         if ($user->profile && $user->profile->status == 'approved') {
             $status = 'Verified';
-            if ($user->profile->extra_status) {
+            if ($user->profile->extra_status)
                 $status = $user->profile->extra_status;
-            }
         }
         $user->membership_status = $status;
         $user->metric = Helper::getNodeInfo($user);
@@ -123,19 +118,18 @@ class AdminController extends Controller
         $timeframe_comments = $request->timeframe_comments ?? 'last_7days';
         $timeframe_discussions = $request->timeframe_discussions ?? 'last_7days';
         // last_24hs, last_7days, last_30days, last_year
-        if ($timeframe_perk == 'last_24hs') {
+        if ($timeframe_perk == 'last_24hs')
             $timeframe_perk =  Carbon::now('UTC')->subHours(24);
-        } else if ($timeframe_perk == 'last_30days') {
+        else if ($timeframe_perk == 'last_30days')
             $timeframe_perk =  Carbon::now('UTC')->subDays(30);
-        } else if ($timeframe_perk == 'last_year') {
+        else if ($timeframe_perk == 'last_year')
             $timeframe_perk =  Carbon::now('UTC')->subYear();
-        } else {
+        else
             $timeframe_perk =  Carbon::now('UTC')->subDays(7);
-        }
 
-        if ($timeframe_comments == 'last_24hs') {
+        if ($timeframe_comments == 'last_24hs')
             $timeframe_comments =  Carbon::now('UTC')->subHours(24);
-        } else if ($timeframe_comments == 'last_30days') {
+        else if ($timeframe_comments == 'last_30days') {
             $timeframe_comments =  Carbon::now('UTC')->subDays(30);
         } else if ($timeframe_comments == 'last_year') {
             $timeframe_comments =  Carbon::now('UTC')->subYear();
@@ -289,7 +283,7 @@ class AdminController extends Controller
             $start = Carbon::createFromFormat("Y-m-d H:i:s", Carbon::now('UTC'), "UTC");
             $now = Carbon::now('UTC');
             $timeEnd = $start->addMinutes($mins);
-
+            
             $endTime = $request->end_date . ' ' . $request->end_time;
             $endTimeCarbon = Carbon::createFromFormat('Y-m-d H:i:s', $endTime, 'EST');
             $endTimeCarbon->setTimezone('UTC');
@@ -1178,9 +1172,8 @@ class AdminController extends Controller
                 // 'system_check_value' => 'required|integer',
             ]);
 
-            if ($validator->fails()) {
+            if ($validator->fails())
                 return $this->validateResponse($validator->errors());
-            }
 
             $record->warning_level = $request->warning_level;
             $record->probation_start = $request->probation_start;
@@ -1204,9 +1197,7 @@ class AdminController extends Controller
             'is_lock' => 'required|boolean'
         ]);
 
-        if ($validator->fails()) {
-            return $this->validateResponse($validator->errors());
-        }
+        if ($validator->fails()) return $this->validateResponse($validator->errors());
 
         $rule = LockRules::where('id', $id)->first();
 
@@ -1222,7 +1213,6 @@ class AdminController extends Controller
             ->orderBy('id', 'ASC')->select(['id', 'screen', 'is_lock'])->get();
         $ruleStatusIsPoor = LockRules::where('type', 'status_is_poor')
             ->orderBy('id', 'ASC')->select(['id', 'screen', 'is_lock'])->get();
-
         $data = [
             'kyc_not_verify' => $ruleKycNotVerify,
             'status_is_poor' => $ruleStatusIsPoor,
@@ -1234,20 +1224,20 @@ class AdminController extends Controller
     {
         $limit = $request->limit ?? 50;
         $node_failing  = $request->node_failing  ?? '';
-        $nodes =  User::select([
-            'id as user_id',
-            'public_address_node',
-            'is_fail_node',
-            'rank',
+
+        $nodes = UserAddress::select([
+            'user_addresses.user_id as user_id',
+            'user_addresses.public_address_node as public_address_node',
+            'user_addresses.is_fail_node as is_fail_node',
+            'user_addresses.rank as rank',
         ])
-            ->where('banned', 0)
-            ->whereNotNull('public_address_node')
+            ->join('users', 'users.id', '=', 'user_addresses.user_id')
+            ->where('users.banned', 0)
+            ->whereNotNull('user_addresses.public_address_node')
             ->where(function ($query) use ($node_failing) {
-                if ($node_failing == 1) {
-                    $query->where('is_fail_node', 1);
-                }
+                if ($node_failing == 1) $query->where('user_addresses.is_fail_node', 1);
             })
-            ->orderBy('rank', 'asc')
+            ->orderBy('user_addresses.rank', 'asc')
             ->paginate($limit);
 
         return $this->successResponse($nodes);
@@ -1258,17 +1248,6 @@ class AdminController extends Controller
     {
         $user = Auth::user();
         $graphDataDay = $graphDataWeek = $graphDataMonth = $graphDataYear = [];
-
-        /*
-        $graphData = [];
-        $items = TokenPrice::orderBy('created_at', 'desc')->limit(100)->get();
-        if ($items && count($items)) {
-            foreach ($items as $item) {
-                $name = strtotime($item->created_at);
-                $graphData[$name] = number_format($item->price, 4);
-            }
-        }
-        */
 
         $timeDay = Carbon::now('UTC')->subHours(24);
         $timeWeek = Carbon::now('UTC')->subDays(7);
@@ -1315,9 +1294,6 @@ class AdminController extends Controller
         ]);
     }
 
-    /**
-     * verify file casper singer
-     */
     public function uploadMembershipFile(Request $request)
     {
         try {
@@ -1326,9 +1302,8 @@ class AdminController extends Controller
                 'file' => 'required|mimes:pdf,docx,doc,txt,rtf|max:100000',
             ]);
 
-            if ($validator->fails()) {
+            if ($validator->fails())
                 return $this->validateResponse($validator->errors());
-            }
 
             $filenameWithExt = $request->file('file')->getClientOriginalName();
             //Get just filename
@@ -1356,7 +1331,6 @@ class AdminController extends Controller
                 'SourceFile' => $request->file('file')
             ]);
 
-            // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/'.$fileNameToStore;
             $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL') . '/not-found';
             MembershipAgreementFile::where('id', '>', 0)->delete();
             $membershipAgreementFile = new MembershipAgreementFile();
