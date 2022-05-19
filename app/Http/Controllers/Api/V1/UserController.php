@@ -36,6 +36,7 @@ use App\Models\Profile;
 use App\Models\Shuftipro;
 use App\Models\ShuftiproTemp;
 use App\Models\User;
+use App\Models\UserAddress;
 use App\Models\VerifyUser;
 use App\Models\Vote;
 use App\Models\VoteResult;
@@ -76,18 +77,7 @@ class UserController extends Controller
     private $profileRepo;
     private $ownerNodeRepo;
 
-    /* Create a new controller instance.
-     *
-     * @param UserRepository $userRepo userRepo
-     *
-     * @return void
-     */
-    public function __construct(
-        UserRepository $userRepo,
-        VerifyUserRepository $verifyUserRepo,
-        ProfileRepository $profileRepo,
-        OwnerNodeRepository $ownerNodeRepo
-    ) {
+    public function __construct(UserRepository $userRepo, VerifyUserRepository $verifyUserRepo, ProfileRepository $profileRepo, OwnerNodeRepository $ownerNodeRepo) {
         $this->userRepo = $userRepo;
         $this->verifyUserRepo = $verifyUserRepo;
         $this->profileRepo = $profileRepo;
@@ -102,11 +92,10 @@ class UserController extends Controller
 
         $data['total'] = User::count();
         $data['verified'] = User::join('profile', 'profile.user_id', '=', 'users.id')
-                            ->where('profile.status', 'approved')
-                            ->whereNotNull('users.public_address_node')
-                            ->get()
-                            ->count();
-
+                                ->where('profile.status', 'approved')
+                                ->whereNotNull('users.public_address_node')
+                                ->get()
+                                ->count();
         return $this->successResponse($data);
     }
 
@@ -127,7 +116,6 @@ class UserController extends Controller
                 ->where('profile.status', 'approved')
                 ->whereNotNull('users.public_address_node')
                 ->paginate($limit);
-
         return $this->successResponse($data);
     }
 
@@ -146,9 +134,7 @@ class UserController extends Controller
                 $record = Shuftipro::where('reference_id', $reference_id)->first();
                 $recordTemp = ShuftiproTemp::where('reference_id', $reference_id)->first();
 
-                if (!$recordTemp) {
-                    return;
-                }
+                if (!$recordTemp) return;
 
                 if ($record) {
                     if (isset($data['event']) && $data['event'] == 'request.deleted') {
@@ -198,9 +184,6 @@ class UserController extends Controller
         }
     }
 
-    /**
-     * change email
-     */
     public function changeEmail(ChangeEmailRequest $request)
     {
         try {
@@ -218,32 +201,24 @@ class UserController extends Controller
                     'created_at' => now()
                 ]
             );
-            if ($userVerify) {
-                Mail::to($request->email)->send(new UserVerifyMail($code));
-            }
+            if ($userVerify) Mail::to($request->email)->send(new UserVerifyMail($code));
             DB::commit();
             return $this->metaSuccess();
         } catch (\Exception $ex) {
             return $this->errorResponse(__('api.error.internal_error'), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
-    /**
-     * Change password
-     */
+    
     public function changePassword(ChangePasswordRequest $request)
     {
         $user = auth()->user();
-        if (Hash::check($request->new_password, $user->password)) {
+        if (Hash::check($request->new_password, $user->password))
             return $this->errorResponse(__('api.error.not_same_current_password'), Response::HTTP_BAD_REQUEST);
-        }
         $newPassword = bcrypt($request->new_password);
         $user->update(['password' => $newPassword]);
         return $this->metaSuccess();
     }
 
-    /**
-     * Get user profile
-     */
     public function getProfile()
     {
         $user = auth()->user()->load(['profile', 'permissions', 'shuftipro', 'shuftiproTemp']);
@@ -252,18 +227,12 @@ class UserController extends Controller
         return $this->successResponse($user);
     }
 
-    /**
-     * loggout user
-     */
     public function logout()
     {
         auth()->user()->token()->revoke();
         return $this->metaSuccess();
     }
 
-    /**
-     * verify file casper singer
-     */
     public function uploadLetter(Request $request)
     {
         try {
@@ -272,13 +241,11 @@ class UserController extends Controller
                 'file' => 'required|mimes:pdf,docx,doc,txt,rtf|max:20000',
             ]);
 
-            if ($validator->fails()) {
-                return $this->validateResponse($validator->errors());
-            }
+            if ($validator->fails()) return $this->validateResponse($validator->errors());
 
             $user = auth()->user();
             $filenameWithExt = $request->file('file')->getClientOriginalName();
-            //Get just filename
+            // Get just filename
             $filename = pathinfo($filenameWithExt, PATHINFO_FILENAME);
             // Get just ext
             $extension = $request->file('file')->getClientOriginalExtension();
@@ -316,9 +283,6 @@ class UserController extends Controller
         }
     }
 
-    /**
-     * Send Hellosign Request
-     */
     public function sendHellosignRequest()
     {
         $user = auth()->user();
@@ -338,9 +302,7 @@ class UserController extends Controller
                 'https://stage.membersbackend.casper.network/',
             ];
 
-            if (in_array(env('APP_URL'), $whitelist)) {
-                $request->enableTestMode();
-            }
+            if (in_array(env('APP_URL'), $whitelist)) $request->enableTestMode();
 
             $request->setTemplateId($template_id);
             $request->setSubject('Member Agreement');
@@ -365,9 +327,8 @@ class UserController extends Controller
 
             $user->update(['signature_request_id' => $signature_request_id]);
             $emailerData = EmailerHelper::getEmailerData();
-            if ($user->letter_verified_at && $user->signature_request_id && $user->node_verified_at) {
+            if ($user->letter_verified_at && $user->signature_request_id && $user->node_verified_at)
                 EmailerHelper::triggerUserEmail($user->email, 'Congratulations', $emailerData, $user);
-            }
             return $this->successResponse([
                 'signature_request_id' => $signature_request_id,
                 'url' => $sign_url,
@@ -376,36 +337,98 @@ class UserController extends Controller
         return $this->errorResponse(__('Hellosign request fail'), Response::HTTP_BAD_REQUEST);
     }
 
-    /**
-     * submit node address
-     */
     public function submitPublicAddress(SubmitPublicAddressRequest $request)
     {
         $user = auth()->user();
-
         $address = strtolower($request->public_address);
 
         $public_address_temp = (new ChecksumValidator())->do($address);
         $public_address = strtolower($address);
 
         $correct_checksum = (int) (new ChecksumValidator($public_address_temp))->do();
-        if (!$correct_checksum) {
+        if (!$correct_checksum)
             return $this->errorResponse(__('Please provide valid address'), Response::HTTP_BAD_REQUEST);
-        }
-
+        
+        // User Check
         $tempUser = User::where('public_address_node', $public_address)->first();
-        if ($tempUser) {
+        if ($tempUser && $tempUser->id != $user->id)
             return $this->errorResponse(__('The address is already used by other user'), Response::HTTP_BAD_REQUEST);
+
+        // User Address Check
+        $tempUserAddress = UserAddress::where('public_address_node', $public_address)->first();
+        if ($tempUserAddress && $tempUserAddress->user_id != $user->id)
+            return $this->errorResponse(__('The address is already used by other user'), Response::HTTP_BAD_REQUEST);
+
+        if (!$tempUserAddress) {
+            $userAddress = new UserAddress;
+            $userAddress->user_id = $user->id;
+            $userAddress->public_address_node = $public_address;
+            $userAddress->save();
         }
 
-        $user->update(['public_address_node' => $public_address]);
+        $user->update([
+            'has_address' => 1,
+            'public_address_node' => $public_address,
+        ]);
 
         return $this->metaSuccess();
     }
 
-    /**
-     * submit node address
-     */
+    public function checkPublicAddress(SubmitPublicAddressRequest $request)
+    {
+        $user = auth()->user();
+        $address = strtolower($request->public_address);
+
+        $public_address_temp = (new ChecksumValidator())->do($address);
+        $public_address = strtolower($address);
+
+        $correct_checksum = (int) (new ChecksumValidator($public_address_temp))->do();
+        if (!$correct_checksum)
+            return $this->errorResponse(__('Please provide valid address'), Response::HTTP_BAD_REQUEST);
+
+        // User Check
+        $tempUser = User::where('public_address_node', $public_address)->first();
+        if ($tempUser)
+            return $this->errorResponse(__('The address is already used by other user'), Response::HTTP_BAD_REQUEST);
+
+        // User Address Check
+        $tempUserAddress = UserAddress::where('public_address_node', $public_address)->first();
+        if ($tempUserAddress)
+            return $this->errorResponse(__('The address is already used by other user'), Response::HTTP_BAD_REQUEST);
+
+        return $this->metaSuccess();
+    }
+
+    public function submitPublicAddress2(SubmitPublicAddressRequest $request)
+    {
+        $user = auth()->user();
+        $address = strtolower($request->public_address);
+
+        $public_address_temp = (new ChecksumValidator())->do($address);
+        $public_address = strtolower($address);
+
+        $correct_checksum = (int) (new ChecksumValidator($public_address_temp))->do();
+        if (!$correct_checksum)
+            return $this->errorResponse(__('Please provide valid address'), Response::HTTP_BAD_REQUEST);
+
+        // User Check
+        $tempUser = User::where('public_address_node', $public_address)->first();
+        if ($tempUser)
+            return $this->errorResponse(__('The address is already used by other user'), Response::HTTP_BAD_REQUEST);
+
+        // User Address Check
+        $tempUserAddress = UserAddress::where('public_address_node', $public_address)->first();
+        if ($tempUserAddress)
+            return $this->errorResponse(__('The address is already used by other user'), Response::HTTP_BAD_REQUEST);
+
+        $userAddress = new UserAddress;
+        $userAddress->user_id = $user->id;
+        $userAddress->public_address_node = $public_address;
+        $userAddress->save();
+        
+        return $this->metaSuccess();
+    }
+
     public function getMessageContent()
     {
         $user = auth()->user();
@@ -418,16 +441,20 @@ class UserController extends Controller
         }, $filename);
     }
 
-    /**
-     * verify file casper singer
-     */
-    public function verifyFileCasperSigner(VerifyFileCasperSignerRequest $request)
+    public function verifyFileCasperSigner2(VerifyFileCasperSignerRequest $request)
     {
         try {
             $casperSigVerify = new CasperSigVerify();
             $user = auth()->user();
             $message = $user->message_content;
-            $public_validator_key = strtolower($user->public_address_node);
+            $public_validator_key = strtolower($request->address);
+
+            $userRecord = User::where('public_address_node', $public_validator_key)->first();
+            $userAddress = UserAddress::where('public_address_node', $public_validator_key)->first();
+
+            if ($userRecord || $userAddress)
+                return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
+
             $file = $request->file;
 
             $name = $file->getClientOriginalName();
@@ -439,7 +466,6 @@ class UserController extends Controller
                     $public_validator_key,
                     $message
                 );
-                // $verified = true;
                 if ($verified) {
                     $filenamehash = md5(Str::random(10) . '_' . (string)time());
 
@@ -455,22 +481,22 @@ class UserController extends Controller
 
                     $s3result = $S3->putObject([
                         'Bucket' => getenv('AWS_BUCKET'),
-                        'Key' => 'signatures/'.$filenamehash,
+                        'Key' => 'signatures/' . $filenamehash,
                         'SourceFile' => $request->file('file')
                     ]);
 
-                    // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/signatures/'.$filenamehash;
                     $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL').'/not-found';
-                    $user->signed_file = $ObjectURL;
-                    $user->node_verified_at = now();
-                    $user->save();
+                    
+                    $userAddress = new UserAddress;
+                    $userAddress->user_id = $user->id;
+                    $userAddress->public_address_node = $public_validator_key;
+                    $userAddress->signed_file = $ObjectURL;
+                    $userAddress->node_verified_at = now();
+                    $userAddress->save();
+
                     $emailerData = EmailerHelper::getEmailerData();
 
-                    EmailerHelper::triggerUserEmail($user->email, 'Your Node is Verified', $emailerData, $user);
-
-                    if ($user->letter_verified_at && $user->signature_request_id && $user->node_verified_at) {
-                        EmailerHelper::triggerUserEmail($user->email, 'Congratulations', $emailerData, $user);
-                    }
+                    EmailerHelper::triggerUserEmail($user->email, 'Your Node is Verified', $emailerData, $user, $userAddress);
                     return $this->metaSuccess();
                 } else {
                     return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
@@ -482,9 +508,80 @@ class UserController extends Controller
         }
     }
 
-    /**
-     * submit KYC
-     */
+    public function verifyFileCasperSigner(VerifyFileCasperSignerRequest $request)
+    {
+        try {
+            $casperSigVerify = new CasperSigVerify();
+            $user = auth()->user();
+            $message = $user->message_content;
+            $public_validator_key = strtolower($request->address);
+
+            $userRecord = User::where('id', $user->id)
+                                ->where('public_address_node', $public_validator_key)
+                                ->first();
+            $userAddress = UserAddress::where('user_id', $user->id)
+                                        ->where('public_address_node', $public_validator_key)
+                                        ->first();
+            if (!$userRecord || !$userAddress)
+                return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
+
+            $file = $request->file;
+
+            $name = $file->getClientOriginalName();
+            $hexstring = $file->get();
+
+            if ($hexstring && $name == 'signature') {
+                $verified = $casperSigVerify->verify(
+                    trim($hexstring),
+                    $public_validator_key,
+                    $message
+                );
+                if ($verified) {
+                    $filenamehash = md5(Str::random(10) . '_' . (string)time());
+
+                    // S3 file upload
+                    $S3 = new S3Client([
+                        'version' => 'latest',
+                        'region' => getenv('AWS_DEFAULT_REGION'),
+                        'credentials' => [
+                            'key' => getenv('AWS_ACCESS_KEY_ID'),
+                            'secret' => getenv('AWS_SECRET_ACCESS_KEY'),
+                        ],
+                    ]);
+
+                    $s3result = $S3->putObject([
+                        'Bucket' => getenv('AWS_BUCKET'),
+                        'Key' => 'signatures/' . $filenamehash,
+                        'SourceFile' => $request->file('file')
+                    ]);
+
+                    $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL').'/not-found';
+                    
+                    $user->signed_file = $ObjectURL;
+                    $user->has_verified_address = 1;
+                    $user->node_verified_at = now();
+                    $user->save();
+
+                    $userAddress->signed_file = $ObjectURL;
+                    $userAddress->node_verified_at = now();
+                    $userAddress->save();
+
+                    $emailerData = EmailerHelper::getEmailerData();
+
+                    EmailerHelper::triggerUserEmail($user->email, 'Your Node is Verified', $emailerData, $user);
+                    if ($user->letter_verified_at && $user->signature_request_id && $user->node_verified_at)
+                        EmailerHelper::triggerUserEmail($user->email, 'Congratulations', $emailerData, $user);
+                    return $this->metaSuccess();
+                } else {
+                    return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
+                }
+            }
+            return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
+        } catch (\Exception $ex) {
+            return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST, $ex->getMessage());
+        }
+    }
+
     public function functionSubmitKYC(SubmitKYCRequest $request)
     {
         $user = auth()->user();
@@ -502,9 +599,6 @@ class UserController extends Controller
         return $this->metaSuccess();
     }
 
-    /**
-     * verify owner node
-     */
     public function verifyOwnerNode(Request $request)
     {
         $user = auth()->user();
@@ -515,9 +609,6 @@ class UserController extends Controller
         return $this->metaSuccess();
     }
 
-    /**
-     * get Owner nodes
-     */
     public function getOwnerNodes()
     {
         $user = auth()->user();
@@ -525,11 +616,8 @@ class UserController extends Controller
         foreach ($owners as $owner) {
             $email = $owner->email;
             $userOwner = User::where('email', $email)->first();
-            if ($userOwner) {
-                $owner->kyc_verified_at = $userOwner->kyc_verified_at;
-            } else {
-                $owner->kyc_verified_at = null;
-            }
+            if ($userOwner) $owner->kyc_verified_at = $userOwner->kyc_verified_at;
+            else $owner->kyc_verified_at = null;
         }
         $data = [];
         $data['kyc_verified_at'] = $user->kyc_verified_at;
@@ -550,9 +638,8 @@ class UserController extends Controller
                 $resetUrl = $url . '/register-type';
                 Mail::to($email)->send(new AddNodeMail($resetUrl));
             }
-        } else {
+        } else
             return $this->errorResponse('Email does not exist', Response::HTTP_BAD_REQUEST);
-        }
         return $this->successResponse(null);
     }
 
@@ -564,9 +651,7 @@ class UserController extends Controller
         $validator = Validator::make($request->all(), [
             'reference_id' => 'required'
         ]);
-        if ($validator->fails()) {
-            return $this->validateResponse($validator->errors());
-        }
+        if ($validator->fails()) return $this->validateResponse($validator->errors());
 
         $user_id = $user->id;
         $reference_id = $request->reference_id;
@@ -589,9 +674,7 @@ class UserController extends Controller
         $validator = Validator::make($request->all(), [
             'reference_id' => 'required'
         ]);
-        if ($validator->fails()) {
-            return $this->validateResponse($validator->errors());
-        }
+        if ($validator->fails()) return $this->validateResponse($validator->errors());
 
         $user_id = $user->id;
         $reference_id = $request->reference_id;
@@ -615,9 +698,7 @@ class UserController extends Controller
         $validator = Validator::make($request->all(), [
             'reference_id' => 'required'
         ]);
-        if ($validator->fails()) {
-            return $this->validateResponse($validator->errors());
-        }
+        if ($validator->fails()) return $this->validateResponse($validator->errors());
 
         $user_id = $user->id;
         $reference_id = $request->reference_id;
@@ -627,8 +708,8 @@ class UserController extends Controller
             $profile->save();
         }
         $record = ShuftiproTemp::where('user_id', $user_id)
-            ->where('reference_id', $reference_id)
-            ->first();
+                    ->where('reference_id', $reference_id)
+                    ->first();
         if ($record) {
             $record->status = 'booked';
             $record->save();
@@ -649,15 +730,11 @@ class UserController extends Controller
         if (!$sort_key) $sort_key = 'ballot.id';
         if (!$sort_direction) $sort_direction = 'desc';
 
-        if ($status != 'active' && $status != 'finish') {
+        if ($status != 'active' && $status != 'finish')
             return $this->errorResponse('Paramater invalid (status is active or finish)', Response::HTTP_BAD_REQUEST);
-        }
 
-        if ($status == 'active') {
-            $query = Ballot::where('status', 'active');
-        } else {
-            $query = Ballot::where('status', '<>', 'active');
-        }
+        if ($status == 'active') $query = Ballot::where('status', 'active');
+        else $query = Ballot::where('status', '<>', 'active');
         $data = $query->with('vote')->orderBy($sort_key, $sort_direction)->paginate($limit);
 
         return $this->successResponse($data);
@@ -668,9 +745,8 @@ class UserController extends Controller
     {
         $user = auth()->user();
         $ballot = Ballot::with(['vote', 'voteResults.user', 'files'])->where('id', $id)->first();
-        if (!$ballot) {
+        if (!$ballot)
             return $this->errorResponse('Not found ballot', Response::HTTP_BAD_REQUEST);
-        }
         foreach ($ballot->files as $file) {
             $ballotFileView = BallotFileView::where('ballot_file_id', $file->id)->where('user_id', $user->id)->first();
             $file->is_viewed =  $ballotFileView  ? 1 : 0;
@@ -684,18 +760,14 @@ class UserController extends Controller
     {
         $user = auth()->user();
         $vote = $request->vote;
-        if (!$vote || ($vote != 'for' && $vote != 'against')) {
+        if (!$vote || ($vote != 'for' && $vote != 'against'))
             return $this->errorResponse('Paramater invalid (vote is for or against)', Response::HTTP_BAD_REQUEST);
-        }
         $ballot = Ballot::where('id', $id)->first();
-        if (!$ballot) {
-            return $this->errorResponse('Not found ballot', Response::HTTP_BAD_REQUEST);
-        }
+        if (!$ballot) return $this->errorResponse('Not found ballot', Response::HTTP_BAD_REQUEST);
         $voteResult = VoteResult::where('user_id', $user->id)->where('ballot_id', $ballot->id)->first();
         if ($voteResult) {
-            if ($vote == $voteResult->type) {
-                return $this->metaSuccess();
-            } else {
+            if ($vote == $voteResult->type) return $this->metaSuccess();
+            else {
                 $voteResult->type = $vote;
                 $voteResult->updated_at = now();
                 if ($vote == 'for') {
@@ -716,11 +788,10 @@ class UserController extends Controller
             $voteResult->vote_id = $ballot->vote->id;
             $voteResult->type = $vote;
             $voteResult->save();
-            if ($vote == 'for') {
+            if ($vote == 'for')
                 $ballot->vote->for_value = $ballot->vote->for_value + 1;
-            } else {
+            else
                 $ballot->vote->against_value = $ballot->vote->against_value + 1;
-            }
             $ballot->vote->result_count = $ballot->vote->result_count + 1;
             $ballot->vote->updated_at = now();
             $ballot->vote->save();
@@ -732,13 +803,10 @@ class UserController extends Controller
     {
         $user = auth()->user();
         $ballotFile = BallotFile::where('id', $fileId)->first();
-        if (!$ballotFile) {
+        if (!$ballotFile)
             return $this->errorResponse('Not found ballot file', Response::HTTP_BAD_REQUEST);
-        }
         $ballotFileView = BallotFileView::where('ballot_file_id', $ballotFile->id)->where('user_id', $user->id)->first();
-        if ($ballotFileView) {
-            return $this->metaSuccess();
-        }
+        if ($ballotFileView) return $this->metaSuccess();
         $ballotFileView = new BallotFileView();
         $ballotFileView->ballot_file_id =  $ballotFile->id;
         $ballotFileView->ballot_id =  $ballotFile->ballot_id;
@@ -757,9 +825,8 @@ class UserController extends Controller
                 'avatar' => 'sometimes|mimes:jpeg,jpg,png,gif,webp|max:100000',
             ]);
 
-            if ($validator->fails()) {
+            if ($validator->fails())
                 return $this->validateResponse($validator->errors());
-            }
 
             $user = auth()->user();
             $filenameWithExt = $request->file('avatar')->getClientOriginalName();
@@ -792,21 +859,6 @@ class UserController extends Controller
             $user->avatar = $s3result['ObjectURL'] ?? getenv('SITE_URL') . '/not-found';
             $user->save();
             return $this->metaSuccess();
-
-            /* old
-            $filenameWithExt = $request->file('avatar')->getClientOriginalName();
-            //Get just filename
-            $filename = pathinfo($filenameWithExt, PATHINFO_FILENAME);
-            // Get just ext
-            $extension = $request->file('avatar')->getClientOriginalExtension();
-            // Filename to store
-            $fileNameToStore = $filename . '_' . time() . '.' . $extension;
-            // Upload Image
-            $path = $request->file('avatar')->storeAs('users/avatar', $fileNameToStore);
-            $user->avatar = $path;
-            $user->save();
-            return $this->metaSuccess();
-            */
         } catch (\Exception $ex) {
             return $this->errorResponse(__('Failed upload avatar'), Response::HTTP_BAD_REQUEST, $ex->getMessage());
         }
@@ -816,7 +868,7 @@ class UserController extends Controller
     {
         $search = $request->search;
         $limit = $request->limit ?? 50;
-
+        
         $slide_value_uptime = $request->uptime ?? 0;
         $slide_value_update_responsiveness = $request->update_responsiveness ?? 0;
         $slide_value_delegotors = $request->delegators ?? 0;
@@ -850,9 +902,7 @@ class UserController extends Controller
                             ->whereNotnull('protocol_version')
                             ->orderBy('created_at', 'desc')
                             ->first();
-            if (!$latest) {
-                $latest = new Node();
-            }
+            if (!$latest) $latest = new Node();
 
             $user->status = isset($user->profile) && isset($user->profile->status) ? $user->profile->status : '';
 
@@ -868,9 +918,7 @@ class UserController extends Controller
             $res = $res_nodeInfo ? $res_nodeInfo : ($res_node ? $res_node : ($res_metric ? $res_metric : 0));
 
             $delegation_rate = isset($user->nodeInfo->delegation_rate) && $user->nodeInfo->delegation_rate ? $user->nodeInfo->delegation_rate / 100 : 1;
-            if ($delegation_rate > 1) {
-                $delegation_rate = 1;
-            }
+            if ($delegation_rate > 1) $delegation_rate = 1;
             $delegators_count = isset($user->nodeInfo->delegators_count) && $user->nodeInfo->delegators_count ? $user->nodeInfo->delegators_count : 0;
             $total_staked_amount = isset($user->nodeInfo->total_staked_amount) && $user->nodeInfo->total_staked_amount ? $user->nodeInfo->total_staked_amount : 0;
 
@@ -879,7 +927,7 @@ class UserController extends Controller
             $delegators_count_score = (float) ($delegators_count / $max_delegators) * $slide_value_delegotors;
             $total_staked_amount_score = (float) ($total_staked_amount / $max_stake_amount) * $slide_value_stake_amount;
             $res_score = (float) (($slide_value_update_responsiveness * $res) / 100);
-
+            
             $user->uptime = $uptime;
             $user->delegation_rate = $delegation_rate;
             $user->delegators_count = $delegators_count;
@@ -892,120 +940,22 @@ class UserController extends Controller
         return $this->successResponse($users);
     }
 
-    public function getMembersOld(Request $request)
+    public function getMemberDetail($id, Request $request)
     {
-        $search = $request->search;
-        $limit = $request->limit ?? 50;
-        $slide_value_uptime = $request->uptime ?? 0;
-        $slide_value_update_responsiveness = $request->update_responsiveness ?? 0;
-        $slide_value_delegotors = $request->delegators ?? 0;
-        $slide_value_stake_amount = $request->stake_amount ?? 0;
-        $slide_delegation_rate = $request->delegation_rate ?? 0;
-
-        $max_uptime = Node::max('uptime');
-        $max_uptime = $max_uptime * 100;
-        $max_delegators = NodeInfo::max('delegators_count');
-        if($max_delegators < 1) $max_delegators = 1;
-        $max_stake_amount = NodeInfo::max('total_staked_amount');
-        if($max_stake_amount < 1) $max_stake_amount = 1;
-
-        $sort_key = $request->sort_key ?? '';
-        $sort_direction = $request->sort_direction ?? '';
-        if (!$sort_key) $sort_key = 'created_at';
-        if (!$sort_direction) $sort_direction = 'desc';
-
-        $users = User::with(['metric'])
-                    ->where('role', 'member')
-                    ->leftJoin('node_info', 'users.public_address_node', '=', 'node_info.node_address')
-                    ->leftJoin('profile', 'users.id', '=', 'profile.user_id')
-                    ->where(function ($query) use ($search) {
-                        if ($search) {
-                            $query->where('users.first_name', 'like', '%' . $search . '%')
-                                ->orWhere('users.last_name', 'like', '%' . $search . '%');
-                        }
-                    })
-                    ->select([
-                        'users.id',
-                        'users.created_at',
-                        'users.first_name',
-                        'users.last_name',
-                        'users.kyc_verified_at',
-                        'users.pseudonym',
-                        'profile.status',
-                        'node_info.uptime',
-                        'node_info.delegation_rate',
-                        'node_info.delegators_count',
-                        'node_info.total_staked_amount',
-                    ])
-                    ->get();
-
-        foreach ($users as $user) {
-            if (!$user->metric && !$user->nodeInfo) {
-                $user->totalScore = 0;
-                continue;
-            }
-
-            $latest = Node::where('node_address', strtolower($user->public_address_node))
-                            ->whereNotnull('protocol_version')
-                            ->orderBy('created_at', 'desc')
-                            ->first();
-            if (!$latest) {
-                $latest = new Node();
-            }
-
-            $delegation_rate = $user->delegation_rate ? $user->delegation_rate / 100 : 1;
-            
-            $latest_uptime_node = isset($latest->uptime) ? $latest->uptime * 100 : null;
-            $latest_update_responsiveness_node = $latest->update_responsiveness ?? null;
-            $metric = $user->metric;
-            if (!$metric) {
-                $metric = new Metric();
-            }
-            $latest_uptime_metric = $metric->uptime ? $metric->uptime : null;
-            $latest_update_responsiveness_metric = $metric->update_responsiveness ? $metric->update_responsiveness : null;
-
-            $latest_uptime = $latest_uptime_node ?? $latest_uptime_metric ?? 1;
-            $latest_update_responsiveness = $latest_update_responsiveness_node ??  $latest_update_responsiveness_metric ?? 1;
-
-            // $delegators_count = $user->delegators_count ? $user->nodeInfo->delegators_count : 0;
-            $delegators_count = $user->delegators_count ? $user->delegators_count : 0;
-            // $total_staked_amount = $user->total_staked_amount ? $user->nodeInfo->total_staked_amount : 0;
-            $total_staked_amount = $user->total_staked_amount ? $user->total_staked_amount : 0;
-
-            $uptime_score = ($slide_value_uptime * $latest_uptime) / 100;
-            $update_responsiveness_score = ($slide_value_update_responsiveness * $latest_update_responsiveness) / 100;
-            $dellegator_score = ($delegators_count / $max_delegators) * $slide_value_delegotors;
-            $satke_amount_score = ($total_staked_amount / $max_stake_amount) * $slide_value_stake_amount;
-            $delegation_rate_score = ($slide_delegation_rate * (1 - $delegation_rate)) / 100;
-            $totalScore =  $uptime_score + $update_responsiveness_score + $dellegator_score + $satke_amount_score + $delegation_rate_score;
-
-            $user->totalScore = $totalScore;
-            $user->uptime = $user->uptime ? $user->uptime : $metric->uptime;
-        }
-        if ($sort_key == 'totalScore') {
-            $users = $users->sortByDesc('totalScore')->values();
-        } else {
-            $users = $users->sortByDesc('created_at')->values();
-        }
-        $users = Helper::paginate($users, $limit, $request->page);
-        return $this->successResponse($users);
-    }
-
-    public function getMemberDetail($id)
-    {
+        $public_address_node = $request->get('public_address_node') ?? null;
         $user = User::where('id', $id)->first();
+
         Helper::getAccountInfoStandard($user);
 
-        if (!$user || $user->role == 'admin') {
+        if (!$user || $user->role == 'admin')
             return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
-        }
-        $user->metric = Helper::getNodeInfo($user);
-        $response = $user->load(['profile']);
+        $user->metric = Helper::getNodeInfo($user, $public_address_node);
+        $response = $user->load(['profile', 'addresses']);
 
         unset($response->last_login_at);
         unset($response->last_login_ip_address);
 
-        if(isset($response->profile)) {
+        if (isset($response->profile)) {
             unset($response->profile->dob);
             unset($response->profile->address);
             unset($response->profile->city);
@@ -1017,9 +967,8 @@ class UserController extends Controller
 
     public function getCaKycHash($hash)
     {
-        if(!ctype_xdigit($hash)) {
+        if (!ctype_xdigit($hash))
             return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
-        }
 
         $selection = DB::select("
             SELECT a.casper_association_kyc_hash as proof_hash, b.reference_id, b.status, c.pseudonym
@@ -1058,33 +1007,27 @@ class UserController extends Controller
     public function checkCurrentPassword(Request $request)
     {
         $user = auth()->user();
-        if (Hash::check($request->current_password, $user->password)) {
+        if (Hash::check($request->current_password, $user->password))
             return $this->metaSuccess();
-        } else {
+        else
             return $this->errorResponse(__('Invalid password'), Response::HTTP_BAD_REQUEST);
-        }
     }
 
     public function settingUser(Request $request)
     {
         $user = auth()->user();
-        if ($request->new_password) {
-            $user->password = bcrypt($request->new_password);
-        }
+        if ($request->new_password) $user->password = bcrypt($request->new_password);
 
         if ($request->username) {
             $checkUsername = User::where('username', $request->username)
                                 ->where('username', '!=', $user->username)
                                 ->first();
-            if ($checkUsername) {
+            if ($checkUsername)
                 return $this->errorResponse(__('this username has already been taken'), Response::HTTP_BAD_REQUEST);
-            }
             $user->username = $request->username;
         }
         
-        if (isset($request->twoFA_login)) {
-            $user->twoFA_login = $request->twoFA_login;
-        }
+        if (isset($request->twoFA_login)) $user->twoFA_login = $request->twoFA_login;
         
         if ($request->email && $request->email != $user->email) {
             $emailParam = $request->email;
@@ -1098,9 +1041,8 @@ class UserController extends Controller
             
             $currentEmail = $user->email;
             $newEmail = $request->email;
-            if ($checkEmail) {
+            if ($checkEmail)
                 return $this->errorResponse(__('this email has already been taken'), Response::HTTP_BAD_REQUEST);
-            }
             $user->new_email = $newEmail;
 
             // Current Email 
@@ -1241,19 +1183,30 @@ class UserController extends Controller
         return $this->successResponse($data);
     }
 
+    public function getListNodesBy(Request $request)
+    {
+        $user = Auth::user();
+        $addresses = UserAddress::where('user_id', $user->id)->orderBy('id', 'asc')->get();
+        return $this->successResponse([
+            'addresses' => $addresses,
+        ]);
+    }
+
     public function getListNodes(Request $request)
     {
         $limit = $request->limit ?? 50;
-        $nodes =  User::select([
+
+        $nodes = UserAddress::select([
             'users.id as user_id',
-            'users.public_address_node',
-            'users.is_fail_node',
             'users.pseudonym',
-            'users.rank',
+            'user_addresses.public_address_node',
+            'user_addresses.is_fail_node',
+            'user_addresses.rank',
             'profile.blockchain_name',
             'profile.blockchain_desc',
         ])
-            ->leftjoin('profile', 'profile.user_id', '=', 'users.id')
+            ->leftJoin('users', 'users.id', '=', 'user_addresses.user_id')
+            ->leftJoin('profile', 'profile.user_id', '=', 'users.id')
             ->where('users.banned', 0)
             ->whereNotNull('users.public_address_node')
             ->orderBy('users.rank', 'asc')
@@ -1316,9 +1269,7 @@ class UserController extends Controller
                 'month' => $result_month,
                 'year' => $result_year,
             ]);
-        } else {
-            return $this->successResponse(null);
-        }
+        } else return $this->successResponse(null);
     }
 
     public function getMembershipFile()
@@ -1377,9 +1328,7 @@ class UserController extends Controller
             'message' => 'nullable|max:5000',
         ]);
 
-        if ($validator->fails()) {
-            return $this->validateResponse($validator->errors());
-        }
+        if ($validator->fails()) return $this->validateResponse($validator->errors());
 
         \Stripe\Stripe::setApiKey(env('STRIPE_SEC_KEY'));
 

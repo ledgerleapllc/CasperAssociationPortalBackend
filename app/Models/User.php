@@ -67,6 +67,8 @@ class User extends Authenticatable
         'validator_fee',
         'cspr_delegated',
         'cspr_self_staked',
+        'has_address',
+        'has_verified_address',
     ];
 
     /**
@@ -124,9 +126,7 @@ class User extends Authenticatable
      */
     public function getLetterFileUrlAttribute()
     {
-        if(!$this->letter_file) {
-            return null;
-        }
+        if (!$this->letter_file) return null;
         // $url = Storage::disk('local')->url($this->letter_file);
         // return asset($url);
         return $this->letter_file;
@@ -134,22 +134,16 @@ class User extends Authenticatable
 
     public function getAvatarUrlAttribute()
     {
-        if(!$this->avatar) {
-            return null;
-        }
+        if (!$this->avatar) return null;
         $url = '';
-        if (strpos($this->avatar, 'http') !== false) {
-            $url = $this->avatar;
-        } else {
-            $url = Storage::disk('local')->url($this->avatar);
-        }
+        if (strpos($this->avatar, 'http') !== false) $url = $this->avatar;
+        else $url = Storage::disk('local')->url($this->avatar);
         return $url;
     }
 
-
     public function getSignedFileUrlAttribute()
     {
-        return url('/') .   $this->signed_file;
+        return url('/') . $this->signed_file;
     }
 
     public function profile()
@@ -160,9 +154,13 @@ class User extends Authenticatable
     public function shuftipro() {
         return $this->hasOne('App\Models\Shuftipro', 'user_id');
     }
-
+    
     public function shuftiproTemp() {
         return $this->hasOne('App\Models\ShuftiproTemp', 'user_id');
+    }
+
+    public function addresses() {
+        return $this->hasMany('App\Models\UserAddress', 'user_id');
     }
 
     public function ownerNodes() {
@@ -202,12 +200,10 @@ class User extends Authenticatable
         $count = Discussion::whereNotIn('id', $removedNews)
                 ->whereDate('created_at', '>',  Carbon::now()->subDays(3))
                 ->count();
-        
         return $count;
     }
 
     public function documentFiles() {
         return $this->hasMany('App\Models\DocumentFile');
     }
-
 }

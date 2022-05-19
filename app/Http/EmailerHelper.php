@@ -69,18 +69,18 @@ class EmailerHelper {
   }
 
   // Send User Email
-  public static function triggerUserEmail($to, $title, $emailerData, $user = null) {
+  public static function triggerUserEmail($to, $title, $emailerData, $user = null, $userAddress = null) {
     $item = $emailerData['triggerUser'][$title] ?? null;
     if ($item) {
-        $content = $item['content'];
-        $subject =$item['subject'];
-
+			$content = $item['content'];
+			$subject = $item['subject'];
       if ($user) {
-        $name =  $user->first_name . ' ' .  $user->last_name;
+        $name = $user->first_name . ' ' .  $user->last_name;
         $content = str_replace('[name]', $name, $content);
         $subject = str_replace('[name]', $name, $subject);
         $content = str_replace('[email]', $user->email, $content);
-        $content = str_replace('[node address]', $user->public_address_node, $content);
+        if ($userAddress) $content = str_replace('[node address]', $userAddress->public_address_node, $content);
+        else $content = str_replace('[node address]', $user->public_address_node, $content);
         $subject = str_replace('[email]', $user->email, $subject);
       }
       Mail::to($to)->send(new UserAlert($subject, $content));
