@@ -1,11 +1,11 @@
-name: dev to staging sync
+name: development to staging sync
 
 
-#Run workflow on successful merge to dev
+#Run workflow on successful merge to development
 on:
   push:
     branches:
-      - dev
+      - development
 
 
 jobs:
@@ -21,7 +21,7 @@ jobs:
           app_id: ${{ secrets.PRBOT_APP_ID }}
           private_key: ${{ secrets.PRBOT_APP_PRIVATE_KEY }}
 
-      #Sync dev branch to the staging branch to keep it updated
+      #Sync development branch to the staging branch to keep it updated
       - name: Set up Node
         uses: actions/setup-node@v1
         with:
@@ -32,12 +32,12 @@ jobs:
         uses: tretuna/sync-branches@ea58ab6e406fd3ad016a064b31270bbb41127f41
         with:
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
-          FROM_BRANCH: "dev"
+          FROM_BRANCH: "development"
           TO_BRANCH: "staging"
           REVIEWERS: '["ledgerleapllc"]'
           CONTENT_COMPARISON: true
-          PULL_REQUEST_BODY: "This PR is created by the PR Bot to sync the dev branch to the staging branch. Please check the content changes also on the dev site if you want. You can feel free to ignore this or approve + merge it. If you merge, the prod deployment will start automatically. If you ignore it, it will get renewed the next time a new feature gets merged to the dev branch."
-          PULL_REQUEST_TITLE: "Sync dev to staging"
+          PULL_REQUEST_BODY: "This PR is created by the PR Bot to sync the development branch to the staging branch. Please check the content changes also on the development site if you want. You can feel free to ignore this or approve + merge it. If you merge, the prod deployment will start automatically. If you ignore it, it will get renewed the next time a new feature gets merged to the development branch."
+          PULL_REQUEST_TITLE: "Sync development to staging"
 
       #Display the pull request URL:
       - name: Display the pull request URL
