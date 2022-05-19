@@ -26,6 +26,7 @@ class MetricController extends Controller
         $user = auth()->user();
         $public_address_node = $request->get('public_address_node');
         if (!$public_address_node) $public_address_node = $user->public_address_node;
+        $isTotal = (int) $request->get('isTotal');
 
         $max_update_responsiveness = DB::select("SELECT max(update_responsiveness) as max_update_responsiveness FROM
             (
@@ -130,6 +131,36 @@ class MetricController extends Controller
         if ($setting) $metric['peers_setting'] = (int) $setting->value;
         else $metric['peers_setting'] = 0;
         
+        $addresses = UserAddress::where('user_id', $user->id)->get();
+        $metric['addresses'] = $addresses;
+
+        if ($isTotal) {
+            $tempRank = $stake_amount = $self_stake_amount = $delegators = 0;
+            if ($addresses && count($addresses) > 0) {
+                $tempRank = UserAddress::get()->count();
+                foreach ($addresses as $address) {
+                    if ($tempRank > (int) $address->rank) {
+                        $tempRank = (int) $address->rank;
+                    }
+                }
+            }
+            if ($tempRank > 0) $metric->rank = $tempRank;
+
+            if ($addresses && count($addresses) > 0) {
+                foreach ($addresses as $address) {
+                    $nodeInfo = NodeInfo::where('node_address', strtolower($address->public_address_node))->first();
+                    if ($nodeInfo) {
+                        $stake_amount += $nodeInfo->total_staked_amount;
+                        $delegators += $nodeInfo->delegators_count;
+                        $self_stake_amount += $nodeInfo->self_staked_amount;
+                    }
+                }
+            }
+            $metric->delegators = $delegators;
+            $metric->stake_amount = $stake_amount;
+            $metric->self_stake_amount = $self_stake_amount;
+        }
+
         return $this->successResponse($metric);
     }
 
@@ -179,7 +210,7 @@ class MetricController extends Controller
         SELECT MAX(peers) as peers FROM node_info
         ) AS results
         ;");
-        $max_peers =  $max_peers[0]->max_peers ?? 0;
+        $max_peers = $max_peers[0]->max_peers ?? 0;
         $max_block_height = Node::max('block_height');
         $max_uptime = DB::select("SELECT max(uptime) as max_uptime FROM
         (

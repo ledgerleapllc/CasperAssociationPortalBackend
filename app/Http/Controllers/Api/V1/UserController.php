@@ -940,15 +940,17 @@ class UserController extends Controller
         return $this->successResponse($users);
     }
 
-    public function getMemberDetail($id)
+    public function getMemberDetail($id, Request $request)
     {
+        $public_address_node = $request->get('public_address_node') ?? null;
         $user = User::where('id', $id)->first();
+
         Helper::getAccountInfoStandard($user);
 
         if (!$user || $user->role == 'admin')
             return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
-        $user->metric = Helper::getNodeInfo($user);
-        $response = $user->load(['profile']);
+        $user->metric = Helper::getNodeInfo($user, $public_address_node);
+        $response = $user->load(['profile', 'addresses']);
 
         unset($response->last_login_at);
         unset($response->last_login_ip_address);

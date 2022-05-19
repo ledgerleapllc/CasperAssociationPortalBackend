@@ -81,8 +81,10 @@ class Helper
 		return $response->json();
 	}
 
-	public static function getNodeInfo($user)
+	public static function getNodeInfo($user, $public_address_node = null)
 	{
+		if (!$public_address_node) $public_address_node = $user->public_address_node;
+
 		$max_update_responsiveness = DB::select("SELECT max(update_responsiveness) as max_update_responsiveness FROM
 			(
 			SELECT MAX(update_responsiveness) as update_responsiveness FROM metric
@@ -110,7 +112,7 @@ class Helper
 			;");
 		$max_uptime = $max_uptime[0]->max_uptime ?? 0;
 
-		$latest = Node::where('node_address', strtolower($user->public_address_node))
+		$latest = Node::where('node_address', strtolower($public_address_node))
 						->whereNotnull('protocol_version')
 						->orderBy('created_at', 'desc')
 						->first();
@@ -128,7 +130,7 @@ class Helper
 		$metric_update_responsiveness = $metric->update_responsiveness ?? null;
 		$metric_peers = $metric->peers ?? null;
 
-		$nodeInfo = NodeInfo::where('node_address', strtolower($user->public_address_node))->first();
+		$nodeInfo = NodeInfo::where('node_address', strtolower($public_address_node))->first();
 		if (!$nodeInfo) $nodeInfo = new NodeInfo();
 
 		$latest_uptime = $nodeInfo->uptime ?? null;
@@ -153,7 +155,7 @@ class Helper
 		$metric->uptime = $latest_uptime  ? $latest_uptime : $metric_uptime;
 
 		$monitoringCriteria = MonitoringCriteria::get();
-		$nodeInfo = NodeInfo::where('node_address', strtolower($user->public_address_node))->first();
+		$nodeInfo = NodeInfo::where('node_address', strtolower($public_address_node))->first();
 		$rank = $user->rank;
 		$delegators = 0;
 		$stake_amount = 0;
