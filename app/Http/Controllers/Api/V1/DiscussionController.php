@@ -3,20 +3,25 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\Response;
+
 use App\Repositories\UserRepository;
 use App\Repositories\DiscussionRepository;
 use App\Repositories\DiscussionCommentRepository;
 use App\Repositories\DiscussionPinRepository;
 use App\Repositories\DiscussionVoteRepository;
 use App\Repositories\DiscussionRemoveNewRepository;
-use Illuminate\Support\Facades\Validator;
+
 use App\Models\Discussion;
 use App\Models\DiscussionComment;
 use App\Models\DiscussionPin;
 use App\Models\DiscussionRemoveNew;
+
 use Carbon\Carbon;
-use Illuminate\Http\Response;
+
 use App\Facades\Paginator;
 
 class DiscussionController extends Controller
@@ -157,9 +162,11 @@ class DiscussionController extends Controller
                 'discussion_votes.id as is_vote',
                 'discussion_votes.is_like as is_like',
             ])->first();
-        $discussion->read = $discussion->read + 1;
-        $discussion->save();
-        $discussion->total_pinned = DiscussionPin::where('discussion_id', $id)->count();
+        if ($discussion) {
+            $discussion->read = $discussion->read + 1;
+            $discussion->save();
+            $discussion->total_pinned = DiscussionPin::where('discussion_id', $id)->count();
+        }
         return $this->successResponse($discussion);
     }
     
