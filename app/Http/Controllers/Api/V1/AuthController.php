@@ -11,14 +11,18 @@ use App\Http\Requests\Api\RegisterEntityRequest;
 use App\Http\Requests\Api\RegisterIndividualRequest;
 use App\Http\Requests\Api\ResetPasswordRequest;
 use App\Http\Requests\Api\SendResetPasswordMailRequeslRequest;
+
 use App\Mail\LoginTwoFA;
 use App\Mail\ResetPasswordMail;
 use App\Mail\UserVerifyMail;
+
 use App\Models\IpHistory;
 use App\Models\User;
 use App\Models\VerifyUser;
+
 use App\Repositories\UserRepository;
 use App\Repositories\VerifyUserRepository;
+
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +30,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+
 use Laravel\Passport\Token;
 
 class AuthController extends Controller
