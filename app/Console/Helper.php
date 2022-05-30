@@ -11,7 +11,8 @@ use App\Models\Shuftipro;
 use App\Models\User;
 
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -25,11 +26,11 @@ class Helper
 
 		$THIS_SEENA_API_KEY = getenv('SEENA_API_KEY');
 		
-		$response = Http::withHeaders([
+		$response = Http::timeout(5)->withHeaders([
 			'Authorization' => "token $THIS_SEENA_API_KEY",
 		])->withOptions([
 			'verify' => false,
-		])->get('https://seena.ledgerleap.com/account-info-standard?validator_id='.$vid);
+		])->get('https://seena.ledgerleap.com/account-info-standard?validator_id=' . $vid);
 
 		try {
 			$json = json_decode($response);

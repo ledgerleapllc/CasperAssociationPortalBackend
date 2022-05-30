@@ -55,6 +55,7 @@ use App\Services\ShuftiproCheck as ServicesShuftiproCheck;
 
 use Carbon\Carbon;
 
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -217,6 +218,29 @@ class UserController extends Controller
         $newPassword = bcrypt($request->new_password);
         $user->update(['password' => $newPassword]);
         return $this->metaSuccess();
+    }
+
+    public function runTest()
+    {
+        $vid = '01ffbcb533e9dfb2fb3dd02312ea00ce8b2adc9fd2ae9770936b77acbb86a35369';
+        // $vid = '01ebaebffebe63ee6e35b88697dd9d5bfab23dac47cbd61a45efc8ea8d80ec9c38';
+
+        $THIS_SEENA_API_KEY = getenv('SEENA_API_KEY');
+        
+        $response = Http::timeout(5)->withHeaders([
+            'Authorization' => "token $THIS_SEENA_API_KEY",
+        ])->withOptions([
+            'verify' => false,
+        ])->get('https://seena.ledgerleap.com/account-info-standard?validator_id=' . $vid);
+
+        try {
+            $json = json_decode($response);
+        } catch (Exception $e) {
+            $json = array();
+        }
+
+        var_dump($json);
+        exit();
     }
 
     public function getProfile()
