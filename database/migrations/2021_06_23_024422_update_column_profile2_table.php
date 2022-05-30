@@ -14,7 +14,7 @@ class UpdateColumnProfile2Table extends Migration
     public function up()
     {
         Schema::table('profile', function (Blueprint $table) {
-            $table->string('type');
+            $table->string('type')->nullable();
         });
     }
 
