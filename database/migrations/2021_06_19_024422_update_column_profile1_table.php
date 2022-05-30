@@ -14,7 +14,7 @@ class UpdateColumnProfile1Table extends Migration
     public function up()
     {
         Schema::table('profile', function (Blueprint $table) {
-            $table->string('status')->default('pending');
+            $table->string('status', 255)->nullable();
         });
     }
 
