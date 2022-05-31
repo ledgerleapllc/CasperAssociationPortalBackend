@@ -319,7 +319,6 @@ class AuthController extends Controller
 
     public function registerSubAdmin(Request $request)
     {
-
         $validator = Validator::make($request->all(), [
             'first_name' => 'required|regex:/^[A-Za-z. ]{1,255}$/',
             'last_name' => 'required|regex:/^[A-Za-z. ]{1,255}$/',
@@ -335,7 +334,7 @@ class AuthController extends Controller
         if (!$user) {
             return $this->errorResponse('There is no admin user with this email', Response::HTTP_BAD_REQUEST);
         }
-        $verify =  VerifyUser::where('email', $request->email)->where('type', VerifyUser::TYPE_INVITE_ADMIN)->where('code', $request->code)->first();
+        $verify = VerifyUser::where('email', $request->email)->where('type', VerifyUser::TYPE_INVITE_ADMIN)->where('code', $request->code)->first();
         if (!$verify) {
             return $this->errorResponse('Fail register sub-amdin', Response::HTTP_BAD_REQUEST);
         }

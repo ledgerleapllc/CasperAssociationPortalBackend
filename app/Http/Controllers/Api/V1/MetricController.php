@@ -14,6 +14,7 @@ use App\Models\Setting;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
@@ -375,10 +376,7 @@ class MetricController extends Controller
             $monitoringCriteria = MonitoringCriteria::get();
             $nodeInfo = NodeInfo::where('node_address', strtolower($public_address_node))->first();
             $rank = $userAddress->rank;
-            $delegators = 0;
-            $stake_amount = 0;
-            $self_stake_amount = 0;
-            $is_open_port = 0;
+            $delegators = $stake_amount = $self_stake_amount = $is_open_port = 0;
             if ($nodeInfo) {
                 $delegators = $nodeInfo->delegators_count;
                 $stake_amount = $nodeInfo->total_staked_amount;
