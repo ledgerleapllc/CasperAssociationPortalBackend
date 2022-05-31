@@ -22,15 +22,6 @@ class UpdateProfile1Table extends Migration
             $table->string('vat_number')->nullable();
             $table->string('page_is_representative')->nullable();
         });
-        
-        DB::statement("ALTER TABLE profile modify first_name varchar(255) NULL");
-        DB::statement("ALTER TABLE profile modify last_name varchar(255) NULL");
-        DB::statement("ALTER TABLE profile modify country_citizenship varchar(255) NULL");
-        DB::statement("ALTER TABLE profile modify country_residence varchar(255) NULL");
-        DB::statement("ALTER TABLE profile modify address varchar(255) NULL");
-        DB::statement("ALTER TABLE profile modify city varchar(255) NULL");
-        DB::statement("ALTER TABLE profile modify zip varchar(255) NULL");
-
     }
 
     /**
