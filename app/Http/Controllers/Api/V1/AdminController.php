@@ -238,9 +238,7 @@ class AdminController extends Controller
                     ->orWhere('users.signature_request_id', null);
             })
             ->where(function ($query) use ($search) {
-                if ($search) {
-                    $query->where('users.email', 'like', '%' . $search . '%');
-                }
+                if ($search) $query->where('users.email', 'like', '%' . $search . '%');
             })
             ->orderBy('users.id', 'desc')
             ->paginate($limit);
