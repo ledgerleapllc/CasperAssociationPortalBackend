@@ -103,7 +103,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::post('/users/membership-agreement',  [UserController::class, 'membershipAgreement']);
             Route::post('/users/check-reset-kyc',  [UserController::class, 'checkResetKyc']);
         });
-
+        
         Route::prefix('admin')->middleware(['role_admin'])->group(function () {
             Route::get('/users', [AdminController::class, 'getUsers']);
             Route::get('/users/{id}', [AdminController::class, 'getUserDetail'])->where('id', '[0-9]+');
