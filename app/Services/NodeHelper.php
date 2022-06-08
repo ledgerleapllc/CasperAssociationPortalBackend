@@ -111,6 +111,7 @@ class NodeHelper
                             $is_open_port = isset($info['uptime']) && isset($info['update_responsiveness']) ? 1 : 0;
 
                             $inactive = (bool)($info['inactive'] ?? false);
+                            $inactive = $inactive ? 1 : 0;
 
                             NodeInfo::updateOrCreate(
                                 [
