@@ -55,12 +55,12 @@ class NodeHelper
     public function updateStats()
     {
         $data = $this->getValidatorStanding();
-        
+
         $validator_standing = isset($data['validator_standing']) ? $data['validator_standing'] : null;
-        
+
         $mbs = isset($data['MBS']) ? $data['MBS'] : 0;
         $peers = isset($data['peers']) ? $data['peers'] : 0;
-        
+
         $setting = Setting::where('name', 'peers')->first();
         if (!$setting) {
             $setting = new Setting;
@@ -85,7 +85,7 @@ class NodeHelper
                     $userAddress = strtolower($user->public_address_node);
                     foreach ($addresses as $address) {
                         $validatorid = strtolower($address->public_address_node);
-                        
+
                         if (isset($validator_standing[$validatorid])) {
                             $info = $validator_standing[$validatorid];
                             $fee = (float) $info['delegation_rate'];
@@ -95,13 +95,13 @@ class NodeHelper
                                 $user->validator_fee = round($fee, 2);
                                 $user->save();
                             }
-                            
+
                             $address->pending_node = 0;
                             $address->validator_fee = round($fee, 2);
                             $address->save();
 
                             $totalRewards = $this->getTotalRewards($validatorid);
-                            
+
                             $build_version = $info['build_version'] ?? null;
                             if ($build_version) {
                                 $build_version = explode('-', $build_version);
@@ -109,7 +109,9 @@ class NodeHelper
                             }
 
                             $is_open_port = isset($info['uptime']) && isset($info['update_responsiveness']) ? 1 : 0;
-                            
+
+                            $inactive = (bool)($info['inactive'] ?? false);
+
                             NodeInfo::updateOrCreate(
                                 [
                                     'node_address' => $validatorid
@@ -127,6 +129,7 @@ class NodeHelper
                                     'uptime' => isset($info['uptime']) ? $info['uptime'] * 100 : 0,
                                     'block_height' => $info['block_height'] ?? 0,
                                     'peers' => $info['peer_count'] ?? 0,
+                                    'inactive' => $inactive
                                 ]
                             );
 

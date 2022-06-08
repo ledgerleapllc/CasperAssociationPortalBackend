@@ -101,7 +101,7 @@ class UserController extends Controller
     }
 
     // Get Verified Members
-    public function getVerifiedMembers() {
+    public function getVerifiedMembers(Request $request) {
         $data = [];
         $limit = $request->limit ?? 50;
         $user = auth()->user();
@@ -936,7 +936,7 @@ class UserController extends Controller
 
             $res_nodeInfo = $user->nodeInfo->update_responsiveness ?? null;
             $res_node = $latest->update_responsiveness ?? null;
-            $res_metric = $metric->update_responsiveness ?? null;
+            $res_metric = $user->metric->update_responsiveness ?? null;
 
             $uptime = $uptime_nodeInfo ? $uptime_nodeInfo : ($uptime_node ? $uptime_node : ($uptime_metric ? $uptime_metric : 1));
             $res = $res_nodeInfo ? $res_nodeInfo : ($res_node ? $res_node : ($res_metric ? $res_metric : 0));
