@@ -87,7 +87,14 @@ class CheckNodeStatus extends Command
             $addresses = $user->addresses ?? [];
             $nodeInfo = $user->nodeInfo ? $user->nodeInfo : $user->metric;
 
-            if (!$nodeInfo || !$addresses || count($addresses) == 0 || !$user->node_verified_at || !$user->letter_verified_at || !$user->signature_request_id) {
+            if (
+                !$nodeInfo || 
+                !$addresses || 
+                count($addresses) == 0 || 
+                !$user->node_verified_at || 
+                !$user->letter_verified_at || 
+                !$user->signature_request_id
+            ) {
                 $user->node_status = null;
                 $user->save();
             } else {
@@ -112,6 +119,7 @@ class CheckNodeStatus extends Command
                     foreach ($addresses as $userAddress) {
                         $public_address_node = strtolower($userAddress->public_address_node);
                         $nodeInfoAddress = NodeInfo::where('node_address', $public_address_node)->first();
+
                         if ($nodeInfoAddress) {
                             $nodeInfoAddress->uptime = $nodeInfoAddress->uptime ? $nodeInfoAddress->uptime : 0;
                             $nodeInfoAddress->block_height_average = $nodeInfoAddress->block_height_average ? $nodeInfoAddress->block_height_average : 0;
@@ -126,18 +134,24 @@ class CheckNodeStatus extends Command
 
                                 $nodeInfoAddress->uptime_time_start = null;
                                 $nodeInfoAddress->uptime_time_end = null;
-                                
+
                                 $nodeInfoAddress->block_height_average_time_start = null;
                                 $nodeInfoAddress->block_height_average_time_end = null;
-                                
+
                                 $nodeInfoAddress->update_responsiveness_time_start = null;
                                 $nodeInfoAddress->update_responsiveness_time_end = null;
-                                
+
                                 $nodeInfoAddress->save();
                             }
                         }
 
-                        if (isset($user->profile) && $user->profile && isset($user->profile->status) && $user->profile->status == 'approved' && $nodeInfoAddress) {
+                        if (
+                            isset($user->profile) && 
+                            $user->profile && 
+                            isset($user->profile->status) && 
+                            $user->profile->status == 'approved' && 
+                            $nodeInfoAddress
+                        ) {
                             $userAddress->extra_status = null;
                             $userAddress->save();
 
@@ -175,6 +189,14 @@ class CheckNodeStatus extends Command
                                 $userAddress->save();
                             }
                         }
+
+                        $inactive = (bool)($nodeInfoAddress->inactive ?? false);
+
+                        if($inactive) {
+                            $userAddress->node_status = 'Offline';
+                            $userAddress->extra_status = 'Suspended';
+                            $userAddress->save();
+                        }
                     }
                     // End For Each
 
@@ -210,7 +232,11 @@ class CheckNodeStatus extends Command
                         }
                     }
 
-                    if (!$hasNotSuspendedStatus && isset($user->profile) && $user->profile) {
+                    if (
+                        !$hasNotSuspendedStatus && 
+                        isset($user->profile) && 
+                        $user->profile
+                    ) {
                         $user->profile->extra_status = 'Suspended';
                         $user->profile->save();
                     } else if (isset($user->profile) && $user->profile) {

@@ -34,7 +34,7 @@ class Helper
 
 		try {
 			$json = json_decode($response);
-		} catch (Exception $e) {
+		} catch (\Exception $e) {
 			$json = array();
 		}
 
