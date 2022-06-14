@@ -158,31 +158,37 @@ class CheckNodeStatus extends Command
                             if ($nodeInfoAddress->uptime < $uptimeProbationStart) {
                                 $userAddress->extra_status = 'On Probation';
 
-                                if(!$nodeInfoAddress->uptime_time_start)
+                                if(!$nodeInfoAddress->uptime_time_start) {
                                     $nodeInfoAddress->uptime_time_start = now();
+                                }
 
-                                if(!$nodeInfoAddress->uptime_time_end)
+                                if(!$nodeInfoAddress->uptime_time_end) {
                                     $nodeInfoAddress->uptime_time_end = Carbon::now('UTC')->addHours($uptimeTime);
+                                }
                             }
 
                             if ($nodeInfoAddress->block_height_average < $blockHeightProbationStart) {
                                 $userAddress->extra_status = 'On Probation';
 
-                                if(!$nodeInfoAddress->block_height_average_time_start)
+                                if(!$nodeInfoAddress->block_height_average_time_start) {
                                     $nodeInfoAddress->block_height_average_time_start = now();
+                                }
 
-                                if(!$nodeInfoAddress->block_height_average_time_end)
+                                if(!$nodeInfoAddress->block_height_average_time_end) {
                                     $nodeInfoAddress->block_height_average_time_end = Carbon::now('UTC')->addHours($blockHeightTime);
+                                }
                             }
 
                             if ($nodeInfoAddress->update_responsiveness < $updateResponsivenessProbationStart) {
                                 $userAddress->extra_status = 'On Probation';
 
-                                if(!$nodeInfoAddress->update_responsiveness_time_start)
+                                if(!$nodeInfoAddress->update_responsiveness_time_start) {
                                     $nodeInfoAddress->update_responsiveness_time_start = now();
+                                }
 
-                                if(!$nodeInfoAddress->update_responsiveness_time_end)
+                                if(!$nodeInfoAddress->update_responsiveness_time_end) {
                                     $nodeInfoAddress->update_responsiveness_time_end = Carbon::now('UTC')->addHours($updateResponsivenessTime);
+                                }
                             }
 
                             $userAddress->save();
