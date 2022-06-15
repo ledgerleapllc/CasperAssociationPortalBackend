@@ -114,17 +114,22 @@ class Helper
 		$max_uptime = $max_uptime[0]->max_uptime ?? 0;
 
 		$latest = Node::where('node_address', strtolower($public_address_node))
-						->whereNotnull('protocol_version')
-						->orderBy('created_at', 'desc')
-						->first();
-		if (!$latest) $latest = new Node();
+			->whereNotnull('protocol_version')
+			->orderBy('created_at', 'desc')
+			->first();
+
+		if (!$latest) {
+			$latest = new Node();
+		}
 
 		$latest_block_height = $latest->block_height ?? null;
 		$latest_update_responsiveness = $latest->update_responsiveness ?? null;
 		$latest_peers = $latest->peers ?? null;
 
 		$metric = Metric::where('user_id', $user->id)->first();
-		if (!$metric) $metric = new Metric();
+		if (!$metric) {
+			$metric = new Metric();
+		}
 
 		$metric_uptime = $metric->uptime ?? null;
 		$metric_block_height = $metric->block_height_average  ?  ($max_block_height - $metric->block_height_average)  : null;
@@ -132,7 +137,9 @@ class Helper
 		$metric_peers = $metric->peers ?? null;
 
 		$nodeInfo = NodeInfo::where('node_address', strtolower($public_address_node))->first();
-		if (!$nodeInfo) $nodeInfo = new NodeInfo();
+		if (!$nodeInfo) {
+			$nodeInfo = new NodeInfo();
+		}
 
 		$latest_uptime = $nodeInfo->uptime ?? null;
 		$nodeInfo_uptime = $nodeInfo->uptime ?? null;
@@ -162,12 +169,14 @@ class Helper
 		$stake_amount = 0;
 		$self_staked_amount = 0;
 		$is_open_port = 0;
+
 		if ($nodeInfo) {
 			$delegators = $nodeInfo->delegators_count;
 			$stake_amount = $nodeInfo->total_staked_amount;
 			$self_staked_amount = $nodeInfo->self_staked_amount;
 			$is_open_port = $nodeInfo->is_open_port;
 		}
+
 		$mbs = NodeInfo::max('mbs');
 		$metric->mbs = $mbs;
 		$metric->rank = $rank;

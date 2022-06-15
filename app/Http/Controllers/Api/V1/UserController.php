@@ -78,7 +78,12 @@ class UserController extends Controller
     private $profileRepo;
     private $ownerNodeRepo;
 
-    public function __construct(UserRepository $userRepo, VerifyUserRepository $verifyUserRepo, ProfileRepository $profileRepo, OwnerNodeRepository $ownerNodeRepo) {
+    public function __construct(
+        UserRepository $userRepo, 
+        VerifyUserRepository $verifyUserRepo, 
+        ProfileRepository $profileRepo, 
+        OwnerNodeRepository $ownerNodeRepo
+    ) {
         $this->userRepo = $userRepo;
         $this->verifyUserRepo = $verifyUserRepo;
         $this->profileRepo = $profileRepo;
@@ -222,6 +227,7 @@ class UserController extends Controller
 
     public function runTest()
     {
+        /*
         $vid = '01ffbcb533e9dfb2fb3dd02312ea00ce8b2adc9fd2ae9770936b77acbb86a35369';
         // $vid = '01ebaebffebe63ee6e35b88697dd9d5bfab23dac47cbd61a45efc8ea8d80ec9c38';
 
@@ -240,6 +246,7 @@ class UserController extends Controller
         }
 
         var_dump($json);
+        */
         exit();
     }
 
@@ -269,13 +276,9 @@ class UserController extends Controller
 
             $user = auth()->user();
             $filenameWithExt = $request->file('file')->getClientOriginalName();
-            // Get just filename
             $filename = pathinfo($filenameWithExt, PATHINFO_FILENAME);
-            // Get just ext
             $extension = $request->file('file')->getClientOriginalExtension();
-            // new filename hash
             $filenamehash = md5(Str::random(10) . '_' . (string)time());
-            // Filename to store
             $fileNameToStore = $filenamehash . '.' . $extension;
 
             // S3 file upload
@@ -407,18 +410,30 @@ class UserController extends Controller
         $public_address = strtolower($address);
 
         $correct_checksum = (int) (new ChecksumValidator($public_address_temp))->do();
-        if (!$correct_checksum)
-            return $this->errorResponse(__('Please provide valid address'), Response::HTTP_BAD_REQUEST);
+        if (!$correct_checksum) {
+            return $this->errorResponse(
+                __('Please provide valid address'), 
+                Response::HTTP_BAD_REQUEST
+            );
+        }
 
         // User Check
         $tempUser = User::where('public_address_node', $public_address)->first();
-        if ($tempUser)
-            return $this->errorResponse(__('The address is already used by other user'), Response::HTTP_BAD_REQUEST);
+        if ($tempUser) {
+            return $this->errorResponse(
+                __('The address is already used by other user'), 
+                Response::HTTP_BAD_REQUEST
+            );
+        }
 
         // User Address Check
         $tempUserAddress = UserAddress::where('public_address_node', $public_address)->first();
-        if ($tempUserAddress)
-            return $this->errorResponse(__('The address is already used by other user'), Response::HTTP_BAD_REQUEST);
+        if ($tempUserAddress) {
+            return $this->errorResponse(
+                __('The address is already used by other user'), 
+                Response::HTTP_BAD_REQUEST
+            );
+        }
 
         return $this->metaSuccess();
     }
@@ -476,11 +491,14 @@ class UserController extends Controller
             $userRecord = User::where('public_address_node', $public_validator_key)->first();
             $userAddress = UserAddress::where('public_address_node', $public_validator_key)->first();
 
-            if ($userRecord || $userAddress)
-                return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
+            if ($userRecord || $userAddress) {
+                return $this->errorResponse(
+                    __('Failed verification'), 
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
 
             $file = $request->file;
-
             $name = $file->getClientOriginalName();
             $hexstring = $file->get();
 
@@ -490,6 +508,7 @@ class UserController extends Controller
                     $public_validator_key,
                     $message
                 );
+
                 if ($verified) {
                     $filenamehash = md5(Str::random(10) . '_' . (string)time());
 
@@ -520,7 +539,13 @@ class UserController extends Controller
 
                     $emailerData = EmailerHelper::getEmailerData();
 
-                    EmailerHelper::triggerUserEmail($user->email, 'Your Node is Verified', $emailerData, $user, $userAddress);
+                    EmailerHelper::triggerUserEmail(
+                        $user->email, 
+                        'Your Node is Verified', 
+                        $emailerData, 
+                        $user, 
+                        $userAddress
+                    );
                     return $this->metaSuccess();
                 } else {
                     return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
@@ -546,8 +571,9 @@ class UserController extends Controller
             $userAddress = UserAddress::where('user_id', $user->id)
                                         ->where('public_address_node', $public_validator_key)
                                         ->first();
-            if (!$userRecord || !$userAddress)
+            if (!$userRecord || !$userAddress) {
                 return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
+            }
 
             $file = $request->file;
 
@@ -849,14 +875,13 @@ class UserController extends Controller
                 'avatar' => 'sometimes|mimes:jpeg,jpg,png,gif,webp|max:100000',
             ]);
 
-            if ($validator->fails())
+            if ($validator->fails()) {
                 return $this->validateResponse($validator->errors());
+            }
 
             $user = auth()->user();
             $filenameWithExt = $request->file('avatar')->getClientOriginalName();
-            //Get just filename
             $filename = pathinfo($filenameWithExt, PATHINFO_FILENAME);
-            // Get just ext
             $extension = $request->file('avatar')->getClientOriginalExtension();
             // new filename hash
             $filenamehash = md5(Str::random(10) . '_' . (string)time());

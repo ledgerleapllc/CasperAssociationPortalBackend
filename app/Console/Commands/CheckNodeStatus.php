@@ -281,6 +281,7 @@ class CheckNodeStatus extends Command
      *
      * @return int
      */
+    /*
     public function handleOld()
     {
         $uptime = MonitoringCriteria::where('type', 'uptime')->first();
@@ -396,4 +397,5 @@ class CheckNodeStatus extends Command
             }
         }
     }
+    */
 }
