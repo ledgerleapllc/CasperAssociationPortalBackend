@@ -127,6 +127,7 @@ class Helper
 		$latest_peers = $latest->peers ?? null;
 
 		$metric = Metric::where('user_id', $user->id)->first();
+
 		if (!$metric) {
 			$metric = new Metric();
 		}
@@ -137,6 +138,7 @@ class Helper
 		$metric_peers = $metric->peers ?? null;
 
 		$nodeInfo = NodeInfo::where('node_address', strtolower($public_address_node))->first();
+
 		if (!$nodeInfo) {
 			$nodeInfo = new NodeInfo();
 		}
