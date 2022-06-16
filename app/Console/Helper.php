@@ -122,20 +122,13 @@ class Helper
 			$latest = new Node();
 		}
 
-		$latest_block_height = $latest->block_height ?? null;
-		$latest_update_responsiveness = $latest->update_responsiveness ?? null;
-		$latest_peers = $latest->peers ?? null;
-
 		$metric = Metric::where('user_id', $user->id)->first();
 
 		if (!$metric) {
 			$metric = new Metric();
 		}
 
-		$metric_uptime = $metric->uptime ?? null;
-		$metric_block_height = $metric->block_height_average  ?  ($max_block_height - $metric->block_height_average)  : null;
-		$metric_update_responsiveness = $metric->update_responsiveness ?? null;
-		$metric_peers = $metric->peers ?? null;
+		$metric_block_height = $metric->block_height_average ? ($max_block_height - $metric->block_height_average)  : null;
 
 		$nodeInfo = NodeInfo::where('node_address', strtolower($public_address_node))->first();
 
@@ -143,26 +136,20 @@ class Helper
 			$nodeInfo = new NodeInfo();
 		}
 
-		$latest_uptime = $nodeInfo->uptime ?? null;
-		$nodeInfo_uptime = $nodeInfo->uptime ?? null;
-		$nodeInfo_block_height = $nodeInfo->block_height ?? null;
-		$nodeInfo_peers = $nodeInfo->peers ?? null;
-		$nodeInfo_update_responsiveness = $nodeInfo->update_responsiveness ?? null;
-
-		$metric->avg_uptime = $nodeInfo_uptime ?? $metric_uptime;
-		$metric->avg_block_height_average = $nodeInfo_block_height ?? $metric_block_height;
-		$metric->avg_update_responsiveness = $nodeInfo_update_responsiveness ?? $metric_update_responsiveness;
-		$metric->avg_peers = $nodeInfo_peers ?? $metric_peers;
+		$metric->avg_uptime = $nodeInfo->uptime ?? $metric->uptime ?? null;
+		$metric->avg_block_height_average = $nodeInfo->block_height ?? $metric_block_height;
+		$metric->avg_update_responsiveness = $nodeInfo->update_responsiveness ?? $metric->update_responsiveness ?? null;
+		$metric->avg_peers = $nodeInfo->peers ?? $metric->peers ?? null;
 
 		$metric->max_peers = $max_peers;
 		$metric->max_update_responsiveness = $max_update_responsiveness;
 		$metric->max_block_height_average = $max_block_height;
 		$metric->max_uptime = $max_uptime;
 
-		$metric->peers = $latest_peers ?? $metric_peers;
-		$metric->update_responsiveness = $latest_update_responsiveness ?? $metric_update_responsiveness;
-		$metric->block_height_average = $latest_block_height ??  $metric_block_height;
-		$metric->uptime = $latest_uptime  ? $latest_uptime : $metric_uptime;
+		$metric->peers = $latest->peers ?? $metric->peers ?? null;
+		$metric->update_responsiveness = $latest->update_responsiveness ?? $metric->update_responsiveness ?? null;
+		$metric->block_height_average = $latest->block_height ?? $metric_block_height;
+		$metric->uptime = $nodeInfo->uptime ?? $metric->uptime ?? null;
 
 		$monitoringCriteria = MonitoringCriteria::get();
 		$nodeInfo = NodeInfo::where('node_address', strtolower($public_address_node))->first();
