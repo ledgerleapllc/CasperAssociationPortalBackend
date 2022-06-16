@@ -77,6 +77,7 @@ class UserController extends Controller
     private $verifyUserRepo;
     private $profileRepo;
     private $ownerNodeRepo;
+    public $failed_verification_response;
 
     public function __construct(
         UserRepository $userRepo, 
@@ -88,6 +89,7 @@ class UserController extends Controller
         $this->verifyUserRepo = $verifyUserRepo;
         $this->profileRepo = $profileRepo;
         $this->ownerNodeRepo = $ownerNodeRepo;
+        $this->failed_verification_response = 'Failed verification';
     }
 
     public function getMemberCountInfo() {
@@ -223,31 +225,6 @@ class UserController extends Controller
         $newPassword = bcrypt($request->new_password);
         $user->update(['password' => $newPassword]);
         return $this->metaSuccess();
-    }
-
-    public function runTest()
-    {
-        /*
-        $vid = '01ffbcb533e9dfb2fb3dd02312ea00ce8b2adc9fd2ae9770936b77acbb86a35369';
-        // $vid = '01ebaebffebe63ee6e35b88697dd9d5bfab23dac47cbd61a45efc8ea8d80ec9c38';
-
-        $THIS_SEENA_API_KEY = getenv('SEENA_API_KEY');
-        
-        $response = Http::timeout(5)->withHeaders([
-            'Authorization' => "token $THIS_SEENA_API_KEY",
-        ])->withOptions([
-            'verify' => false,
-        ])->get('https://seena.ledgerleap.com/account-info-standard?validator_id=' . $vid);
-
-        try {
-            $json = json_decode($response);
-        } catch (Exception $e) {
-            $json = array();
-        }
-
-        var_dump($json);
-        */
-        exit();
     }
 
     public function getProfile()
@@ -493,7 +470,7 @@ class UserController extends Controller
 
             if ($userRecord || $userAddress) {
                 return $this->errorResponse(
-                    __('Failed verification'), 
+                    __($this->failed_verification_response),
                     Response::HTTP_BAD_REQUEST
                 );
             }
@@ -548,12 +525,12 @@ class UserController extends Controller
                     );
                     return $this->metaSuccess();
                 } else {
-                    return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
+                    return $this->errorResponse(__($this->failed_verification_response), Response::HTTP_BAD_REQUEST);
                 }
             }
-            return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
+            return $this->errorResponse(__($this->failed_verification_response), Response::HTTP_BAD_REQUEST);
         } catch (\Exception $ex) {
-            return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST, $ex->getMessage());
+            return $this->errorResponse(__($this->failed_verification_response), Response::HTTP_BAD_REQUEST, $ex->getMessage());
         }
     }
 
@@ -572,7 +549,7 @@ class UserController extends Controller
                                         ->where('public_address_node', $public_validator_key)
                                         ->first();
             if (!$userRecord || !$userAddress) {
-                return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
+                return $this->errorResponse(__($this->failed_verification_response), Response::HTTP_BAD_REQUEST);
             }
 
             $file = $request->file;
@@ -623,12 +600,12 @@ class UserController extends Controller
                         EmailerHelper::triggerUserEmail($user->email, 'Congratulations', $emailerData, $user);
                     return $this->metaSuccess();
                 } else {
-                    return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
+                    return $this->errorResponse(__($this->failed_verification_response), Response::HTTP_BAD_REQUEST);
                 }
             }
-            return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
+            return $this->errorResponse(__($this->failed_verification_response), Response::HTTP_BAD_REQUEST);
         } catch (\Exception $ex) {
-            return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST, $ex->getMessage());
+            return $this->errorResponse(__($this->failed_verification_response), Response::HTTP_BAD_REQUEST, $ex->getMessage());
         }
     }
 
