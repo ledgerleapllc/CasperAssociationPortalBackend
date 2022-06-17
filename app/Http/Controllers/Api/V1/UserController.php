@@ -77,12 +77,19 @@ class UserController extends Controller
     private $verifyUserRepo;
     private $profileRepo;
     private $ownerNodeRepo;
+    public $failed_verification_response;
 
-    public function __construct(UserRepository $userRepo, VerifyUserRepository $verifyUserRepo, ProfileRepository $profileRepo, OwnerNodeRepository $ownerNodeRepo) {
+    public function __construct(
+        UserRepository $userRepo, 
+        VerifyUserRepository $verifyUserRepo, 
+        ProfileRepository $profileRepo, 
+        OwnerNodeRepository $ownerNodeRepo
+    ) {
         $this->userRepo = $userRepo;
         $this->verifyUserRepo = $verifyUserRepo;
         $this->profileRepo = $profileRepo;
         $this->ownerNodeRepo = $ownerNodeRepo;
+        $this->failed_verification_response = 'Failed verification';
     }
 
     public function getMemberCountInfo() {
@@ -220,29 +227,6 @@ class UserController extends Controller
         return $this->metaSuccess();
     }
 
-    public function runTest()
-    {
-        $vid = '01ffbcb533e9dfb2fb3dd02312ea00ce8b2adc9fd2ae9770936b77acbb86a35369';
-        // $vid = '01ebaebffebe63ee6e35b88697dd9d5bfab23dac47cbd61a45efc8ea8d80ec9c38';
-
-        $THIS_SEENA_API_KEY = getenv('SEENA_API_KEY');
-        
-        $response = Http::timeout(5)->withHeaders([
-            'Authorization' => "token $THIS_SEENA_API_KEY",
-        ])->withOptions([
-            'verify' => false,
-        ])->get('https://seena.ledgerleap.com/account-info-standard?validator_id=' . $vid);
-
-        try {
-            $json = json_decode($response);
-        } catch (Exception $e) {
-            $json = array();
-        }
-
-        var_dump($json);
-        exit();
-    }
-
     public function getProfile()
     {
         $user = auth()->user()->load(['profile', 'permissions', 'shuftipro', 'shuftiproTemp']);
@@ -269,13 +253,9 @@ class UserController extends Controller
 
             $user = auth()->user();
             $filenameWithExt = $request->file('file')->getClientOriginalName();
-            // Get just filename
             $filename = pathinfo($filenameWithExt, PATHINFO_FILENAME);
-            // Get just ext
             $extension = $request->file('file')->getClientOriginalExtension();
-            // new filename hash
             $filenamehash = md5(Str::random(10) . '_' . (string)time());
-            // Filename to store
             $fileNameToStore = $filenamehash . '.' . $extension;
 
             // S3 file upload
@@ -407,18 +387,30 @@ class UserController extends Controller
         $public_address = strtolower($address);
 
         $correct_checksum = (int) (new ChecksumValidator($public_address_temp))->do();
-        if (!$correct_checksum)
-            return $this->errorResponse(__('Please provide valid address'), Response::HTTP_BAD_REQUEST);
+        if (!$correct_checksum) {
+            return $this->errorResponse(
+                __('Please provide valid address'), 
+                Response::HTTP_BAD_REQUEST
+            );
+        }
 
         // User Check
         $tempUser = User::where('public_address_node', $public_address)->first();
-        if ($tempUser)
-            return $this->errorResponse(__('The address is already used by other user'), Response::HTTP_BAD_REQUEST);
+        if ($tempUser) {
+            return $this->errorResponse(
+                __('The address is already used by other user'), 
+                Response::HTTP_BAD_REQUEST
+            );
+        }
 
         // User Address Check
         $tempUserAddress = UserAddress::where('public_address_node', $public_address)->first();
-        if ($tempUserAddress)
-            return $this->errorResponse(__('The address is already used by other user'), Response::HTTP_BAD_REQUEST);
+        if ($tempUserAddress) {
+            return $this->errorResponse(
+                __('The address is already used by other user'), 
+                Response::HTTP_BAD_REQUEST
+            );
+        }
 
         return $this->metaSuccess();
     }
@@ -476,11 +468,14 @@ class UserController extends Controller
             $userRecord = User::where('public_address_node', $public_validator_key)->first();
             $userAddress = UserAddress::where('public_address_node', $public_validator_key)->first();
 
-            if ($userRecord || $userAddress)
-                return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
+            if ($userRecord || $userAddress) {
+                return $this->errorResponse(
+                    __($this->failed_verification_response),
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
 
             $file = $request->file;
-
             $name = $file->getClientOriginalName();
             $hexstring = $file->get();
 
@@ -490,6 +485,7 @@ class UserController extends Controller
                     $public_validator_key,
                     $message
                 );
+
                 if ($verified) {
                     $filenamehash = md5(Str::random(10) . '_' . (string)time());
 
@@ -520,15 +516,21 @@ class UserController extends Controller
 
                     $emailerData = EmailerHelper::getEmailerData();
 
-                    EmailerHelper::triggerUserEmail($user->email, 'Your Node is Verified', $emailerData, $user, $userAddress);
+                    EmailerHelper::triggerUserEmail(
+                        $user->email, 
+                        'Your Node is Verified', 
+                        $emailerData, 
+                        $user, 
+                        $userAddress
+                    );
                     return $this->metaSuccess();
                 } else {
-                    return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
+                    return $this->errorResponse(__($this->failed_verification_response), Response::HTTP_BAD_REQUEST);
                 }
             }
-            return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
+            return $this->errorResponse(__($this->failed_verification_response), Response::HTTP_BAD_REQUEST);
         } catch (\Exception $ex) {
-            return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST, $ex->getMessage());
+            return $this->errorResponse(__($this->failed_verification_response), Response::HTTP_BAD_REQUEST, $ex->getMessage());
         }
     }
 
@@ -546,8 +548,9 @@ class UserController extends Controller
             $userAddress = UserAddress::where('user_id', $user->id)
                                         ->where('public_address_node', $public_validator_key)
                                         ->first();
-            if (!$userRecord || !$userAddress)
-                return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
+            if (!$userRecord || !$userAddress) {
+                return $this->errorResponse(__($this->failed_verification_response), Response::HTTP_BAD_REQUEST);
+            }
 
             $file = $request->file;
 
@@ -597,12 +600,12 @@ class UserController extends Controller
                         EmailerHelper::triggerUserEmail($user->email, 'Congratulations', $emailerData, $user);
                     return $this->metaSuccess();
                 } else {
-                    return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
+                    return $this->errorResponse(__($this->failed_verification_response), Response::HTTP_BAD_REQUEST);
                 }
             }
-            return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST);
+            return $this->errorResponse(__($this->failed_verification_response), Response::HTTP_BAD_REQUEST);
         } catch (\Exception $ex) {
-            return $this->errorResponse(__('Failed verification'), Response::HTTP_BAD_REQUEST, $ex->getMessage());
+            return $this->errorResponse(__($this->failed_verification_response), Response::HTTP_BAD_REQUEST, $ex->getMessage());
         }
     }
 
@@ -849,14 +852,13 @@ class UserController extends Controller
                 'avatar' => 'sometimes|mimes:jpeg,jpg,png,gif,webp|max:100000',
             ]);
 
-            if ($validator->fails())
+            if ($validator->fails()) {
                 return $this->validateResponse($validator->errors());
+            }
 
             $user = auth()->user();
             $filenameWithExt = $request->file('avatar')->getClientOriginalName();
-            //Get just filename
             $filename = pathinfo($filenameWithExt, PATHINFO_FILENAME);
-            // Get just ext
             $extension = $request->file('avatar')->getClientOriginalExtension();
             // new filename hash
             $filenamehash = md5(Str::random(10) . '_' . (string)time());
