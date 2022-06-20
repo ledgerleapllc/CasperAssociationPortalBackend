@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class UpdateColumnProfile2Table extends Migration
+class UserAddressesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,8 +13,12 @@ class UpdateColumnProfile2Table extends Migration
      */
     public function up()
     {
-        Schema::table('profile', function (Blueprint $table) {
-            $table->string('type')->nullable();
+        Schema::create('user_addresses', function (Blueprint $table) {
+            $table->id();
+            $table->integer('user_id');
+            $table->string('public_address_node');
+            $table->timestamp('node_verified_at')->nullable();
+            $table->timestamps();
         });
     }
 

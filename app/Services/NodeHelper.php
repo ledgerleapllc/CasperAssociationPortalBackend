@@ -55,12 +55,12 @@ class NodeHelper
     public function updateStats()
     {
         $data = $this->getValidatorStanding();
-        
+
         $validator_standing = isset($data['validator_standing']) ? $data['validator_standing'] : null;
-        
+
         $mbs = isset($data['MBS']) ? $data['MBS'] : 0;
         $peers = isset($data['peers']) ? $data['peers'] : 0;
-        
+
         $setting = Setting::where('name', 'peers')->first();
         if (!$setting) {
             $setting = new Setting;
@@ -71,69 +71,84 @@ class NodeHelper
         $setting->value = $peers;
         $setting->save();
 
-        $users = User::whereNotNull('public_address_node')->get();
+        $users = User::with('addresses')->whereNotNull('public_address_node')->get();
+
         if ($validator_standing) {
             // Refresh Validator Standing
             foreach ($validator_standing as $key => $value) {
-                // $newKey = (new ChecksumValidator())->do($key);
                 $validator_standing[strtolower($key)] = $value;
             }
 
             foreach ($users as $user) {
-                $validatorid = strtolower($user->public_address_node);
-                // $validatorid = (new ChecksumValidator())->do($validatorid);
-                
-                if (isset($validator_standing[$validatorid])) {
-                    $info = $validator_standing[$validatorid];
-                    $fee = (float) $info['delegation_rate'];
+                if (isset($user->addresses) && count($user->addresses) > 0) {
+                    $addresses = $user->addresses;
+                    $userAddress = strtolower($user->public_address_node);
+                    foreach ($addresses as $address) {
+                        $validatorid = strtolower($address->public_address_node);
 
-                    $user->pending_node = 0;
-                    $user->validator_fee = round($fee, 2);
-                    $user->save();
+                        if (isset($validator_standing[$validatorid])) {
+                            $info = $validator_standing[$validatorid];
+                            $fee = (float) $info['delegation_rate'];
 
-                    $totalRewards = $this->getTotalRewards($validatorid);
-                    
-                    $build_version = $info['build_version'] ?? null;
-                    if ($build_version) {
-                        $build_version = explode('-', $build_version);
-                        $build_version = $build_version[0];
+                            if ($userAddress == $validatorid) {
+                                $user->pending_node = 0;
+                                $user->validator_fee = round($fee, 2);
+                                $user->save();
+                            }
+
+                            $address->pending_node = 0;
+                            $address->validator_fee = round($fee, 2);
+                            $address->save();
+
+                            $totalRewards = $this->getTotalRewards($validatorid);
+
+                            $build_version = $info['build_version'] ?? null;
+                            if ($build_version) {
+                                $build_version = explode('-', $build_version);
+                                $build_version = $build_version[0];
+                            }
+
+                            $is_open_port = isset($info['uptime']) && isset($info['update_responsiveness']) ? 1 : 0;
+
+                            $inactive = (bool)($info['inactive'] ?? false);
+                            $inactive = $inactive ? 1 : 0;
+
+                            NodeInfo::updateOrCreate(
+                                [
+                                    'node_address' => $validatorid
+                                ],
+                                [
+                                    'delegators_count' => $info['delegator_count'] ?? 0,
+                                    'total_staked_amount' => $info['total_stake'],
+                                    'delegation_rate' => $info['delegation_rate'],
+                                    'daily_earning' => $info['daily_earnings'] ?? 0,
+                                    'self_staked_amount' => $info['self_stake'] ?? 0,
+                                    'total_earning' => isset($totalRewards['data']) &&  $totalRewards['data']  > 0 ? $totalRewards['data'] / 1000000000 : 0,
+                                    'is_open_port' => $is_open_port,
+                                    'mbs' => $mbs,
+                                    'update_responsiveness' => isset($info['update_responsiveness']) ? $info['update_responsiveness'] * 100 : 0,
+                                    'uptime' => isset($info['uptime']) ? $info['uptime'] * 100 : 0,
+                                    'block_height' => $info['block_height'] ?? 0,
+                                    'peers' => $info['peer_count'] ?? 0,
+                                    'inactive' => $inactive
+                                ]
+                            );
+
+                            Node::updateOrCreate(
+                                [
+                                    'node_address' => $validatorid
+                                ],
+                                [
+                                    'block_height' => $info['block_height'] ?? null,
+                                    'protocol_version' => $build_version,
+                                    'update_responsiveness' => isset($info['update_responsiveness']) ? $info['update_responsiveness'] * 100 : null,
+                                    'uptime' => isset($info['uptime']) ? $info['uptime'] : null,
+                                    'weight' => $info['daily_earnings'] ?? 0,
+                                    'peers' => $info['peer_count'] ?? 0,
+                                ]
+                            );
+                        }
                     }
-
-                    $is_open_port = isset($info['uptime']) && isset($info['update_responsiveness']) ? 1 : 0;
-                    
-                    NodeInfo::updateOrCreate(
-                        [
-                            'node_address' => $validatorid
-                        ],
-                        [
-                            'delegators_count' => $info['delegator_count'] ?? 0,
-                            'total_staked_amount' => $info['total_stake'],
-                            'delegation_rate' => $info['delegation_rate'],
-                            'daily_earning' => $info['daily_earnings'] ?? 0,
-                            'self_staked_amount' => $info['self_stake'] ?? 0,
-                            'total_earning' => isset($totalRewards['data']) &&  $totalRewards['data']  > 0 ? $totalRewards['data'] / 1000000000 : 0,
-                            'is_open_port' => $is_open_port,
-                            'mbs' => $mbs,
-                            'update_responsiveness' => isset($info['update_responsiveness']) ? $info['update_responsiveness'] * 100 : 0,
-                            'uptime' => isset($info['uptime']) ? $info['uptime'] * 100 : 0,
-                            'block_height' => $info['block_height'] ?? 0,
-                            'peers' => $info['peer_count'] ?? 0,
-                        ]
-                    );
-
-                    Node::updateOrCreate(
-                        [
-                            'node_address' => $validatorid
-                        ],
-                        [
-                            'block_height' => $info['block_height'] ?? null,
-                            'protocol_version' => $build_version,
-                            'update_responsiveness' => isset($info['update_responsiveness']) ? $info['update_responsiveness'] * 100 : null,
-                            'uptime' => isset($info['uptime']) ? $info['uptime'] : null,
-                            'weight' => $info['daily_earnings'] ?? 0,
-                            'peers' => $info['peer_count'] ?? 0,
-                        ]
-                    );
                 }
             }
         }

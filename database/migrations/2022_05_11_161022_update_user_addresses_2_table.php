@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class UpdateUser1Table extends Migration
+class UpdateUserAddresses2Table extends Migration
 {
     /**
      * Run the migrations.
@@ -13,10 +13,9 @@ class UpdateUser1Table extends Migration
      */
     public function up()
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->renameColumn('status', 'member_status');
-            $table->string('role')->default('member');
-            $table->string('signed_file')->nullable();
+        Schema::table('user_addresses', function ($table) {
+            $table->tinyInteger('is_fail_node')->nullable()->default(0);
+            $table->integer('rank')->nullable();
         });
     }
 

@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class UpdateColumnProfile2Table extends Migration
+class UpdateUserAddresses3Table extends Migration
 {
     /**
      * Run the migrations.
@@ -13,8 +13,9 @@ class UpdateColumnProfile2Table extends Migration
      */
     public function up()
     {
-        Schema::table('profile', function (Blueprint $table) {
-            $table->string('type')->nullable();
+        Schema::table('user_addresses', function ($table) {
+            $table->tinyInteger('pending_node')->nullable()->default(0);
+            $table->float('validator_fee')->nullable()->default(0);
         });
     }
 

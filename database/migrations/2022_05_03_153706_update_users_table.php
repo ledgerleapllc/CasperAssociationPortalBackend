@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class UpdateColumnProfile2Table extends Migration
+class UpdateUsersTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,8 +13,9 @@ class UpdateColumnProfile2Table extends Migration
      */
     public function up()
     {
-        Schema::table('profile', function (Blueprint $table) {
-            $table->string('type')->nullable();
+        Schema::table('users', function ($table) {
+            $table->boolean('has_address')->default(0);
+            $table->boolean('has_verified_address')->default(0);
         });
     }
 

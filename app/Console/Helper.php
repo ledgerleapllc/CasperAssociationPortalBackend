@@ -11,18 +11,13 @@ use App\Models\Shuftipro;
 use App\Models\User;
 
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class Helper
 {
-	/**
-	 * Acquire casper account info standard on a single valdator view basis
-	 *
-	 * @param  string $vid  valid validator ID
-	 * @return void         automatically places retrieved account info standard data in DB by user's validator ID
-	 */
 	public static function getAccountInfoStandard($user)
 	{
 		$vid = $user->public_address_node ?? '';
@@ -30,16 +25,16 @@ class Helper
 		$pseudonym = $user->pseudonym ?? null;
 
 		$THIS_SEENA_API_KEY = getenv('SEENA_API_KEY');
-
-		$response = Http::withHeaders([
+		
+		$response = Http::timeout(5)->withHeaders([
 			'Authorization' => "token $THIS_SEENA_API_KEY",
 		])->withOptions([
 			'verify' => false,
-		])->get('https://seena.ledgerleap.com/account-info-standard?validator_id='.$vid);
+		])->get('https://seena.ledgerleap.com/account-info-standard?validator_id=' . $vid);
 
 		try {
 			$json = json_decode($response);
-		} catch (Exception $e) {
+		} catch (\Exception $e) {
 			$json = array();
 		}
 
@@ -48,35 +43,22 @@ class Helper
 		$blockchain_logo = $json->message->owner->branding->logo->png_256 ?? null;
 
 		$profile = Profile::where('user_id', $uid)->first();
-
-		if($profile && $json) {
-			if($blockchain_name) {
-				$profile->blockchain_name = $blockchain_name;
-			}
-
-			if($blockchain_desc) {
-				$profile->blockchain_desc = $blockchain_desc;
-			}
-
-			if(
-				$blockchain_logo &&
-				$user->avatar == null
-			) {
+		
+		if ($profile && $json) {
+			if ($blockchain_name) $profile->blockchain_name = $blockchain_name;
+			if ($blockchain_desc) $profile->blockchain_desc = $blockchain_desc;
+			if ($blockchain_logo && $user->avatar == null) {
 				$user->avatar = $blockchain_logo;
 				$user->save();
 			}
-
+			
 			$profile->save();
 			$shufti_profile = Shuftipro::where('user_id', $uid)->first();
 
-			if(
-				$shufti_profile &&
-				$shufti_profile->status == 'approved' &&
-				$pseudonym
-			) {
+			if ($shufti_profile && $shufti_profile->status == 'approved' && $pseudonym) {
 				$shuft_status = $shufti_profile->status;
 				$reference_id = $shufti_profile->reference_id;
-				$hash = md5($pseudonym.$reference_id.$shuft_status);
+				$hash = md5($pseudonym . $reference_id . $shuft_status);
 				$profile->casper_association_kyc_hash = $hash;
 				$profile->save();
 			}
@@ -100,8 +82,10 @@ class Helper
 		return $response->json();
 	}
 
-	public static function getNodeInfo($user)
+	public static function getNodeInfo($user, $public_address_node = null)
 	{
+		if (!$public_address_node) $public_address_node = $user->public_address_node;
+
 		$max_update_responsiveness = DB::select("SELECT max(update_responsiveness) as max_update_responsiveness FROM
 			(
 			SELECT MAX(update_responsiveness) as update_responsiveness FROM metric
@@ -127,66 +111,61 @@ class Helper
 			SELECT MAX(uptime) as uptime FROM node_info
 			) AS results
 			;");
-		$max_uptime =  $max_uptime[0]->max_uptime ?? 0;
+		$max_uptime = $max_uptime[0]->max_uptime ?? 0;
 
-		$latest = Node::where('node_address', strtolower($user->public_address_node))
-						->whereNotnull('protocol_version')
-						->orderBy('created_at', 'desc')
-						->first();
+		$latest = Node::where('node_address', strtolower($public_address_node))
+			->whereNotnull('protocol_version')
+			->orderBy('created_at', 'desc')
+			->first();
+
 		if (!$latest) {
 			$latest = new Node();
 		}
-		$latest_block_height = $latest->block_height ?? null;
-		$latest_update_responsiveness = $latest->update_responsiveness ?? null;
-		$latest_peers = $latest->peers ?? null;
 
 		$metric = Metric::where('user_id', $user->id)->first();
+
 		if (!$metric) {
 			$metric = new Metric();
 		}
-		$metric_uptime = $metric->uptime ?? null;
-		$metric_block_height = $metric->block_height_average  ?  ($max_block_height - $metric->block_height_average)  : null;
-		$metric_update_responsiveness = $metric->update_responsiveness ?? null;
-		$metric_peers = $metric->peers ?? null;
 
-		$nodeInfo = NodeInfo::where('node_address', strtolower($user->public_address_node))->first();
+		$metric_block_height = $metric->block_height_average ? ($max_block_height - $metric->block_height_average)  : null;
+
+		$nodeInfo = NodeInfo::where('node_address', strtolower($public_address_node))->first();
+
 		if (!$nodeInfo) {
 			$nodeInfo = new NodeInfo();
 		}
-		$latest_uptime = $nodeInfo->uptime ?? null;
-		$nodeInfo_uptime = $nodeInfo->uptime ?? null;
-		$nodeInfo_block_height = $nodeInfo->block_height ?? null;
-		$nodeInfo_peers = $nodeInfo->peers ?? null;
-		$nodeInfo_update_responsiveness = $nodeInfo->update_responsiveness ?? null;
 
-		$metric->avg_uptime = $nodeInfo_uptime ?? $metric_uptime;
-		$metric->avg_block_height_average = $nodeInfo_block_height ?? $metric_block_height;
-		$metric->avg_update_responsiveness = $nodeInfo_update_responsiveness ?? $metric_update_responsiveness;
-		$metric->avg_peers = $nodeInfo_peers ?? $metric_peers;
+		$metric->avg_uptime = $nodeInfo->uptime ?? $metric->uptime ?? null;
+		$metric->avg_block_height_average = $nodeInfo->block_height ?? $metric_block_height;
+		$metric->avg_update_responsiveness = $nodeInfo->update_responsiveness ?? $metric->update_responsiveness ?? null;
+		$metric->avg_peers = $nodeInfo->peers ?? $metric->peers ?? null;
 
 		$metric->max_peers = $max_peers;
 		$metric->max_update_responsiveness = $max_update_responsiveness;
 		$metric->max_block_height_average = $max_block_height;
 		$metric->max_uptime = $max_uptime;
 
-		$metric->peers = $latest_peers ?? $metric_peers;
-		$metric->update_responsiveness = $latest_update_responsiveness ?? $metric_update_responsiveness;
-		$metric->block_height_average = $latest_block_height ??  $metric_block_height;
-		$metric->uptime = $latest_uptime  ? $latest_uptime : $metric_uptime;
+		$metric->peers = $latest->peers ?? $metric->peers ?? null;
+		$metric->update_responsiveness = $latest->update_responsiveness ?? $metric->update_responsiveness ?? null;
+		$metric->block_height_average = $latest->block_height ?? $metric_block_height;
+		$metric->uptime = $nodeInfo->uptime ?? $metric->uptime ?? null;
 
 		$monitoringCriteria = MonitoringCriteria::get();
-		$nodeInfo = NodeInfo::where('node_address', strtolower($user->public_address_node))->first();
+		$nodeInfo = NodeInfo::where('node_address', strtolower($public_address_node))->first();
 		$rank = $user->rank;
 		$delegators = 0;
 		$stake_amount = 0;
 		$self_staked_amount = 0;
 		$is_open_port = 0;
+
 		if ($nodeInfo) {
 			$delegators = $nodeInfo->delegators_count;
 			$stake_amount = $nodeInfo->total_staked_amount;
 			$self_staked_amount = $nodeInfo->self_staked_amount;
 			$is_open_port = $nodeInfo->is_open_port;
 		}
+
 		$mbs = NodeInfo::max('mbs');
 		$metric->mbs = $mbs;
 		$metric->rank = $rank;
@@ -199,11 +178,6 @@ class Helper
 		return $metric;
 	}
 
-	/**
-	 * The attributes that are mass assignable.
-	 *
-	 * @var array
-	 */
 	public static function paginate($items, $perPage = 5, $page = null, $options = [])
 	{
 		$page = $page ?: (Paginator::resolveCurrentPage() ?: 1);

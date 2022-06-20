@@ -11,14 +11,18 @@ use App\Http\Requests\Api\RegisterEntityRequest;
 use App\Http\Requests\Api\RegisterIndividualRequest;
 use App\Http\Requests\Api\ResetPasswordRequest;
 use App\Http\Requests\Api\SendResetPasswordMailRequeslRequest;
+
 use App\Mail\LoginTwoFA;
 use App\Mail\ResetPasswordMail;
 use App\Mail\UserVerifyMail;
+
 use App\Models\IpHistory;
 use App\Models\User;
 use App\Models\VerifyUser;
+
 use App\Repositories\UserRepository;
 use App\Repositories\VerifyUserRepository;
+
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +30,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+
 use Laravel\Passport\Token;
 
 class AuthController extends Controller
@@ -314,7 +319,6 @@ class AuthController extends Controller
 
     public function registerSubAdmin(Request $request)
     {
-
         $validator = Validator::make($request->all(), [
             'first_name' => 'required|regex:/^[A-Za-z. ]{1,255}$/',
             'last_name' => 'required|regex:/^[A-Za-z. ]{1,255}$/',
@@ -330,7 +334,7 @@ class AuthController extends Controller
         if (!$user) {
             return $this->errorResponse('There is no admin user with this email', Response::HTTP_BAD_REQUEST);
         }
-        $verify =  VerifyUser::where('email', $request->email)->where('type', VerifyUser::TYPE_INVITE_ADMIN)->where('code', $request->code)->first();
+        $verify = VerifyUser::where('email', $request->email)->where('type', VerifyUser::TYPE_INVITE_ADMIN)->where('code', $request->code)->first();
         if (!$verify) {
             return $this->errorResponse('Fail register sub-amdin', Response::HTTP_BAD_REQUEST);
         }

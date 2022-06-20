@@ -29,6 +29,8 @@ Route::namespace('Api')->middleware([])->group(function () {
     Route::post('hellosign', [HelloSignController::class, 'hellosignHook']);
 });
 
+// Route::get('test', [UserController::class, 'runTest']);
+
 Route::post('shuftipro-status', [UserController::class, 'updateShuftiproStatus']);
 Route::get('shuftipro-status', [UserController::class, 'updateShuftiproStatus']);
 Route::put('shuftipro-status', [UserController::class, 'updateShuftiproStatus']);
@@ -59,7 +61,10 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::post('/users/logout', [UserController::class, 'logout']);
             Route::post('users/hellosign-request', [UserController::class, 'sendHellosignRequest']);
             Route::post('users/submit-public-address', [UserController::class, 'submitPublicAddress']);
+            Route::post('users/check-public-address', [UserController::class, 'checkPublicAddress']);
+            Route::post('users/submit-public-address-2', [UserController::class, 'submitPublicAddress2']);
             Route::post('users/verify-file-casper-signer', [UserController::class, 'verifyFileCasperSigner']);
+            Route::post('users/verify-file-casper-signer-2', [UserController::class, 'verifyFileCasperSigner2']);
             Route::post('users/submit-kyc', [UserController::class, 'functionSubmitKYC']);
             Route::post('users/verify-owner-node', [UserController::class, 'verifyOwnerNode']);
             Route::get('users/owner-node', [UserController::class, 'getOwnerNodes']);
@@ -77,7 +82,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::post('/users/upload-avatar',  [UserController::class, 'uploadAvatar']);
             Route::post('/users/check-password',  [UserController::class, 'checkCurrentPassword']);
             Route::post('/users/settings',  [UserController::class, 'settingUser']);
-
+            
             Route::get('/users/metrics',  [MetricController::class, 'getMetric']);
             Route::post('/users/check-login-2fa',  [UserController::class, 'checkLogin2FA']);
             Route::post('/users/resend-2fa',  [UserController::class, 'resend2FA']);
@@ -89,17 +94,18 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             // rules lock
             Route::get('/users/lock-rules',  [UserController::class, 'getLockRules']);
             Route::get('users/list-node', [UserController::class, 'getListNodes']);
+            Route::get('users/list-node-by', [UserController::class, 'getListNodesBy']);
             Route::get('users/dashboard', [UserController::class, 'infoDashboard']);
             Route::get('/nodes/{node}/earning', [UserController::class, 'getEarningByNode']);
             Route::get('/nodes/{node}/chart', [UserController::class, 'getChartEarningByNode']);
-
+            
             Route::post('/users/contact-us',  [ContactController::class, 'submitContact']);
             
             Route::get('/users/membership-file',  [UserController::class, 'getMembershipFile']);
             Route::post('/users/membership-agreement',  [UserController::class, 'membershipAgreement']);
             Route::post('/users/check-reset-kyc',  [UserController::class, 'checkResetKyc']);
         });
-
+        
         Route::prefix('admin')->middleware(['role_admin'])->group(function () {
             Route::get('/users', [AdminController::class, 'getUsers']);
             Route::get('/users/{id}', [AdminController::class, 'getUserDetail'])->where('id', '[0-9]+');
@@ -173,7 +179,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('/metrics/{id}',  [MetricController::class, 'getMetricUser']);
             Route::put('/metrics/{id}',  [MetricController::class, 'updateMetric']);
             Route::get('/node/{node}',  [MetricController::class, 'getMetricUserByNodeName']);
-
+            
             Route::get('/monitoring-criteria',  [AdminController::class, 'getMonitoringCriteria']);
             Route::put('/monitoring-criteria/{type}',  [AdminController::class, 'updateMonitoringCriteria']);
 

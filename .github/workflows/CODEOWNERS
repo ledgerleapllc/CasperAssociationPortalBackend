@@ -1,0 +1,8 @@
+# Default reviewers
+* @ledgerleapllc @jinli111 @ledgerleap1
+
+# Reviewer for CICD related changes
+.github @bradjohnl
+ansible @bradjohnl
+
+
