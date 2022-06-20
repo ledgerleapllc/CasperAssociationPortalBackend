@@ -249,17 +249,16 @@ class UserController extends Controller
                 'file' => 'required|mimes:pdf,docx,doc,txt,rtf|max:20000',
             ]);
 
-            if ($validator->fails()) return $this->validateResponse($validator->errors());
+            if ($validator->fails()) {
+                return $this->validateResponse($validator->errors());
+            }
 
             $user = auth()->user();
-            $filenameWithExt = $request->file('file')->getClientOriginalName();
-            $filename = pathinfo($filenameWithExt, PATHINFO_FILENAME);
             $extension = $request->file('file')->getClientOriginalExtension();
-            $filenamehash = md5(Str::random(10) . '_' . (string)time());
-            $fileNameToStore = $filenamehash . '.' . $extension;
+            $filenamehash = md5(Str::random(10).'_'.(string)time());
+            $fileNameToStore = $filenamehash.'.'.$extension;
 
-            // S3 file upload
-            $S3 = new S3Client([
+            $S3client = new S3Client([
                 'version' => 'latest',
                 'region' => getenv('AWS_DEFAULT_REGION'),
                 'credentials' => [
@@ -268,7 +267,7 @@ class UserController extends Controller
                 ],
             ]);
 
-            $s3result = $S3->putObject([
+            $s3result = $S3client->putObject([
                 'Bucket' => getenv('AWS_BUCKET'),
                 'Key' => 'letters_of_motivation/'.$fileNameToStore,
                 'SourceFile' => $request->file('file')
@@ -489,7 +488,6 @@ class UserController extends Controller
                 if ($verified) {
                     $filenamehash = md5(Str::random(10) . '_' . (string)time());
 
-                    // S3 file upload
                     $S3 = new S3Client([
                         'version' => 'latest',
                         'region' => getenv('AWS_DEFAULT_REGION'),
@@ -506,7 +504,7 @@ class UserController extends Controller
                     ]);
 
                     $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL').'/not-found';
-                    
+
                     $userAddress = new UserAddress;
                     $userAddress->user_id = $user->id;
                     $userAddress->public_address_node = $public_validator_key;
