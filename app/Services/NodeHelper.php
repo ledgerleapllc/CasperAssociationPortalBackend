@@ -32,6 +32,7 @@ class NodeHelper
 {
     public function __construct()
     {
+        // do nothing
     }
 
     public function decodePeers($__peers)
@@ -166,7 +167,6 @@ class NodeHelper
 
         // multi curl handler each full chunk
         for($chunk = 0; $chunk < $divided; $chunk++) {
-            // info('Doing chunk '.($chunk + 1));
             $mh = curl_multi_init();
             $ch = array();
 
@@ -208,7 +208,6 @@ class NodeHelper
                 }
             }
 
-            // info('Closing multi handle for chunk '.($chunk + 1));
             curl_multi_close($mh);
             $mh = null;
             usleep(50000);
@@ -216,7 +215,6 @@ class NodeHelper
 
 
         // do last chunk
-        // info('Doing last chunk of '.$remainder.' peers');
         $mh = curl_multi_init();
         $ch = array();
 
@@ -447,7 +445,6 @@ class NodeHelper
                             $block_height = (int)($port8888data['last_added_block_info']['height'] ?? 0);
                             $build_version = $port8888data['build_version'] ?? '1.0.0';
                             $chainspec_name = $port8888data['chainspec_name'] ?? 'casper';
-                            $next_upgrade = $port8888data['next_upgrade'] ?? null;
 
                             if($block_height > $global_validator_standing["global_block_height"]) {
                                 $global_validator_standing["global_block_height"] = $block_height;
