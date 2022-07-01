@@ -26,8 +26,6 @@ use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Exception\ServerException;
 use GuzzleHttp\Exception\BadResponseException;
 
-use App\Services\ChecksumValidator;
-
 use Casper\Rpc\RpcClient;
 
 class NodeHelper
