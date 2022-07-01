@@ -16,46 +16,121 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
+use Casper\Rpc\RpcClient;
+
+use App\Services\Blake2b;
+
 class Helper
 {
+	public static function publicKeyToAccountHash($public_key)
+	{
+		$public_key = (string)$public_key;
+		$first_byte = substr($public_key, 0, 2);
+
+		if($first_byte == '01') {
+			$algo = bin2hex('ed25519');
+		} elseif($first_byte == '02') {
+			$algo = bin2hex('secp256k1');
+		} else {
+			return false;
+		}
+
+		$blake2b = new Blake2b($size = 28);
+		$account_hash = bin2hex($blake2b->hash(hex2bin($algo.'00'.substr($public_key, 2))));
+
+		return $account_hash;
+	}
+
 	public static function getAccountInfoStandard($user)
 	{
-		$vid = $user->public_address_node ?? '';
+		$vid = strtolower($user->public_address_node ?? '');
+
+		// convert to account hash
+		$account_hash = self::publicKeyToAccountHash($vid);
+
 		$uid = $user->id ?? 0;
 		$pseudonym = $user->pseudonym ?? null;
+		$account_info_urls_uref = getenv('ACCOUNT_INFO_STANDARD_URLS_UREF');
+		$node_ip = 'http://'.getenv('NODE_IP').':7777';
+		$casper_client = new RpcClient($node_ip);
+		$latest_block = $casper_client->getLatestBlock();
+		$block_hash = $latest_block->getHash();
+		$state_root_hash = $casper_client->getStateRootHash($block_hash);
+		$curl = curl_init();
 
-		$THIS_SEENA_API_KEY = getenv('SEENA_API_KEY');
-		
-		$response = Http::timeout(5)->withHeaders([
-			'Authorization' => "token $THIS_SEENA_API_KEY",
-		])->withOptions([
-			'verify' => false,
-		])->get('https://seena.ledgerleap.com/account-info-standard?validator_id=' . $vid);
+		$json_data = array(
+			'id' => (int)time(),
+			'jsonrpc' => '2.0',
+			'method' => 'state_get_dictionary_item',
+			'params' => array(
+				'state_root_hash' => $state_root_hash,
+				'dictionary_identifier' => array(
+					'URef' => array(
+						'seed_uref' => $account_info_urls_uref,
+						'dictionary_item_key' => $account_hash,
+					)
+				)
+			)
+		);
 
-		try {
-			$json = json_decode($response);
-		} catch (\Exception $e) {
-			$json = array();
+		curl_setopt($curl, CURLOPT_URL, $node_ip.'/rpc');
+		curl_setopt($curl, CURLOPT_POST, true);
+		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($json_data));
+		curl_setopt($curl, CURLOPT_HTTPHEADER, array(
+			'Accept: application/json',
+			'Content-type: application/json',
+		));
+
+		$response = curl_exec($curl);
+		curl_close($curl);
+		$decodedResponse = json_decode($response, true);
+		$parsed = $decodedResponse['result']['stored_value']['CLValue']['parsed'] ?? '';
+		$json = array();
+
+		if($parsed) {
+			curl_setopt(
+				$curl, 
+				CURLOPT_URL, 
+				$parsed.'/.well-known/casper/account-info.casper.json'
+			);
+			curl_setopt($curl, CURLOPT_POST, false);
+			$response = curl_exec($curl);
+
+			try {
+				$json = json_decode($response);
+			} catch (\Exception $e) {
+				$json = array();
+			}
 		}
 
 		$blockchain_name = $json->message->owner->name ?? null;
 		$blockchain_desc = $json->message->owner->description ?? null;
 		$blockchain_logo = $json->message->owner->branding->logo->png_256 ?? null;
-
 		$profile = Profile::where('user_id', $uid)->first();
 		
 		if ($profile && $json) {
-			if ($blockchain_name) $profile->blockchain_name = $blockchain_name;
-			if ($blockchain_desc) $profile->blockchain_desc = $blockchain_desc;
+			if ($blockchain_name) {
+				$profile->blockchain_name = $blockchain_name;
+			}
+
+			if ($blockchain_desc) {
+				$profile->blockchain_desc = $blockchain_desc;
+			}
+
 			if ($blockchain_logo && $user->avatar == null) {
 				$user->avatar = $blockchain_logo;
 				$user->save();
 			}
-			
+
 			$profile->save();
 			$shufti_profile = Shuftipro::where('user_id', $uid)->first();
 
-			if ($shufti_profile && $shufti_profile->status == 'approved' && $pseudonym) {
+			if (
+				$shufti_profile && 
+				$shufti_profile->status == 'approved' && 
+				$pseudonym
+			) {
 				$shuft_status = $shufti_profile->status;
 				$reference_id = $shufti_profile->reference_id;
 				$hash = md5($pseudonym . $reference_id . $shuft_status);
