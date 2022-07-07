@@ -488,6 +488,11 @@ class NodeHelper
         $MBS = $MBS_arr[99] ?? $MBS_arr[count($MBS_arr) - 1];
         $global_validator_standing['MBS'] = $MBS;
 
+
+        // DailyEarning garbage cleanup
+        $old_earning = DailyEarning::where('created_at', '<', Carbon::now('UTC')->subDays(90))->delete();
+
+
         return $global_validator_standing;
     }
 
