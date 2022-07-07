@@ -489,7 +489,7 @@ class NodeHelper
 
 
         // DailyEarning garbage cleanup
-        $old_earning = DailyEarning::where('created_at', '<', Carbon::now('UTC')->subDays(90))->delete();
+        DailyEarning::where('created_at', '<', Carbon::now('UTC')->subDays(90))->delete();
 
 
         return $global_validator_standing;
