@@ -363,10 +363,9 @@ class NodeHelper
                     // save current stake amount to daily earnings table
                     $earning = new DailyEarning();
                     $earning->node_address = $public_key;
-                    $earning->self_staked_amount = $self_staked_amount;
+                    $earning->self_staked_amount = (int)$self_staked_amount;
                     $earning->created_at = Carbon::now('UTC');
                     $earning->save();
-                    //// todo: garbage cleanup of old records (3 months)
 
 
                     // get difference between current self stake and yesterdays self stake
@@ -487,6 +486,11 @@ class NodeHelper
         rsort($MBS_arr);
         $MBS = $MBS_arr[99] ?? $MBS_arr[count($MBS_arr) - 1];
         $global_validator_standing['MBS'] = $MBS;
+
+
+        // DailyEarning garbage cleanup
+        DailyEarning::where('created_at', '<', Carbon::now('UTC')->subDays(90))->delete();
+
 
         return $global_validator_standing;
     }
