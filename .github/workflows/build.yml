@@ -1,5 +1,5 @@
 # SonarCloud workflow for CI based analysis
-name: SonarCloud Build
+name: Build
 on:
   push:
     branches:
