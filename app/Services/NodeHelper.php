@@ -117,11 +117,13 @@ class NodeHelper
     public function discoverPeers()
     {
         $port8888_responses = array();
+        $http_protocol = 'http://';
+        $status_port = ':8888/status';
 
 
         // Get peers from trusted node, port 8888
         $curl = curl_init();
-        curl_setopt($curl, CURLOPT_URL, 'http://'.getenv('NODE_IP').':8888/status');
+        curl_setopt($curl, CURLOPT_URL, $http_protocol.getenv('NODE_IP').$status_port);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
         $json = curl_exec($curl);
 
@@ -172,7 +174,7 @@ class NodeHelper
 
             for($i = 0; $i < 20; $i++) {
                 $ch[$i] = curl_init();
-                curl_setopt($ch[$i], CURLOPT_URL, 'http://'.$peers[$real_index].':8888/status');
+                curl_setopt($ch[$i], CURLOPT_URL, $http_protocol.$peers[$real_index].$status_port);
                 curl_setopt($ch[$i], CURLOPT_HEADER, 0);
                 curl_setopt($ch[$i], CURLOPT_RETURNTRANSFER, 1);
                 curl_setopt($ch[$i], CURLOPT_CONNECTTIMEOUT, 3);
@@ -218,13 +220,13 @@ class NodeHelper
         $mh = curl_multi_init();
         $ch = array();
 
-        for($i = 0; $i < $remainder; $i++) {
+        for ($i = 0; $i < $remainder; $i++) {
             $ch[$i] = curl_init();
-            curl_setopt($ch[$i], CURLOPT_URL, 'http://'.$peers[$real_index].':8888/status');
+            curl_setopt($ch[$i], CURLOPT_URL, $http_protocol.$peers[$real_index].$status_port);
             curl_setopt($ch[$i], CURLOPT_HEADER, 0);
             curl_setopt($ch[$i], CURLOPT_RETURNTRANSFER, 1);
-            curl_setopt($ch[$i], CURLOPT_CONNECTTIMEOUT, 3);
-            curl_setopt($ch[$i], CURLOPT_TIMEOUT, 3);
+            curl_setopt($ch[$i], CURLOPT_CONNECTTIMEOUT, 4);
+            curl_setopt($ch[$i], CURLOPT_TIMEOUT, 4);
 
             curl_multi_add_handle($mh, $ch[$i]);
             $real_index += 1;
@@ -235,19 +237,19 @@ class NodeHelper
         do {
             $status = curl_multi_exec($mh, $active);
 
-            if($active) {
+            if ($active) {
                 curl_multi_select($mh);
             }
-        } while($active && $status == CURLM_OK);
+        } while ($active && $status == CURLM_OK);
 
         for($i = 0; $i < $remainder; $i++) {
             curl_multi_remove_handle($mh, $ch[$i]);
         }
 
-        foreach($ch as $req) {
+        foreach ($ch as $req) {
             $content = curl_multi_getcontent($req);
 
-            if($content) {
+            if ($content) {
                 $object = json_decode($content, true);
                 $peer_count = isset($object['peers']) ? count($object['peers']) : 0;
                 unset($object['peers']);
