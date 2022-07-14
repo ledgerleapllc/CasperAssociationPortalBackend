@@ -16,7 +16,8 @@
         "laravel/passport": "^10.1",
         "laravel/tinker": "^2.5",
         "phpseclib/phpseclib": "~3.0",
-        "stripe/stripe-php": "^7.121"
+        "stripe/stripe-php": "^7.121",
+        "make-software/casper-php-sdk": "dev-master"
     },
     "require-dev": {
         "facade/ignition": "^2.5",

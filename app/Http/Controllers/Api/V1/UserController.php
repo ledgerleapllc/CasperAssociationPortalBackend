@@ -301,8 +301,8 @@ class UserController extends Controller
                 'http://casper.local/',
                 'https://backend.caspermember.com',
                 'https://backend.caspermember.com/',
-                'https://stage.membersbackend.casper.network',
-                'https://stage.membersbackend.casper.network/',
+                'https://members-backend-staging.casper.network',
+                'https://members-backend-staging.casper.network/',
             ];
 
             if (in_array(env('APP_URL'), $whitelist)) $request->enableTestMode();

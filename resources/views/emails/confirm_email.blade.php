@@ -179,7 +179,7 @@
 			<label>
 				<a href="{{ config('app.site_url') }}/privacy-policy">Privacy Policy</a>
 				<span style="margin-left:10px;margin-right:10px;">|</span>
-				<a href="{{ config('app.site_url') }}/terms-of-service">Terms of Service</a>
+				<a href="{{ config('app.site_url') }}/terms-of-service.pdf">Terms of Service</a>
 			</label>
 		</div>
 	</div>
