@@ -15,6 +15,12 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
 
+    - name: Setup PHP with Xdebug
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '7.4'
+        coverage: xdebug
+
     - name: Copy .env
       run: php -r "file_exists('.env') || copy('.env.example', '.env');"
 
@@ -39,10 +45,10 @@ jobs:
       env:
         DB_CONNECTION: sqlite
         DB_DATABASE: database/database.sqlite
-      run: vendor/bin/phpunit --coverage-clover=/tmp/coverage.xml
+      run: vendor/bin/phpunit --coverage-clover=coverage.xml
 
     - name: Fix code coverage paths
-      run: sed -i 's@'$GITHUB_WORKSPACE'@/github/workspace/@g' /tmp/coverage.xml
+      run: sed -i 's@'$GITHUB_WORKSPACE'@/github/workspace/@g' coverage.xml
 
     - name: SonarCloud Scan
       uses: SonarSource/sonarcloud-github-action@master
