@@ -1,11 +1,9 @@
 # SonarCloud workflow for CI based analysis
 name: SonarCloud analysis build
+
 on:
-  push:
-    branches:
-    - master
-  pull_request:
-    types: [opened, synchronize, reopened]
+  - pull_request
+  - push
 
 jobs:
   sonarcloud:
