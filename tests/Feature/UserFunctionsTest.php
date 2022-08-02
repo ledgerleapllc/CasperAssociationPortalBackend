@@ -12,7 +12,7 @@ class UserFunctionsTest extends TestCase
         $response = $this->withHeaders([
             'Accept' => 'application/json',
         ])->json('get', '/api/v1/members');
-
+        
         // $apiResponse = $response->baseResponse->getData();
         
         $response->assertStatus(200)
@@ -60,9 +60,9 @@ class UserFunctionsTest extends TestCase
             'Accept' => 'application/json',
             'Authorization' => 'Bearer ' . $token,
         ])->json('get', '/api/v1/users/list-node');
-
+        
         // $apiResponse = $response->baseResponse->getData();
-
+        
         $response->assertStatus(200)
                 ->assertJsonStructure([
                     'message',
@@ -72,12 +72,12 @@ class UserFunctionsTest extends TestCase
     
     public function testInfoDashboard() {
         $token = $this->getUserToken();
-
+        
         $response = $this->withHeaders([
             'Accept' => 'application/json',
             'Authorization' => 'Bearer ' . $token,
         ])->json('get', '/api/v1/users/dashboard');
-
+        
         // $apiResponse = $response->baseResponse->getData();
         
         $response->assertStatus(200)
