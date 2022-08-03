@@ -44,6 +44,7 @@ class Helper
 	public static function getAccountInfoStandard($user)
 	{
 		$vid = strtolower($user->public_address_node ?? '');
+		if (!$vid) return;
 
 		// convert to account hash
 		$account_hash = self::publicKeyToAccountHash($vid);
@@ -51,7 +52,7 @@ class Helper
 		$uid = $user->id ?? 0;
 		$pseudonym = $user->pseudonym ?? null;
 		$account_info_urls_uref = getenv('ACCOUNT_INFO_STANDARD_URLS_UREF');
-		$node_ip = 'http://'.getenv('NODE_IP').':7777';
+		$node_ip = 'http://' . getenv('NODE_IP') . ':7777';
 		$casper_client = new RpcClient($node_ip);
 		$latest_block = $casper_client->getLatestBlock();
 		$block_hash = $latest_block->getHash();
@@ -73,7 +74,7 @@ class Helper
 			)
 		);
 
-		curl_setopt($curl, CURLOPT_URL, $node_ip.'/rpc');
+		curl_setopt($curl, CURLOPT_URL, $node_ip . '/rpc');
 		curl_setopt($curl, CURLOPT_POST, true);
 		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($json_data));
