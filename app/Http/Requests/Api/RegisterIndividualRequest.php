@@ -30,7 +30,7 @@ class RegisterIndividualRequest extends FormRequest
             'password' => 'required|min:8|max:80',
             'pseudonym' => 'required|alpha_num|max:200|unique:users',
             'telegram' => 'nullable|regex:/^[@][a-zA-Z0-9_-]+$/',
-            'validatorAddress' => 'required',
+            // 'validatorAddress' => 'required',
         ];
     }
 }
