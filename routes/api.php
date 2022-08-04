@@ -51,6 +51,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
     Route::get('/donation', [UserController::class, 'getDonationSessionId']);
     Route::post('/donation', [UserController::class, 'submitDonation']);
     Route::post('/contact-us',  [ContactController::class, 'submitContact']);
+    Route::post('/users/check-validator-address', [UserController::class, 'checkValidatorAddress']);
     Route::middleware(['auth:api'])->group(function () {
         Route::middleware(['user_banned'])->group(function () {
             Route::post('/users/verify-email', [AuthController::class, 'verifyEmail']);

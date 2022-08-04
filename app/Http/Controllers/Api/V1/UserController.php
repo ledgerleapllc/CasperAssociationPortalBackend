@@ -356,12 +356,12 @@ class UserController extends Controller
         $tempUser = User::where('public_address_node', $public_address)->first();
         if ($tempUser && $tempUser->id != $user->id)
             return $this->errorResponse(__('The address is already used by other user'), Response::HTTP_BAD_REQUEST);
-
+        
         // User Address Check
         $tempUserAddress = UserAddress::where('public_address_node', $public_address)->first();
         if ($tempUserAddress && $tempUserAddress->user_id != $user->id)
             return $this->errorResponse(__('The address is already used by other user'), Response::HTTP_BAD_REQUEST);
-
+        
         if (!$tempUserAddress) {
             $userAddress = new UserAddress;
             $userAddress->user_id = $user->id;
@@ -374,6 +374,43 @@ class UserController extends Controller
             'public_address_node' => $public_address,
         ]);
 
+        return $this->metaSuccess();
+    }
+
+    public function checkValidatorAddress(SubmitPublicAddressRequest $request)
+    {
+        $address = strtolower($request->public_address);
+
+        $public_address_temp = (new ChecksumValidator())->do($address);
+        $public_address = strtolower($address);
+
+        if (!$public_address_temp) {
+            return $this->successResponse(['message' => __('The validator ID is invalid')]);
+        }
+
+        $correct_checksum = (int) (new ChecksumValidator($public_address_temp))->do();
+        if (!$correct_checksum) {
+            return $this->successResponse(['message' => __('The validator ID is invalid')]);
+        }
+
+        // User Check
+        $tempUser = User::where('public_address_node', $public_address)->first();
+        if ($tempUser) {
+            return $this->successResponse(['message' => __('The validator ID you specified is already associated with an Association member')]);
+        }
+
+        // User Address Check
+        $tempUserAddress = UserAddress::where('public_address_node', $public_address)->first();
+        if ($tempUserAddress) {
+            return $this->successResponse(['message' => __('The validator ID you specified is already associated with an Association member')]);
+        }
+
+        $nodeHelper = new NodeHelper();
+        $addresses = $nodeHelper->getValidAddresses();
+        
+        if (!in_array($address, $addresses)) {
+            return $this->successResponse(['message' => __('The validator ID specified could not be found in the Casper validator pool')]);
+        }
         return $this->metaSuccess();
     }
 

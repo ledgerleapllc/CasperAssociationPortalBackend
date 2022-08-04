@@ -18,6 +18,7 @@ use App\Mail\UserVerifyMail;
 
 use App\Models\IpHistory;
 use App\Models\User;
+use App\Models\UserAddress;
 use App\Models\VerifyUser;
 
 use App\Repositories\UserRepository;
@@ -32,6 +33,9 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 use Laravel\Passport\Token;
+
+use App\Services\ChecksumValidator;
+use App\Services\NodeHelper;
 
 class AuthController extends Controller
 {
@@ -110,6 +114,40 @@ class AuthController extends Controller
         try {
             DB::beginTransaction();
             $data = $request->all();
+
+            $validatorAddress = strtolower($data['validatorAddress'] ?? '');
+            if (!$validatorAddress) {
+                return $this->errorResponse(__('The validator ID is invalid'), Response::HTTP_BAD_REQUEST);
+            } else {
+                $public_address_temp = (new ChecksumValidator())->do($validatorAddress);
+                if (!$public_address_temp) {
+                    return $this->errorResponse(__('The validator ID is invalid'), Response::HTTP_BAD_REQUEST);
+                }
+
+                $correct_checksum = (int) (new ChecksumValidator($public_address_temp))->do();
+                if (!$correct_checksum) {
+                    return $this->errorResponse(__('The validator ID is invalid'), Response::HTTP_BAD_REQUEST);
+                }
+
+                // User Check
+                $tempUser = User::where('public_address_node', $validatorAddress)->first();
+                if ($tempUser) {
+                    return $this->errorResponse(__('The validator ID you specified is already associated with an Association member'), Response::HTTP_BAD_REQUEST);
+                }
+
+                // User Address Check
+                $tempUserAddress = UserAddress::where('public_address_node', $validatorAddress)->first();
+                if ($tempUserAddress) {
+                    return $this->errorResponse(__('The validator ID you specified is already associated with an Association member'), Response::HTTP_BAD_REQUEST);
+                }
+
+                $nodeHelper = new NodeHelper();
+                $addresses = $nodeHelper->getValidAddresses();
+                if (!in_array($validatorAddress, $addresses)) {
+                    return $this->errorResponse(__('The validator ID specified could not be found in the Casper validator pool'), Response::HTTP_BAD_REQUEST);
+                }
+            }
+
             $data['password'] = bcrypt($request->password);
             $data['last_login_at'] = now();
             $data['type'] = User::TYPE_ENTITY;
@@ -130,7 +168,15 @@ class AuthController extends Controller
             $user->pending_node = 1;
             $user->last_login_at = now();
             $user->last_login_ip_address = request()->ip();
+            $user->public_address_node = $validatorAddress;
+            $user->has_address = 1;
             $user->save();
+
+            $userAddress = new UserAddress;
+            $userAddress->user_id = $user->id;
+            $userAddress->public_address_node = $validatorAddress;
+            $userAddress->save();
+
             $ipHistory = new IpHistory();
             $ipHistory->user_id = $user->id;
             $ipHistory->ip_address =  request()->ip();
@@ -155,6 +201,39 @@ class AuthController extends Controller
             DB::beginTransaction();
             $data = $request->all();
             
+            $validatorAddress = strtolower($data['validatorAddress'] ?? '');
+            if (!$validatorAddress) {
+                return $this->errorResponse(__('The validator ID is invalid'), Response::HTTP_BAD_REQUEST);
+            } else {
+                $public_address_temp = (new ChecksumValidator())->do($validatorAddress);
+                if (!$public_address_temp) {
+                    return $this->errorResponse(__('The validator ID is invalid'), Response::HTTP_BAD_REQUEST);
+                }
+
+                $correct_checksum = (int) (new ChecksumValidator($public_address_temp))->do();
+                if (!$correct_checksum) {
+                    return $this->errorResponse(__('The validator ID is invalid'), Response::HTTP_BAD_REQUEST);
+                }
+
+                // User Check
+                $tempUser = User::where('public_address_node', $validatorAddress)->first();
+                if ($tempUser) {
+                    return $this->errorResponse(__('The validator ID you specified is already associated with an Association member'), Response::HTTP_BAD_REQUEST);
+                }
+
+                // User Address Check
+                $tempUserAddress = UserAddress::where('public_address_node', $validatorAddress)->first();
+                if ($tempUserAddress) {
+                    return $this->errorResponse(__('The validator ID you specified is already associated with an Association member'), Response::HTTP_BAD_REQUEST);
+                }
+
+                $nodeHelper = new NodeHelper();
+                $addresses = $nodeHelper->getValidAddresses();
+                if (!in_array($validatorAddress, $addresses)) {
+                    return $this->errorResponse(__('The validator ID specified could not be found in the Casper validator pool'), Response::HTTP_BAD_REQUEST);
+                }
+            }
+
             $data['password'] = bcrypt($request->password);
             $data['last_login_at'] = now();
             $data['type'] = User::TYPE_INDIVIDUAL;
@@ -175,7 +254,15 @@ class AuthController extends Controller
             $user->pending_node = 1;
             $user->last_login_at = now();
             $user->last_login_ip_address = request()->ip();
+            $user->public_address_node = $validatorAddress;
+            $user->has_address = 1;
             $user->save();
+
+            $userAddress = new UserAddress;
+            $userAddress->user_id = $user->id;
+            $userAddress->public_address_node = $validatorAddress;
+            $userAddress->save();
+
             $ipHistory = new IpHistory();
             $ipHistory->user_id = $user->id;
             $ipHistory->ip_address =  request()->ip();
