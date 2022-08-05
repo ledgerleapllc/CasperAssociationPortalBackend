@@ -18,6 +18,7 @@ use App\Mail\UserVerifyMail;
 
 use App\Models\IpHistory;
 use App\Models\User;
+use App\Models\UserAddress;
 use App\Models\VerifyUser;
 
 use App\Repositories\UserRepository;
@@ -32,6 +33,9 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 use Laravel\Passport\Token;
+
+use App\Services\ChecksumValidator;
+use App\Services\NodeHelper;
 
 class AuthController extends Controller
 {
@@ -110,6 +114,7 @@ class AuthController extends Controller
         try {
             DB::beginTransaction();
             $data = $request->all();
+
             $data['password'] = bcrypt($request->password);
             $data['last_login_at'] = now();
             $data['type'] = User::TYPE_ENTITY;
@@ -131,6 +136,7 @@ class AuthController extends Controller
             $user->last_login_at = now();
             $user->last_login_ip_address = request()->ip();
             $user->save();
+
             $ipHistory = new IpHistory();
             $ipHistory->user_id = $user->id;
             $ipHistory->ip_address =  request()->ip();
@@ -154,7 +160,7 @@ class AuthController extends Controller
         try {
             DB::beginTransaction();
             $data = $request->all();
-            
+
             $data['password'] = bcrypt($request->password);
             $data['last_login_at'] = now();
             $data['type'] = User::TYPE_INDIVIDUAL;
@@ -176,6 +182,7 @@ class AuthController extends Controller
             $user->last_login_at = now();
             $user->last_login_ip_address = request()->ip();
             $user->save();
+            
             $ipHistory = new IpHistory();
             $ipHistory->user_id = $user->id;
             $ipHistory->ip_address =  request()->ip();

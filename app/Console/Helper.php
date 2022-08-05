@@ -58,9 +58,9 @@ class Helper
 		$block_hash = $latest_block->getHash();
 		$state_root_hash = $casper_client->getStateRootHash($block_hash);
 		$curl = curl_init();
-
+		
 		$json_data = array(
-			'id' => (int)time(),
+			'id' => (int) time(),
 			'jsonrpc' => '2.0',
 			'method' => 'state_get_dictionary_item',
 			'params' => array(

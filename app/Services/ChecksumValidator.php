@@ -96,7 +96,7 @@ class ChecksumValidator {
 			$reference_validator_id = $this->validator_id;
 			$this->validator_id = strtolower(substr($reference_validator_id, 2));
 
-			if($this->keytag == '01') {
+			if ($this->keytag == '01') {
 				$this->algo = 'ed25519';
 			} elseif ($this->keytag == '02') {
 				$this->algo = 'secp256k1';
@@ -104,9 +104,13 @@ class ChecksumValidator {
 				return false;
 			}
 
-			$v = hex2bin($this->validator_id);
+			try {
+				$v = hex2bin($this->validator_id);
+			} catch (\Exception $e) {
+				return false;
+			}
 
-			if(mb_strlen($v, '8bit') > $this->SMALL_BYTES_COUNT) {
+			if (mb_strlen($v, '8bit') > $this->SMALL_BYTES_COUNT) {
 				return true;
 			}
 
@@ -130,10 +134,14 @@ class ChecksumValidator {
 				return false;
 			}
 
-			$v = hex2bin($_v);
+			try {
+				$v = hex2bin($_v);
+			} catch (\Exception $e) {
+				return false;
+			}
 
 			if(mb_strlen($v, '8bit') > $this->SMALL_BYTES_COUNT) {
-				return  strtolower($_v);
+				return strtolower($_v);
 			}
 
 			return $this->keytag . $this->_encode($v);
