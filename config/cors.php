@@ -36,7 +36,7 @@ return [
         'https://members-staging.casper.network',
         'http://api.shuftipro.com',
         'https://api.shuftipro.com',
-        'http://api.hellosign.com'
+        'http://api.hellosign.com',
         'https://api.hellosign.com'
     ],
 
