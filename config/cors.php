@@ -26,12 +26,18 @@ return [
     ],
 
     'allowed_origins' => [
-        'caspermember.com',
-        'casper.network',
-        'members.casper.network',
-        'members-staging.casper.network',
-        'api.shuftipro.com',
-        'api.hellosign.com'
+        'http://caspermember.com',
+        'https://caspermember.com',
+        'http://casper.network',
+        'https://casper.network',
+        'http://members.casper.network',
+        'https://members.casper.network',
+        'http://members-staging.casper.network',
+        'https://members-staging.casper.network',
+        'http://api.shuftipro.com',
+        'https://api.shuftipro.com',
+        'http://api.hellosign.com'
+        'https://api.hellosign.com'
     ],
 
     'allowed_origins_patterns' => [],
