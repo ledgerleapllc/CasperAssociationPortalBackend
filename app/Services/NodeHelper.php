@@ -6,6 +6,7 @@ use App\Models\KeyPeer;
 use App\Models\Node;
 use App\Models\NodeInfo;
 use App\Models\User;
+use App\Models\UserAddress;
 use App\Models\Setting;
 use App\Models\DailyEarning;
 
@@ -355,7 +356,7 @@ class NodeHelper
 
             foreach($bids as $bid) {
                 $public_key = strtolower($bid['public_key'] ?? 'nill');
-                $node_info = NodeInfo::where('node_address', $public_key)->first();
+                $node_info = UserAddress::where('public_address_node', $public_key)->first();
 
                 // parse bid
                 $b = $bid['bid'] ?? array();
