@@ -27,15 +27,15 @@ class Helper
 		$public_key = (string)$public_key;
 		$first_byte = substr($public_key, 0, 2);
 
-		if($first_byte == '01') {
-			$algo = bin2hex('ed25519');
-		} elseif($first_byte == '02') {
-			$algo = bin2hex('secp256k1');
+		if($first_byte === '01') {
+			$algo = unpack('H*', 'ed25519');
 		} else {
-			return false;
+			$algo = unpack('H*', 'secp256k1');
 		}
 
-		$blake2b = new Blake2b($size = 28);
+		$algo = $algo[1] ?? '';
+
+		$blake2b = new Blake2b();
 		$account_hash = bin2hex($blake2b->hash(hex2bin($algo.'00'.substr($public_key, 2))));
 
 		return $account_hash;
@@ -58,7 +58,7 @@ class Helper
 		$block_hash = $latest_block->getHash();
 		$state_root_hash = $casper_client->getStateRootHash($block_hash);
 		$curl = curl_init();
-		
+
 		$json_data = array(
 			'id' => (int) time(),
 			'jsonrpc' => '2.0',
@@ -84,7 +84,6 @@ class Helper
 		));
 
 		$response = curl_exec($curl);
-		curl_close($curl);
 		$decodedResponse = json_decode($response, true);
 		$parsed = $decodedResponse['result']['stored_value']['CLValue']['parsed'] ?? '';
 		$json = array();
@@ -99,17 +98,19 @@ class Helper
 			$response = curl_exec($curl);
 
 			try {
-				$json = json_decode($response);
+				$json = json_decode($response, true);
 			} catch (\Exception $e) {
 				$json = array();
 			}
 		}
 
-		$blockchain_name = $json->message->owner->name ?? null;
-		$blockchain_desc = $json->message->owner->description ?? null;
-		$blockchain_logo = $json->message->owner->branding->logo->png_256 ?? null;
+		curl_close($curl);
+
+		$blockchain_name = $json['owner']['name'] ?? null;
+		$blockchain_desc = $json['owner']['description'] ?? null;
+		$blockchain_logo = $json['owner']['branding']['logo']['png_256'] ?? null;
 		$profile = Profile::where('user_id', $uid)->first();
-		
+
 		if ($profile && $json) {
 			if ($blockchain_name) {
 				$profile->blockchain_name = $blockchain_name;
