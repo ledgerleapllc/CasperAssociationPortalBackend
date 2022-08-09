@@ -40,7 +40,7 @@ class InstallController extends Controller
         // Setup User
         $userData = [
             [
-                'title' => 'Welcome to the Casper',
+                'title' => 'Welcome to the Casper Association portal',
                 'subject' => 'Welcome to the Casper Association portal!',
                 'content' => 'Welcome to the Casper Association,<br/><br/>To access your member portal you must complete 3 simple steps that you can find once you log in.<br/><br/>#1. E-sign the terms of the portal.<br/><br/>#2. Verify your node. For this step you will need to enter the public address for your node. Next, you will be given a file to sign locally on your node (for security) by following the instructions provided in this process. You will the upload the signed file to verify that you own the provided public address.<br/><br/>#3. Upload a letter of motivation. This is the final step for membership and requires you to write and upload a letter of motivation explaining why you would like to be a member. Remember, members are able to vote about important matters effecting the Casper network. For this reason, we like to know why everyone is here. Feel free to explain why you like Casper, why you are running a node, and why you want to be able to vote and participate as a member. Don\'t over-think it but be detailed. There are no wrong answers here!<br/><br/>Please reply to this email if you need help'
             ],

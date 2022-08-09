@@ -6,6 +6,7 @@ use App\Models\KeyPeer;
 use App\Models\Node;
 use App\Models\NodeInfo;
 use App\Models\User;
+use App\Models\UserAddress;
 use App\Models\Setting;
 use App\Models\DailyEarning;
 
@@ -265,23 +266,60 @@ class NodeHelper
         return $port8888_responses;
     }
 
+    public function getValidAddresses()
+    {
+        $curl = curl_init();
+        $json_data = [
+            'id' => (int) time(),
+            'jsonrpc' => '2.0',
+            'method' => 'state_get_auction_info',
+            'params' => array()
+        ];
+
+        curl_setopt($curl, CURLOPT_URL, 'http://' . getenv('NODE_IP') . ':7777/rpc');
+        curl_setopt($curl, CURLOPT_POST, true);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($json_data));
+        curl_setopt($curl, CURLOPT_HTTPHEADER, [
+            'Accept: application/json',
+            'Content-type: application/json',
+        ]);
+
+        // parse response for bids
+        $response = curl_exec($curl);
+        curl_close($curl);
+        $decodedResponse = json_decode($response, true);
+        $auction_state = $decodedResponse['result']['auction_state'] ?? [];
+        $bids = $auction_state['bids'] ?? [];
+
+        $addresses = [];
+        if ($bids) {
+            foreach($bids as $bid) {
+                if (isset($bid['public_key']) && $bid['public_key']) {
+                    $public_key = strtolower($bid['public_key']);
+                    $addresses[] = $public_key;
+                }
+            }
+        }
+        return $addresses;
+    }
+
     public function getValidatorStanding()
     {
         // get node ips from peers
         $port8888_responses = $this->discoverPeers();
 
-
         // get auction state from trusted node RPC
         $curl = curl_init();
 
         $json_data = array(
-            'id' => (int)time(),
+            'id' => (int) time(),
             'jsonrpc' => '2.0',
             'method' => 'state_get_auction_info',
             'params' => array()
         );
 
-        curl_setopt($curl, CURLOPT_URL, 'http://'.getenv('NODE_IP').':7777/rpc');
+        curl_setopt($curl, CURLOPT_URL, 'http://' . getenv('NODE_IP') . ':7777/rpc');
         curl_setopt($curl, CURLOPT_POST, true);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($json_data));
@@ -290,7 +328,6 @@ class NodeHelper
             'Content-type: application/json',
         ));
 
-
         // parse response for bids
         $response = curl_exec($curl);
         curl_close($curl);
@@ -298,14 +335,11 @@ class NodeHelper
         $auction_state = $decodedResponse['result']['auction_state'] ?? array();
         $bids = $auction_state['bids'] ?? array();
 
-
         // get era ID
         $era_id = (int)($auction_state['era_validators'][0]['era_id'] ?? 0);
 
-
         // set MBS array. minimum bid slot amount
         $MBS_arr = array();
-
 
         // set default object
         $global_validator_standing = array(
@@ -315,7 +349,6 @@ class NodeHelper
             "validator_standing" => array()
         );
 
-
         // check each bid validator against existing platform validators
         if($bids) {
             // get global uptimes from MAKE
@@ -323,16 +356,13 @@ class NodeHelper
 
             foreach($bids as $bid) {
                 $public_key = strtolower($bid['public_key'] ?? 'nill');
-                $node_info = NodeInfo::where('node_address', $public_key)->first();
-
+                $node_info = UserAddress::where('public_address_node', $public_key)->first();
 
                 // parse bid
                 $b = $bid['bid'] ?? array();
 
-
                 // get self stake amount
                 $self_staked_amount = (int)($b['staked_amount'] ?? 0);
-
 
                 // calculate total stake, delegators + self stake
                 $delegators = (array)($b['delegators'] ?? array());
@@ -347,20 +377,16 @@ class NodeHelper
                 $total_staked_amount = $total_staked_amount / 1000000000;
                 $self_staked_amount = $self_staked_amount / 1000000000;
 
-
                 // append to MBS array and pluck 100th place later
                 $MBS_arr[$public_key] = $total_staked_amount;
-
 
                 // node exists on platform, fetch/save info
                 if($node_info) {
                     // get delegation rate
                     $delegation_rate = (float)($b['delegation_rate'] ?? 0);
 
-
                     // get active status (equivocation check)
                     $inactive = (bool)($b['inactive'] ?? false);
-
 
                     // save current stake amount to daily earnings table
                     $earning = new DailyEarning();
@@ -369,7 +395,6 @@ class NodeHelper
                     $earning->created_at = Carbon::now('UTC');
                     $earning->save();
 
-
                     // get difference between current self stake and yesterdays self stake
                     $get_earning = DailyEarning::where('node_address', $public_key)
                         ->where('created_at', '>', Carbon::now('UTC')->subHours(24))
@@ -377,7 +402,6 @@ class NodeHelper
                         ->first();
                     $yesterdays_self_staked_amount = (float)($get_earning->self_staked_amount ?? 0);
                     $daily_earning = $self_staked_amount - $yesterdays_self_staked_amount;
-
 
                     // get node uptime from MAKE object
                     $uptime = 0;
@@ -392,7 +416,6 @@ class NodeHelper
                     }
 
                     $float_uptime = (float)($uptime / 100.0);
-
 
                     // build individual validator_standing object
                     $global_validator_standing
@@ -489,10 +512,8 @@ class NodeHelper
         $MBS = $MBS_arr[99] ?? $MBS_arr[count($MBS_arr) - 1];
         $global_validator_standing['MBS'] = $MBS;
 
-
         // DailyEarning garbage cleanup
         DailyEarning::where('created_at', '<', Carbon::now('UTC')->subDays(90))->delete();
-
 
         return $global_validator_standing;
     }
