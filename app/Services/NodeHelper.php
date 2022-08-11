@@ -126,11 +126,24 @@ class NodeHelper
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_URL, $http_protocol.getenv('NODE_IP').$status_port);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 3);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 3);
+
+        // try once with main NODE_IP
         $json = curl_exec($curl);
 
-        if(curl_errno($curl)) {
-            return array();
+        if(curl_errno($curl) && getenv('BACKUP_NODE_IP')) {
+            curl_setopt($curl, CURLOPT_URL, $http_protocol.getenv('BACKUP_NODE_IP').$status_port);
+
+            // try twice with main BACKUP_NODE_IP
+            $json = curl_exec($curl);
+
+            if(curl_errno($curl)) {
+                return array();
+            }
         }
+
+        curl_close($curl);
 
         try {
             $object = json_decode($json, true);
@@ -279,14 +292,24 @@ class NodeHelper
         curl_setopt($curl, CURLOPT_URL, 'http://' . getenv('NODE_IP') . ':7777/rpc');
         curl_setopt($curl, CURLOPT_POST, true);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 3);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 3);
         curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($json_data));
         curl_setopt($curl, CURLOPT_HTTPHEADER, [
             'Accept: application/json',
             'Content-type: application/json',
         ]);
 
-        // parse response for bids
+        // parse response for bids from NODE_IP
         $response = curl_exec($curl);
+
+        if (curl_errno($curl) && getenv('BACKUP_NODE_IP')) {
+            curl_setopt($curl, CURLOPT_URL, 'http://' . getenv('BACKUP_NODE_IP') . ':7777/rpc');
+
+            // try twice with BACKUP_NODE_IP
+            $response = curl_exec($curl);
+        }
+
         curl_close($curl);
         $decodedResponse = json_decode($response, true);
         $auction_state = $decodedResponse['result']['auction_state'] ?? [];
@@ -322,6 +345,8 @@ class NodeHelper
         curl_setopt($curl, CURLOPT_URL, 'http://' . getenv('NODE_IP') . ':7777/rpc');
         curl_setopt($curl, CURLOPT_POST, true);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 3);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 3);
         curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($json_data));
         curl_setopt($curl, CURLOPT_HTTPHEADER, array(
             'Accept: application/json',
@@ -330,6 +355,14 @@ class NodeHelper
 
         // parse response for bids
         $response = curl_exec($curl);
+
+        if (curl_errno($curl) && getenv('BACKUP_NODE_IP')) {
+            curl_setopt($curl, CURLOPT_URL, 'http://' . getenv('BACKUP_NODE_IP') . ':7777/rpc');
+
+            // try twice with BACKUP_NODE_IP
+            $response = curl_exec($curl);
+        }
+
         curl_close($curl);
         $decodedResponse = json_decode($response, true);
         $auction_state = $decodedResponse['result']['auction_state'] ?? array();
