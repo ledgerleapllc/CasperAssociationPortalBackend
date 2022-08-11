@@ -292,8 +292,8 @@ class NodeHelper
         curl_setopt($curl, CURLOPT_URL, 'http://' . getenv('NODE_IP') . ':7777/rpc');
         curl_setopt($curl, CURLOPT_POST, true);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 3);
-        curl_setopt($curl, CURLOPT_TIMEOUT, 3);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 5);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 5);
         curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($json_data));
         curl_setopt($curl, CURLOPT_HTTPHEADER, [
             'Accept: application/json',
@@ -345,8 +345,8 @@ class NodeHelper
         curl_setopt($curl, CURLOPT_URL, 'http://' . getenv('NODE_IP') . ':7777/rpc');
         curl_setopt($curl, CURLOPT_POST, true);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 3);
-        curl_setopt($curl, CURLOPT_TIMEOUT, 3);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 5);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 5);
         curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($json_data));
         curl_setopt($curl, CURLOPT_HTTPHEADER, array(
             'Accept: application/json',
