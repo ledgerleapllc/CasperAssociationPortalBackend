@@ -6,11 +6,6 @@
         AllowOverride All
         Require all granted
     </Directory>
-    <IfModule mod_rewrite.c>
-        RewriteEngine On
-        RewriteCond %{HTTPS}  !=on
-        RewriteRule ^/?(.*) https://%{SERVER_NAME}/$1 [R,L]
-    </IfModule>
     ErrorLog ${APACHE_LOG_DIR}/error.log
     CustomLog ${APACHE_LOG_DIR}/access.log combineid
 </VirtualHost>
