@@ -6,14 +6,19 @@ if (!function_exists('generateString')) {
 
     function generateString($strength = 16)
     {
-        $permitted_chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        $input_length = strlen($permitted_chars);
-        $random_string = '';
-        for ($i = 0; $i < $strength; $i++) {
-            $random_character = $permitted_chars[mt_rand(0, $input_length - 1)];
-            $random_string .= $random_character;
+        $seed = str_split(
+            'ABCDEFGHJKLMNPQRSTUVWXYZ'.
+            '2345678923456789'
+        );
+        // dont use 0, 1, o, O, l, I
+        shuffle($seed);
+        $hash = '';
+
+        foreach(array_rand($seed, $strength) as $k) {
+            $hash .= $seed[$k];
         }
-        return $random_string;
+
+        return $hash;
     }
 }
 

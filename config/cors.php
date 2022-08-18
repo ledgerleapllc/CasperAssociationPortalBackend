@@ -17,9 +17,29 @@ return [
 
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
-    'allowed_methods' => ['*'],
+    'allowed_methods' => [
+        'GET',
+        'POST',
+        'PUT',
+        'DELETE',
+        'OPTIONS'
+    ],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => [
+        'http://caspermember.com',
+        'https://caspermember.com',
+        'http://casper.network',
+        'https://casper.network',
+        'http://members.casper.network',
+        'https://members.casper.network',
+        'http://members-staging.casper.network',
+        'https://members-staging.casper.network',
+        'http://api.shuftipro.com',
+        'https://api.shuftipro.com',
+        'http://api.hellosign.com',
+        'https://api.hellosign.com',
+        'http://localhost:3000'
+    ],
 
     'allowed_origins_patterns' => [],
 

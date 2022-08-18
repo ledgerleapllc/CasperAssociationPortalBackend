@@ -11,50 +11,128 @@ use App\Models\Shuftipro;
 use App\Models\User;
 
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
+use Casper\Rpc\RpcClient;
+
+use App\Services\Blake2b;
+
 class Helper
 {
-	public static function getAccountInfoStandard($user)
+	public static function publicKeyToAccountHash($public_key)
 	{
-		$vid = $user->public_address_node ?? '';
-		$uid = $user->id ?? 0;
-		$pseudonym = $user->pseudonym ?? null;
+		$public_key = (string)$public_key;
+		$first_byte = substr($public_key, 0, 2);
 
-		$THIS_SEENA_API_KEY = getenv('SEENA_API_KEY');
-		
-		$response = Http::withHeaders([
-			'Authorization' => "token $THIS_SEENA_API_KEY",
-		])->withOptions([
-			'verify' => false,
-		])->get('https://seena.ledgerleap.com/account-info-standard?validator_id='.$vid);
-
-		try {
-			$json = json_decode($response);
-		} catch (Exception $e) {
-			$json = array();
+		if($first_byte === '01') {
+			$algo = unpack('H*', 'ed25519');
+		} else {
+			$algo = unpack('H*', 'secp256k1');
 		}
 
-		$blockchain_name = $json->message->owner->name ?? null;
-		$blockchain_desc = $json->message->owner->description ?? null;
-		$blockchain_logo = $json->message->owner->branding->logo->png_256 ?? null;
+		$algo = $algo[1] ?? '';
 
+		$blake2b = new Blake2b();
+		$account_hash = bin2hex($blake2b->hash(hex2bin($algo.'00'.substr($public_key, 2))));
+
+		return $account_hash;
+	}
+
+	public static function getAccountInfoStandard($user)
+	{
+		$vid = strtolower($user->public_address_node ?? '');
+		if (!$vid) return;
+
+		// convert to account hash
+		$account_hash = self::publicKeyToAccountHash($vid);
+
+		$uid = $user->id ?? 0;
+		$pseudonym = $user->pseudonym ?? null;
+		$account_info_urls_uref = getenv('ACCOUNT_INFO_STANDARD_URLS_UREF');
+		$node_ip = 'http://' . getenv('NODE_IP') . ':7777';
+		$casper_client = new RpcClient($node_ip);
+		$latest_block = $casper_client->getLatestBlock();
+		$block_hash = $latest_block->getHash();
+		$state_root_hash = $casper_client->getStateRootHash($block_hash);
+		$curl = curl_init();
+
+		$json_data = array(
+			'id' => (int) time(),
+			'jsonrpc' => '2.0',
+			'method' => 'state_get_dictionary_item',
+			'params' => array(
+				'state_root_hash' => $state_root_hash,
+				'dictionary_identifier' => array(
+					'URef' => array(
+						'seed_uref' => $account_info_urls_uref,
+						'dictionary_item_key' => $account_hash,
+					)
+				)
+			)
+		);
+
+		curl_setopt($curl, CURLOPT_URL, $node_ip . '/rpc');
+		curl_setopt($curl, CURLOPT_POST, true);
+		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($json_data));
+		curl_setopt($curl, CURLOPT_HTTPHEADER, array(
+			'Accept: application/json',
+			'Content-type: application/json',
+		));
+
+		$response = curl_exec($curl);
+		$decodedResponse = json_decode($response, true);
+		$parsed = $decodedResponse['result']['stored_value']['CLValue']['parsed'] ?? '';
+		$json = array();
+
+		if($parsed) {
+			curl_setopt(
+				$curl, 
+				CURLOPT_URL, 
+				$parsed.'/.well-known/casper/account-info.casper.json'
+			);
+			curl_setopt($curl, CURLOPT_POST, false);
+			$response = curl_exec($curl);
+
+			try {
+				$json = json_decode($response, true);
+			} catch (\Exception $e) {
+				$json = array();
+			}
+		}
+
+		curl_close($curl);
+
+		$blockchain_name = $json['owner']['name'] ?? null;
+		$blockchain_desc = $json['owner']['description'] ?? null;
+		$blockchain_logo = $json['owner']['branding']['logo']['png_256'] ?? null;
 		$profile = Profile::where('user_id', $uid)->first();
-		
+
 		if ($profile && $json) {
-			if ($blockchain_name) $profile->blockchain_name = $blockchain_name;
-			if ($blockchain_desc) $profile->blockchain_desc = $blockchain_desc;
+			if ($blockchain_name) {
+				$profile->blockchain_name = $blockchain_name;
+			}
+
+			if ($blockchain_desc) {
+				$profile->blockchain_desc = $blockchain_desc;
+			}
+
 			if ($blockchain_logo && $user->avatar == null) {
 				$user->avatar = $blockchain_logo;
 				$user->save();
 			}
-			
+
 			$profile->save();
 			$shufti_profile = Shuftipro::where('user_id', $uid)->first();
 
-			if ($shufti_profile && $shufti_profile->status == 'approved' && $pseudonym) {
+			if (
+				$shufti_profile && 
+				$shufti_profile->status == 'approved' && 
+				$pseudonym
+			) {
 				$shuft_status = $shufti_profile->status;
 				$reference_id = $shufti_profile->reference_id;
 				$hash = md5($pseudonym . $reference_id . $shuft_status);
@@ -113,46 +191,42 @@ class Helper
 		$max_uptime = $max_uptime[0]->max_uptime ?? 0;
 
 		$latest = Node::where('node_address', strtolower($public_address_node))
-						->whereNotnull('protocol_version')
-						->orderBy('created_at', 'desc')
-						->first();
-		if (!$latest) $latest = new Node();
+			->whereNotnull('protocol_version')
+			->orderBy('created_at', 'desc')
+			->first();
 
-		$latest_block_height = $latest->block_height ?? null;
-		$latest_update_responsiveness = $latest->update_responsiveness ?? null;
-		$latest_peers = $latest->peers ?? null;
+		if (!$latest) {
+			$latest = new Node();
+		}
 
 		$metric = Metric::where('user_id', $user->id)->first();
-		if (!$metric) $metric = new Metric();
 
-		$metric_uptime = $metric->uptime ?? null;
-		$metric_block_height = $metric->block_height_average  ?  ($max_block_height - $metric->block_height_average)  : null;
-		$metric_update_responsiveness = $metric->update_responsiveness ?? null;
-		$metric_peers = $metric->peers ?? null;
+		if (!$metric) {
+			$metric = new Metric();
+		}
+
+		$metric_block_height = $metric->block_height_average ? ($max_block_height - $metric->block_height_average)  : null;
 
 		$nodeInfo = NodeInfo::where('node_address', strtolower($public_address_node))->first();
-		if (!$nodeInfo) $nodeInfo = new NodeInfo();
 
-		$latest_uptime = $nodeInfo->uptime ?? null;
-		$nodeInfo_uptime = $nodeInfo->uptime ?? null;
-		$nodeInfo_block_height = $nodeInfo->block_height ?? null;
-		$nodeInfo_peers = $nodeInfo->peers ?? null;
-		$nodeInfo_update_responsiveness = $nodeInfo->update_responsiveness ?? null;
+		if (!$nodeInfo) {
+			$nodeInfo = new NodeInfo();
+		}
 
-		$metric->avg_uptime = $nodeInfo_uptime ?? $metric_uptime;
-		$metric->avg_block_height_average = $nodeInfo_block_height ?? $metric_block_height;
-		$metric->avg_update_responsiveness = $nodeInfo_update_responsiveness ?? $metric_update_responsiveness;
-		$metric->avg_peers = $nodeInfo_peers ?? $metric_peers;
+		$metric->avg_uptime = $nodeInfo->uptime ?? $metric->uptime ?? null;
+		$metric->avg_block_height_average = $nodeInfo->block_height ?? $metric_block_height;
+		$metric->avg_update_responsiveness = $nodeInfo->update_responsiveness ?? $metric->update_responsiveness ?? null;
+		$metric->avg_peers = $nodeInfo->peers ?? $metric->peers ?? null;
 
 		$metric->max_peers = $max_peers;
 		$metric->max_update_responsiveness = $max_update_responsiveness;
 		$metric->max_block_height_average = $max_block_height;
 		$metric->max_uptime = $max_uptime;
 
-		$metric->peers = $latest_peers ?? $metric_peers;
-		$metric->update_responsiveness = $latest_update_responsiveness ?? $metric_update_responsiveness;
-		$metric->block_height_average = $latest_block_height ??  $metric_block_height;
-		$metric->uptime = $latest_uptime  ? $latest_uptime : $metric_uptime;
+		$metric->peers = $latest->peers ?? $metric->peers ?? null;
+		$metric->update_responsiveness = $latest->update_responsiveness ?? $metric->update_responsiveness ?? null;
+		$metric->block_height_average = $latest->block_height ?? $metric_block_height;
+		$metric->uptime = $nodeInfo->uptime ?? $metric->uptime ?? null;
 
 		$monitoringCriteria = MonitoringCriteria::get();
 		$nodeInfo = NodeInfo::where('node_address', strtolower($public_address_node))->first();
@@ -161,12 +235,14 @@ class Helper
 		$stake_amount = 0;
 		$self_staked_amount = 0;
 		$is_open_port = 0;
+
 		if ($nodeInfo) {
 			$delegators = $nodeInfo->delegators_count;
 			$stake_amount = $nodeInfo->total_staked_amount;
 			$self_staked_amount = $nodeInfo->self_staked_amount;
 			$is_open_port = $nodeInfo->is_open_port;
 		}
+
 		$mbs = NodeInfo::max('mbs');
 		$metric->mbs = $mbs;
 		$metric->rank = $rank;

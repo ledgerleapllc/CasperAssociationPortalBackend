@@ -10,13 +10,14 @@
         "doctrine/dbal": "^3.1",
         "fideloper/proxy": "^4.4",
         "fruitcake/laravel-cors": "^2.0",
-        "guzzlehttp/guzzle": "^7.0.1",
+        "guzzlehttp/guzzle": "^7.4.3",
         "hellosign/hellosign-php-sdk": "^3.7",
         "laravel/framework": "^8.40",
         "laravel/passport": "^10.1",
         "laravel/tinker": "^2.5",
         "phpseclib/phpseclib": "~3.0",
-        "stripe/stripe-php": "^7.121"
+        "stripe/stripe-php": "^7.121",
+        "make-software/casper-php-sdk": "dev-master"
     },
     "require-dev": {
         "facade/ignition": "^2.5",
