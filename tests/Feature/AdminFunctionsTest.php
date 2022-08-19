@@ -8,6 +8,10 @@ use Tests\TestCase;
 
 class AdminFunctionsTest extends TestCase
 {
+    public function testConsoleCommand() {
+        $this->artisan('node-info')->assertSuccessful();
+    }
+
     public function testGetGraphInfo() {
         $response = $this->withHeaders([
             'Accept' => 'application/json',
