@@ -564,7 +564,7 @@ class UserFunctionsTest extends TestCase
     */
 
     public function testGetChartEarningByNode() {
-        $node = '01ebaebffebe63ee6e35b88697dd9d5bfab23dac47cbd61a45efc8ea8d80ec9c38';
+        $node = '01eedfd20f75528c50aae557d15dff5ca6379ca8401bceb8e969cd0cb1ea52ec7f';
         $token = $this->getUserToken($node);
 
         $response = $this->withHeaders([

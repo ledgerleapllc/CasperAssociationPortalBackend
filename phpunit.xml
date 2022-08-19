@@ -32,5 +32,7 @@
         <server name="STRIPE_PRODUCTION_ID" value="prod_LRvVwxb1uNzTlM"/>
         <server name="HELLOSIGN_API_KEY" value="6b3ad195d0fff7be0bde1a2111f54d01ad950ea4f688e11331ac592ee3046788"/>
         <server name="HELLOSIGN_CLIENT_ID" value="d0cb9c3a8a0ce7b34a62985617bf22eb"/>
+        <server name="NODE_IP" value="18.219.70.138"/>
+        <server name="BACKUP_NODE_IP" value=""/>
     </php>
 </phpunit>
