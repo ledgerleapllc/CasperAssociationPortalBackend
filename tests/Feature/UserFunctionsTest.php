@@ -269,7 +269,7 @@ class UserFunctionsTest extends TestCase
         $token = $this->getUserToken();
 
         $params = [
-            'public_address' => '01eedfd20f75528c50aae557d15dff5ca6379ca8401bceb8e969cd0cb1ea52ec7f',
+            'public_address' => '011117189c666f81c5160cd610ee383dc9b2d0361f004934754d39752eedc64957',
         ];
 
         $response = $this->withHeaders([
@@ -289,7 +289,7 @@ class UserFunctionsTest extends TestCase
         $token = $this->getUserToken();
 
         $params = [
-            'public_address' => '01eedfd20f75528c50aae557d15dff5ca6379ca8401bceb8e969cd0cb1ea52ec7f',
+            'public_address' => '011117189c666f81c5160cd610ee383dc9b2d0361f004934754d39752eedc64957',
         ];
 
         $response = $this->withHeaders([
@@ -311,7 +311,7 @@ class UserFunctionsTest extends TestCase
         $file = UploadedFile::fake()->create('document.pdf', 10, 'application/pdf');
         $params = [
             'file' => $file,
-            'address' => '01eedfd20f75528c50aae557d15dff5ca6379ca8401bceb8e969cd0cb1ea52ec7f',
+            'address' => '011117189c666f81c5160cd610ee383dc9b2d0361f004934754d39752eedc64957',
         ];
 
         $response = $this->withHeaders([
@@ -333,7 +333,7 @@ class UserFunctionsTest extends TestCase
         $file = UploadedFile::fake()->create('document.pdf', 10, 'application/pdf');
         $params = [
             'file' => $file,
-            'address' => '01eedfd20f75528c50aae557d15dff5ca6379ca8401bceb8e969cd0cb1ea52ec7f',
+            'address' => '011117189c666f81c5160cd610ee383dc9b2d0361f004934754d39752eedc64957',
         ];
 
         $response = $this->withHeaders([
@@ -564,7 +564,7 @@ class UserFunctionsTest extends TestCase
     */
 
     public function testGetChartEarningByNode() {
-        $node = '01eedfd20f75528c50aae557d15dff5ca6379ca8401bceb8e969cd0cb1ea52ec7f';
+        $node = '011117189c666f81c5160cd610ee383dc9b2d0361f004934754d39752eedc64957';
         $token = $this->getUserToken($node);
 
         $response = $this->withHeaders([
