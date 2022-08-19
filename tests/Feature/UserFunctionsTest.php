@@ -572,7 +572,7 @@ class UserFunctionsTest extends TestCase
             'Authorization' => 'Bearer ' . $token,
         ])->json('get', '/api/v1/nodes/' . $node . '/chart');
 
-        $apiResponse = $response->baseResponse->getData();
+        // $apiResponse = $response->baseResponse->getData();
 
         $response->assertStatus(200)
                 ->assertJsonStructure([
