@@ -126,8 +126,8 @@ class NodeHelper
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_URL, $http_protocol.getenv('NODE_IP').$status_port);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 3);
-        curl_setopt($curl, CURLOPT_TIMEOUT, 3);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 15);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 15);
 
         // try once with main NODE_IP
         $json = curl_exec($curl);
@@ -191,8 +191,8 @@ class NodeHelper
                 curl_setopt($ch[$i], CURLOPT_URL, $http_protocol.$peers[$real_index].$status_port);
                 curl_setopt($ch[$i], CURLOPT_HEADER, 0);
                 curl_setopt($ch[$i], CURLOPT_RETURNTRANSFER, 1);
-                curl_setopt($ch[$i], CURLOPT_CONNECTTIMEOUT, 3);
-                curl_setopt($ch[$i], CURLOPT_TIMEOUT, 3);
+                curl_setopt($ch[$i], CURLOPT_CONNECTTIMEOUT, 15);
+                curl_setopt($ch[$i], CURLOPT_TIMEOUT, 15);
 
                 curl_multi_add_handle($mh, $ch[$i]);
                 $real_index += 1;
@@ -239,8 +239,8 @@ class NodeHelper
             curl_setopt($ch[$i], CURLOPT_URL, $http_protocol.$peers[$real_index].$status_port);
             curl_setopt($ch[$i], CURLOPT_HEADER, 0);
             curl_setopt($ch[$i], CURLOPT_RETURNTRANSFER, 1);
-            curl_setopt($ch[$i], CURLOPT_CONNECTTIMEOUT, 4);
-            curl_setopt($ch[$i], CURLOPT_TIMEOUT, 4);
+            curl_setopt($ch[$i], CURLOPT_CONNECTTIMEOUT, 15);
+            curl_setopt($ch[$i], CURLOPT_TIMEOUT, 15);
 
             curl_multi_add_handle($mh, $ch[$i]);
             $real_index += 1;
@@ -292,8 +292,8 @@ class NodeHelper
         curl_setopt($curl, CURLOPT_URL, 'http://' . getenv('NODE_IP') . ':7777/rpc');
         curl_setopt($curl, CURLOPT_POST, true);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 5);
-        curl_setopt($curl, CURLOPT_TIMEOUT, 5);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 15);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 15);
         curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($json_data));
         curl_setopt($curl, CURLOPT_HTTPHEADER, [
             'Accept: application/json',
@@ -345,8 +345,8 @@ class NodeHelper
         curl_setopt($curl, CURLOPT_URL, 'http://' . getenv('NODE_IP') . ':7777/rpc');
         curl_setopt($curl, CURLOPT_POST, true);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 5);
-        curl_setopt($curl, CURLOPT_TIMEOUT, 5);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 15);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 15);
         curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($json_data));
         curl_setopt($curl, CURLOPT_HTTPHEADER, array(
             'Accept: application/json',
@@ -542,7 +542,8 @@ class NodeHelper
 
         // find MBS
         rsort($MBS_arr);
-        $MBS = $MBS_arr[99] ?? $MBS_arr[count($MBS_arr) - 1];
+        $MBS = null;
+        if (count($MBS_arr) > 0) $MBS = $MBS_arr[99] ?? $MBS_arr[count($MBS_arr) - 1];
         $global_validator_standing['MBS'] = $MBS;
 
         // DailyEarning garbage cleanup

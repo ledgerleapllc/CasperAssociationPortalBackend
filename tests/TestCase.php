@@ -59,7 +59,7 @@ abstract class TestCase extends BaseTestCase
         return null;
     }
 
-    public function addUser() {
+    public function addUser($node = null) {
         $first_name = 'Test';
         $last_name = 'Individual';
         $email = 'testindividual@gmail.com';
@@ -81,13 +81,14 @@ abstract class TestCase extends BaseTestCase
             $user->signature_request_id = 'TestSignatureRequestId';
             $user->role = 'member';
             $user->letter_file = 'LetterFileLink';
+            if ($node) $user->public_address_node = $node;
             $user->save();
         }
         return $user;
     }
 
-    public function getUserToken() {
-        $this->addUser();
+    public function getUserToken($node = null) {
+        $this->addUser($node);
 
         $params = [
             'email' => 'testindividual@gmail.com',

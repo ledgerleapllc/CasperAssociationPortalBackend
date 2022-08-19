@@ -51,6 +51,7 @@ class Helper
 
 		$uid = $user->id ?? 0;
 		$pseudonym = $user->pseudonym ?? null;
+
 		$account_info_urls_uref = getenv('ACCOUNT_INFO_STANDARD_URLS_UREF');
 		$node_ip = 'http://' . getenv('NODE_IP') . ':7777';
 		$casper_client = new RpcClient($node_ip);
@@ -84,7 +85,8 @@ class Helper
 		));
 
 		$response = curl_exec($curl);
-		$decodedResponse = json_decode($response, true);
+		$decodedResponse = [];
+		if ($response) $decodedResponse = json_decode($response, true);
 		$parsed = $decodedResponse['result']['stored_value']['CLValue']['parsed'] ?? '';
 		$json = array();
 
