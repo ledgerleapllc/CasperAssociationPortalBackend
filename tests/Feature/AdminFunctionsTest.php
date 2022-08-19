@@ -21,8 +21,6 @@ class AdminFunctionsTest extends TestCase
             'Authorization' => 'Bearer ' . $token,
         ])->json('post', '/api/v1/users/submit-public-address', $params);
 
-        // $apiResponse = $response->baseResponse->getData();
-
         $this->artisan('node-info')->assertSuccessful();
     }
 
