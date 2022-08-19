@@ -1,0 +1,39 @@
+packages:
+  required:
+    apt:
+    - apache2
+    - git
+    - software-properties-common
+    - php7.4
+    - php7.4-bcmath
+    - php7.4-bz2
+    - php7.4-intl
+    - php7.4-gd
+    - php7.4-mbstring
+    - php7.4-mysql
+    - php7.4-common
+    - php7.4-zip
+    - php7.4-curl
+    - php7.4-xml
+    - php7.4-gmp
+
+
+php:
+  artisan:
+    setup_commands:
+      - key:generate
+      - migrate
+      - passport:install
+      - config:clear
+      - route:clear
+      - cache:clear
+
+apache:
+  a2enmod:
+    module_list:
+      - rewrite
+      - headers
+      - ssl
+
+security:
+  app_user: ubuntu
