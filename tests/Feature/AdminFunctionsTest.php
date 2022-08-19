@@ -8,6 +8,24 @@ use Tests\TestCase;
 
 class AdminFunctionsTest extends TestCase
 {
+    public function testConsoleCommand() {
+        $node = '011117189c666f81c5160cd610ee383dc9b2d0361f004934754d39752eedc64957';
+        $token = $this->getUserToken();
+
+        $params = [
+            'public_address' => $node,
+        ];
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('post', '/api/v1/users/submit-public-address', $params);
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $this->artisan('node-info')->assertSuccessful();
+    }
+
     public function testGetGraphInfo() {
         $response = $this->withHeaders([
             'Accept' => 'application/json',
