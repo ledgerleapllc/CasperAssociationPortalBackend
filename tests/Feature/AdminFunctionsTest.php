@@ -38,7 +38,60 @@ class AdminFunctionsTest extends TestCase
                     'data',
                 ]);
     }
+
+    public function testGetUserDetail() {
+        $token = $this->getAdminToken();
+        $user = $this->addUser();
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('get', '/api/v1/admin/users/' . $user->id);
+
+        // $apiResponse = $response->baseResponse->getData();
+        
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
+    public function testGetInfoDashboard() {
+        $token = $this->getAdminToken();
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('get', '/api/v1/admin/dashboard');
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
     
+    public function testGetKYC() {
+        $token = $this->getAdminToken();
+        $user = $this->addUser();
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('get', '/api/v1/admin/users/' . $user->id . '/kyc');
+
+        // $apiResponse = $response->baseResponse->getData();
+        
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
     public function testListNode() {
         $token = $this->getAdminToken();
 
@@ -128,6 +181,15 @@ class AdminFunctionsTest extends TestCase
                     'data',
                 ]);
     }
+
+    /*
+    public function testRemoveUser() {
+    
+    }
+    public function testRefreshLinks() {
+    
+    }
+    */
     
     public function testGetBallots() {
         $token = $this->getAdminToken();
