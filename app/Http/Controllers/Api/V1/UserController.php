@@ -1412,7 +1412,7 @@ class UserController extends Controller
 
         if ($allPrices && isset($allPrices['data']) && count($allPrices['data'])) {
             foreach ($allPrices['data'] as $item) {
-                if ((int) $item->unit_price == $amount) {
+                if (isset($item->unit_price) && (int) $item->unit_price == $amount) {
                     $priceId = $item->id;
                     break;
                 }

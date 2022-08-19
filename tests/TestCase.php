@@ -16,7 +16,7 @@ use App\Models\VerifyUser;
 abstract class TestCase extends BaseTestCase
 {
     use CreatesApplication, DatabaseMigrations;
-
+    
     public function setUp(): void
     {
         parent::setUp();
@@ -24,7 +24,7 @@ abstract class TestCase extends BaseTestCase
         Artisan::call('cache:clear');
         Artisan::call('passport:install');
     }
-
+    
     public function addAdmin() {
         $user = User::where(['email' => 'ledgerleapllcadmin@gmail.com'])->first();
         if (!$user) {
@@ -51,7 +51,7 @@ abstract class TestCase extends BaseTestCase
         $response = $this->withHeaders([
             'Accept' => 'application/json',
         ])->json('post', '/api/v1/auth/login', $params);
-
+        
         $apiResponse = $response->baseResponse->getData();
 
         if ($apiResponse && isset($apiResponse->data) && isset($apiResponse->data->access_token))
@@ -66,7 +66,7 @@ abstract class TestCase extends BaseTestCase
         $password = 'TestIndividual111@';
         $pseudonym = 'testindividual';
         $telegram = '@testindividual';
-
+        
         $user = User::where('email', $email)->first();
         if (!$user) {
             $user = new User;
