@@ -780,11 +780,34 @@ class UserController extends Controller
         if (!$sort_key) $sort_key = 'ballot.id';
         if (!$sort_direction) $sort_direction = 'desc';
 
-        if ($status != 'active' && $status != 'finish')
+        if ($status != 'active' && $status != 'finish' && $status != 'scheduled')
             return $this->errorResponse('Paramater invalid (status is active or finish)', Response::HTTP_BAD_REQUEST);
 
-        if ($status == 'active') $query = Ballot::where('status', 'active');
+        $now = Carbon::now('EST');
+        $startDate = $now->format('Y-m-d');
+        $startTime = $now->format('H:i:s');
+
+        if ($status == 'active') {
+            $query = Ballot::where('status', 'active')
+                            ->where(function ($query) use ($startDate, $startTime) {
+                                $query->where('start_date', '<', $startDate)
+                                        ->orWhere(function ($query) use ($startDate, $startTime) {
+                                            $query->where('start_date', $startDate)
+                                                    ->where('start_time', '<=', $startTime);
+                                        });
+                            });
+        } else if ($status == 'scheduled') {
+            $query = Ballot::where('status', 'active')
+                            ->where(function ($query) use ($startDate, $startTime) {
+                                $query->where('start_date', '>', $startDate)
+                                        ->orWhere(function ($query) use ($startDate, $startTime) {
+                                            $query->where('start_date', $startDate)
+                                                    ->where('start_time', '>', $startTime);
+                                        });
+                            });
+        }
         else $query = Ballot::where('status', '<>', 'active');
+
         $data = $query->with('vote')->orderBy($sort_key, $sort_direction)->paginate($limit);
 
         return $this->successResponse($data);
@@ -1389,7 +1412,7 @@ class UserController extends Controller
 
         if ($allPrices && isset($allPrices['data']) && count($allPrices['data'])) {
             foreach ($allPrices['data'] as $item) {
-                if ((int) $item->unit_price == $amount) {
+                if (isset($item->unit_price) && (int) $item->unit_price == $amount) {
                     $priceId = $item->id;
                     break;
                 }

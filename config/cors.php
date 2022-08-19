@@ -37,7 +37,8 @@ return [
         'http://api.shuftipro.com',
         'https://api.shuftipro.com',
         'http://api.hellosign.com',
-        'https://api.hellosign.com'
+        'https://api.hellosign.com',
+        'http://localhost:3000'
     ],
 
     'allowed_origins_patterns' => [],
