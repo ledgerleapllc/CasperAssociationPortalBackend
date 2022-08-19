@@ -1281,7 +1281,7 @@ class UserController extends Controller
             ->leftJoin('profile', 'profile.user_id', '=', 'users.id')
             ->where('users.banned', 0)
             ->whereNotNull('users.public_address_node')
-            ->orderBy('users.rank', 'asc')
+            ->orderBy('user_addresses.rank', 'asc')
             ->paginate($limit);
 
         return $this->successResponse($nodes);
