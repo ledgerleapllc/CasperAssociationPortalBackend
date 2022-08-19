@@ -4,6 +4,9 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use App\Models\User;
 use Tests\TestCase;
 
 class UserFunctionsTest extends TestCase
@@ -169,16 +172,48 @@ class UserFunctionsTest extends TestCase
                 ]);
     }
 
-    /*
     public function testChangeEmail() {
-    
+        $token = $this->getUserToken();
+
+        $params = [
+            'email' => 'testindividualnew@gmail.com',
+        ];
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('post', '/api/v1/users/change-email', $params);
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
     }
 
     public function testChangePassword() {
+        $token = $this->getUserToken();
 
+        $params = [
+            'new_password' => 'TestIndividual111New@',
+        ];
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('post', '/api/v1/users/change-password', $params);
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
     }
-    */
-
+    
     public function testGetProfile() {
         $token = $this->getUserToken();
 
@@ -195,6 +230,234 @@ class UserFunctionsTest extends TestCase
                     'data',
                 ]);
     }
+
+    public function testLogout() {
+        $token = $this->getUserToken();
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('post', '/api/v1/users/logout');
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
+    public function testHellosignRequest() {
+        $token = $this->getUserToken();
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('post', '/api/v1/users/hellosign-request');
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
+    public function testSubmitPublicAddress() {
+        $token = $this->getUserToken();
+
+        $params = [
+            'public_address' => '01eedfd20f75528c50aae557d15dff5ca6379ca8401bceb8e969cd0cb1ea52ec7f',
+        ];
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('post', '/api/v1/users/submit-public-address', $params);
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
+    public function testCheckPublicAddress() {
+        $token = $this->getUserToken();
+
+        $params = [
+            'public_address' => '01eedfd20f75528c50aae557d15dff5ca6379ca8401bceb8e969cd0cb1ea52ec7f',
+        ];
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('post', '/api/v1/users/check-public-address', $params);
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
+    public function testVerifyFileCasperSigner() {
+        $token = $this->getUserToken();
+
+        $file = UploadedFile::fake()->create('document.pdf', 10, 'application/pdf');
+        $params = [
+            'file' => $file,
+            'address' => '01eedfd20f75528c50aae557d15dff5ca6379ca8401bceb8e969cd0cb1ea52ec7f',
+        ];
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('post', '/api/v1/users/verify-file-casper-signer', $params);
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
+    public function testVerifyFileCasperSigner2() {
+        $token = $this->getUserToken();
+
+        $file = UploadedFile::fake()->create('document.pdf', 10, 'application/pdf');
+        $params = [
+            'file' => $file,
+            'address' => '01eedfd20f75528c50aae557d15dff5ca6379ca8401bceb8e969cd0cb1ea52ec7f',
+        ];
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('post', '/api/v1/users/verify-file-casper-signer-2', $params);
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
+    public function testSubmitKYC() {
+        $token = $this->getUserToken();
+
+        $params = [
+            'first_name' => 'Test',
+            'last_name' => 'Individual',
+            'dob' => '03/03/1992',
+            'address' => 'New York',
+            'city' => 'New York',
+            'zip' => '10025',
+            'country_citizenship' => 'United States',
+            'country_residence' => 'United States',
+            'type' => User::TYPE_INDIVIDUAL,
+        ];
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('post', '/api/v1/users/submit-kyc', $params);
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
+    public function testVerifyOwnerNode() {
+        $token = $this->getUserToken();
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('post', '/api/v1/users/verify-owner-node', []);
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
+    public function testGetOwnerNodes() {
+        $token = $this->getUserToken();
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('get', '/api/v1/users/owner-node');
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
+    public function testResendInviteOwner() {
+        $token = $this->getUserToken();
+
+        $params = [
+            'email' => 'testindividual@gmail.com',
+        ];
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('post', '/api/v1/users/resend-invite-owner', $params);
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
+    /*
+    public function testGetMessageContent() {
+        $token = $this->getUserToken();
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('get', '/api/v1/users/message-content');
+
+        // $apiResponse = $response->baseResponse->getData();
+        // statusCode
+    }
+
+    public function testSaveShuftiproTemp() {
+
+    }
+
+    public function testUpdateShuftiproTemp() {
+
+    }
+
+    public function testDeleteShuftiproTemp() {
+
+    }
+
+    public function testUploadLetter() {
+
+    }
+    */
 
     public function testListNodes() {
         $token = $this->getUserToken();

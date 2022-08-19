@@ -19,6 +19,7 @@
     </coverage>
     <php>
         <server name="APP_ENV" value="testing"/>
+        <server name="APP_URL" value="http://casper.local"/>
         <server name="BCRYPT_ROUNDS" value="4"/>
         <server name="CACHE_DRIVER" value="array"/>
         <server name="DB_CONNECTION" value="sqlite"/>
@@ -29,5 +30,7 @@
         <server name="TELESCOPE_ENABLED" value="false"/>
         <server name="STRIPE_SEC_KEY" value="sk_test_51Kl0SHFp9k9JM7BlFpK9zO88K6c6yUM8BtyPdTMaOgvovlDO3xumYOLzqjOC7O4K4yZCLZ2DYRKbasb0KCbMOciE0069GOxkWg"/>
         <server name="STRIPE_PRODUCTION_ID" value="prod_LRvVwxb1uNzTlM"/>
+        <server name="HELLOSIGN_API_KEY" value="6b3ad195d0fff7be0bde1a2111f54d01ad950ea4f688e11331ac592ee3046788"/>
+        <server name="HELLOSIGN_CLIENT_ID" value="d0cb9c3a8a0ce7b34a62985617bf22eb"/>
     </php>
 </phpunit>
