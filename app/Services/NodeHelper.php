@@ -542,7 +542,8 @@ class NodeHelper
 
         // find MBS
         rsort($MBS_arr);
-        $MBS = $MBS_arr[99] ?? $MBS_arr[count($MBS_arr) - 1];
+        $MBS = null;
+        if (count($MBS_arr) > 0) $MBS = $MBS_arr[99] ?? $MBS_arr[count($MBS_arr) - 1];
         $global_validator_standing['MBS'] = $MBS;
 
         // DailyEarning garbage cleanup

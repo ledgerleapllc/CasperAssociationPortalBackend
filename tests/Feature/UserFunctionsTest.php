@@ -556,4 +556,28 @@ class UserFunctionsTest extends TestCase
                     'data',
                 ]);
     }
+
+    /*
+    public function testGetEarningByNode() {
+
+    }
+    */
+
+    public function testGetChartEarningByNode() {
+        $node = '01ebaebffebe63ee6e35b88697dd9d5bfab23dac47cbd61a45efc8ea8d80ec9c38';
+        $token = $this->getUserToken($node);
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('get', '/api/v1/nodes/' . $node . '/chart');
+
+        $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
 }
