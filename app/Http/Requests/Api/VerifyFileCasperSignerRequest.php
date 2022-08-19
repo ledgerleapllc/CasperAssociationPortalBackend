@@ -24,7 +24,7 @@ class VerifyFileCasperSignerRequest extends FormRequest
     public function rules()
     {
         return [
-            'file' => 'required|file',
+            'file' => 'required|file|max:1024',
             'address' => 'required',
         ];
     }

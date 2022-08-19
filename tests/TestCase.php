@@ -16,7 +16,7 @@ use App\Models\VerifyUser;
 abstract class TestCase extends BaseTestCase
 {
     use CreatesApplication, DatabaseMigrations;
-
+    
     public function setUp(): void
     {
         parent::setUp();
@@ -24,7 +24,7 @@ abstract class TestCase extends BaseTestCase
         Artisan::call('cache:clear');
         Artisan::call('passport:install');
     }
-
+    
     public function addAdmin() {
         $user = User::where(['email' => 'ledgerleapllcadmin@gmail.com'])->first();
         if (!$user) {
@@ -51,7 +51,7 @@ abstract class TestCase extends BaseTestCase
         $response = $this->withHeaders([
             'Accept' => 'application/json',
         ])->json('post', '/api/v1/auth/login', $params);
-
+        
         $apiResponse = $response->baseResponse->getData();
 
         if ($apiResponse && isset($apiResponse->data) && isset($apiResponse->data->access_token))
@@ -59,14 +59,14 @@ abstract class TestCase extends BaseTestCase
         return null;
     }
 
-    public function addUser() {
+    public function addUser($node = null) {
         $first_name = 'Test';
         $last_name = 'Individual';
         $email = 'testindividual@gmail.com';
         $password = 'TestIndividual111@';
         $pseudonym = 'testindividual';
         $telegram = '@testindividual';
-
+        
         $user = User::where('email', $email)->first();
         if (!$user) {
             $user = new User;
@@ -81,13 +81,14 @@ abstract class TestCase extends BaseTestCase
             $user->signature_request_id = 'TestSignatureRequestId';
             $user->role = 'member';
             $user->letter_file = 'LetterFileLink';
+            if ($node) $user->public_address_node = $node;
             $user->save();
         }
         return $user;
     }
 
-    public function getUserToken() {
-        $this->addUser();
+    public function getUserToken($node = null) {
+        $this->addUser($node);
 
         $params = [
             'email' => 'testindividual@gmail.com',

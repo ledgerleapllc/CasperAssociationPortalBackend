@@ -301,8 +301,8 @@ class UserController extends Controller
                 'http://casper.local/',
                 'https://backend.caspermember.com',
                 'https://backend.caspermember.com/',
-                'https://stage.membersbackend.casper.network',
-                'https://stage.membersbackend.casper.network/',
+                'https://members-backend-staging.casper.network',
+                'https://members-backend-staging.casper.network/',
             ];
 
             if (in_array(env('APP_URL'), $whitelist)) $request->enableTestMode();
@@ -344,25 +344,42 @@ class UserController extends Controller
     {
         $user = auth()->user();
         $address = strtolower($request->public_address);
-
-        $public_address_temp = (new ChecksumValidator())->do($address);
         $public_address = strtolower($address);
 
+        $public_address_temp = (new ChecksumValidator())->do($address);
+        if (!$public_address_temp) {
+            return $this->errorResponse(__('The validator ID is invalid'), Response::HTTP_BAD_REQUEST);
+        }
+        
         $correct_checksum = (int) (new ChecksumValidator($public_address_temp))->do();
-        if (!$correct_checksum)
-            return $this->errorResponse(__('Please provide valid address'), Response::HTTP_BAD_REQUEST);
+        if (!$correct_checksum) {
+            return $this->errorResponse(__('The validator ID is invalid'), Response::HTTP_BAD_REQUEST);
+        }
         
         // User Check
         $tempUser = User::where('public_address_node', $public_address)->first();
-        if ($tempUser && $tempUser->id != $user->id)
-            return $this->errorResponse(__('The address is already used by other user'), Response::HTTP_BAD_REQUEST);
-
+        if ($tempUser && $tempUser->id != $user->id && $tempUser->node_verified_at) {
+            return $this->errorResponse(__('The validator ID you specified is already associated with an Association member'), Response::HTTP_BAD_REQUEST);
+        }
+        
         // User Address Check
         $tempUserAddress = UserAddress::where('public_address_node', $public_address)->first();
-        if ($tempUserAddress && $tempUserAddress->user_id != $user->id)
-            return $this->errorResponse(__('The address is already used by other user'), Response::HTTP_BAD_REQUEST);
+        if ($tempUserAddress && $tempUserAddress->user_id != $user->id && $tempUserAddress->node_verified_at) {
+            return $this->errorResponse(__('The validator ID you specified is already associated with an Association member'), Response::HTTP_BAD_REQUEST);
+        }
 
-        if (!$tempUserAddress) {
+        // Pool Check
+        $nodeHelper = new NodeHelper();
+        $addresses = $nodeHelper->getValidAddresses();
+        if (!in_array($public_address, $addresses)) {
+            return $this->errorResponse(__('The validator ID specified could not be found in the Casper validator pool'), Response::HTTP_BAD_REQUEST);
+        }
+        
+        // Remove Other User's Same Address
+        UserAddress::where('public_address_node', $public_address)->where('user_id', '!=', $user->id)->whereNull('node_verified_at')->delete();
+        User::where('public_address_node', $public_address)->where('id', '!=', $user->id)->whereNull('node_verified_at')->update(['public_address_node' => null]);
+        
+        if (!$tempUserAddress || $tempUserAddress->user_id != $user->id) {
             $userAddress = new UserAddress;
             $userAddress->user_id = $user->id;
             $userAddress->public_address_node = $public_address;
@@ -377,70 +394,76 @@ class UserController extends Controller
         return $this->metaSuccess();
     }
 
-    public function checkPublicAddress(SubmitPublicAddressRequest $request)
+    public function checkValidatorAddress(SubmitPublicAddressRequest $request)
     {
-        $user = auth()->user();
         $address = strtolower($request->public_address);
 
         $public_address_temp = (new ChecksumValidator())->do($address);
         $public_address = strtolower($address);
+
+        if (!$public_address_temp) {
+            return $this->successResponse(['message' => __('The validator ID is invalid')]);
+        }
 
         $correct_checksum = (int) (new ChecksumValidator($public_address_temp))->do();
         if (!$correct_checksum) {
-            return $this->errorResponse(
-                __('Please provide valid address'), 
-                Response::HTTP_BAD_REQUEST
-            );
+            return $this->successResponse(['message' => __('The validator ID is invalid')]);
         }
 
         // User Check
         $tempUser = User::where('public_address_node', $public_address)->first();
-        if ($tempUser) {
-            return $this->errorResponse(
-                __('The address is already used by other user'), 
-                Response::HTTP_BAD_REQUEST
-            );
+        if ($tempUser && $tempUser->node_verified_at) {
+            return $this->successResponse(['message' => __('The validator ID you specified is already associated with an Association member')]);
         }
 
         // User Address Check
         $tempUserAddress = UserAddress::where('public_address_node', $public_address)->first();
-        if ($tempUserAddress) {
-            return $this->errorResponse(
-                __('The address is already used by other user'), 
-                Response::HTTP_BAD_REQUEST
-            );
+        if ($tempUserAddress && $tempUserAddress->node_verified_at) {
+            return $this->successResponse(['message' => __('The validator ID you specified is already associated with an Association member')]);
         }
 
+        $nodeHelper = new NodeHelper();
+        $addresses = $nodeHelper->getValidAddresses();
+        if (!in_array($public_address, $addresses)) {
+            return $this->successResponse(['message' => __('The validator ID specified could not be found in the Casper validator pool')]);
+        }
         return $this->metaSuccess();
     }
 
-    public function submitPublicAddress2(SubmitPublicAddressRequest $request)
+    public function checkPublicAddress(SubmitPublicAddressRequest $request)
     {
-        $user = auth()->user();
         $address = strtolower($request->public_address);
-
-        $public_address_temp = (new ChecksumValidator())->do($address);
         $public_address = strtolower($address);
 
+        $public_address_temp = (new ChecksumValidator())->do($address);
+        if (!$public_address_temp) {
+            return $this->errorResponse(__('The validator ID is invalid'), Response::HTTP_BAD_REQUEST);
+        }
+
         $correct_checksum = (int) (new ChecksumValidator($public_address_temp))->do();
-        if (!$correct_checksum)
-            return $this->errorResponse(__('Please provide valid address'), Response::HTTP_BAD_REQUEST);
+        if (!$correct_checksum) {
+            return $this->errorResponse(__('The validator ID is invalid'), Response::HTTP_BAD_REQUEST);
+        }
 
         // User Check
         $tempUser = User::where('public_address_node', $public_address)->first();
-        if ($tempUser)
-            return $this->errorResponse(__('The address is already used by other user'), Response::HTTP_BAD_REQUEST);
+        if ($tempUser && $tempUser->node_verified_at) {
+            return $this->errorResponse(__('The validator ID you specified is already associated with an Association member'), Response::HTTP_BAD_REQUEST);
+        }
 
         // User Address Check
         $tempUserAddress = UserAddress::where('public_address_node', $public_address)->first();
-        if ($tempUserAddress)
-            return $this->errorResponse(__('The address is already used by other user'), Response::HTTP_BAD_REQUEST);
+        if ($tempUserAddress && $tempUserAddress->node_verified_at) {
+            return $this->errorResponse(__('The validator ID you specified is already associated with an Association member'), Response::HTTP_BAD_REQUEST);
+        }
 
-        $userAddress = new UserAddress;
-        $userAddress->user_id = $user->id;
-        $userAddress->public_address_node = $public_address;
-        $userAddress->save();
-        
+        // Pool Check
+        $nodeHelper = new NodeHelper();
+        $addresses = $nodeHelper->getValidAddresses();
+        if (!in_array($public_address, $addresses)) {
+            return $this->errorResponse(__('The validator ID specified could not be found in the Casper validator pool'), Response::HTTP_BAD_REQUEST);
+        }
+
         return $this->metaSuccess();
     }
 
@@ -467,11 +490,12 @@ class UserController extends Controller
             $userRecord = User::where('public_address_node', $public_validator_key)->first();
             $userAddress = UserAddress::where('public_address_node', $public_validator_key)->first();
 
-            if ($userRecord || $userAddress) {
-                return $this->errorResponse(
-                    __($this->failed_verification_response),
-                    Response::HTTP_BAD_REQUEST
-                );
+            if ($userRecord && $userRecord->node_verified_at) {
+                return $this->errorResponse(__($this->failed_verification_response), Response::HTTP_BAD_REQUEST);
+            }
+
+            if ($userAddress && $userAddress->node_verified_at) {
+                return $this->errorResponse(__($this->failed_verification_response), Response::HTTP_BAD_REQUEST);
             }
 
             $file = $request->file;
@@ -505,7 +529,12 @@ class UserController extends Controller
 
                     $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL').'/not-found';
 
-                    $userAddress = new UserAddress;
+                    // Remove Other User's Same Address
+                    UserAddress::where('public_address_node', $public_validator_key)->where('user_id', '!=', $user->id)->whereNull('node_verified_at')->delete();
+                    User::where('public_address_node', $public_validator_key)->where('id', '!=', $user->id)->whereNull('node_verified_at')->update(['public_address_node' => null]);
+                    
+                    $userAddress = UserAddress::where('public_address_node', $public_validator_key)->where('user_id', $user->id)->first();
+                    if (!$userAddress) $userAddress = new UserAddress;
                     $userAddress->user_id = $user->id;
                     $userAddress->public_address_node = $public_validator_key;
                     $userAddress->signed_file = $ObjectURL;
@@ -540,12 +569,8 @@ class UserController extends Controller
             $message = $user->message_content;
             $public_validator_key = strtolower($request->address);
 
-            $userRecord = User::where('id', $user->id)
-                                ->where('public_address_node', $public_validator_key)
-                                ->first();
-            $userAddress = UserAddress::where('user_id', $user->id)
-                                        ->where('public_address_node', $public_validator_key)
-                                        ->first();
+            $userRecord = User::where('id', $user->id)->where('public_address_node', $public_validator_key)->first();
+            $userAddress = UserAddress::where('user_id', $user->id)->where('public_address_node', $public_validator_key)->first();
             if (!$userRecord || !$userAddress) {
                 return $this->errorResponse(__($this->failed_verification_response), Response::HTTP_BAD_REQUEST);
             }
@@ -755,11 +780,34 @@ class UserController extends Controller
         if (!$sort_key) $sort_key = 'ballot.id';
         if (!$sort_direction) $sort_direction = 'desc';
 
-        if ($status != 'active' && $status != 'finish')
+        if ($status != 'active' && $status != 'finish' && $status != 'scheduled')
             return $this->errorResponse('Paramater invalid (status is active or finish)', Response::HTTP_BAD_REQUEST);
 
-        if ($status == 'active') $query = Ballot::where('status', 'active');
+        $now = Carbon::now('EST');
+        $startDate = $now->format('Y-m-d');
+        $startTime = $now->format('H:i:s');
+
+        if ($status == 'active') {
+            $query = Ballot::where('status', 'active')
+                            ->where(function ($query) use ($startDate, $startTime) {
+                                $query->where('start_date', '<', $startDate)
+                                        ->orWhere(function ($query) use ($startDate, $startTime) {
+                                            $query->where('start_date', $startDate)
+                                                    ->where('start_time', '<=', $startTime);
+                                        });
+                            });
+        } else if ($status == 'scheduled') {
+            $query = Ballot::where('status', 'active')
+                            ->where(function ($query) use ($startDate, $startTime) {
+                                $query->where('start_date', '>', $startDate)
+                                        ->orWhere(function ($query) use ($startDate, $startTime) {
+                                            $query->where('start_date', $startDate)
+                                                    ->where('start_time', '>', $startTime);
+                                        });
+                            });
+        }
         else $query = Ballot::where('status', '<>', 'active');
+
         $data = $query->with('vote')->orderBy($sort_key, $sort_direction)->paginate($limit);
 
         return $this->successResponse($data);
@@ -1364,7 +1412,7 @@ class UserController extends Controller
 
         if ($allPrices && isset($allPrices['data']) && count($allPrices['data'])) {
             foreach ($allPrices['data'] as $item) {
-                if ((int) $item->unit_price == $amount) {
+                if (isset($item->unit_price) && (int) $item->unit_price == $amount) {
                     $priceId = $item->id;
                     break;
                 }
