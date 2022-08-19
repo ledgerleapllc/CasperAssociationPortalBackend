@@ -711,4 +711,46 @@ class UserFunctionsTest extends TestCase
                     'data',
                 ]);
     }
+
+    public function testGetActiveVotes() {
+        $token = $this->getUserToken();
+
+        $params = [
+            'status' => 'active'
+        ];
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('get', '/api/v1/users/votes', $params);
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
+    public function testGetScheduledVotes() {
+        $token = $this->getUserToken();
+
+        $params = [
+            'status' => 'scheduled'
+        ];
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('get', '/api/v1/users/votes', $params);
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
 }
