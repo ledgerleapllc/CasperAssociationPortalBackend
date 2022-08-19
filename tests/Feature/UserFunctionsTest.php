@@ -429,7 +429,6 @@ class UserFunctionsTest extends TestCase
                 ]);
     }
 
-    /*
     public function testGetMessageContent() {
         $token = $this->getUserToken();
 
@@ -438,26 +437,91 @@ class UserFunctionsTest extends TestCase
             'Authorization' => 'Bearer ' . $token,
         ])->json('get', '/api/v1/users/message-content');
 
-        // $apiResponse = $response->baseResponse->getData();
-        // statusCode
+        $content = $response->streamedContent();
+
+        $response->assertStatus(200);
     }
 
     public function testSaveShuftiproTemp() {
+        $token = $this->getUserToken();
 
+        $params = [
+            'reference_id' => 'TestReferenceId'
+        ];
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('post', '/api/v1/users/shuftipro-temp', $params);
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
     }
 
     public function testUpdateShuftiproTemp() {
+        $token = $this->getUserToken();
 
+        $params = [
+            'reference_id' => 'TestReferenceId'
+        ];
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('put', '/api/v1/users/shuftipro-temp', $params);
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
     }
 
     public function testDeleteShuftiproTemp() {
+        $token = $this->getUserToken();
 
+        $params = [
+            'reference_id' => 'TestReferenceId'
+        ];
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('put', '/api/v1/users/shuftipro-temp/delete', $params);
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
     }
 
     public function testUploadLetter() {
+        $token = $this->getUserToken();
 
+        $file = UploadedFile::fake()->create('letter.pdf', 10, 'application/pdf');
+        $params = [
+            'file' => $file,
+        ];
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('post', '/api/v1/users/upload-letter', $params);
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
     }
-    */
 
     public function testListNodes() {
         $token = $this->getUserToken();
