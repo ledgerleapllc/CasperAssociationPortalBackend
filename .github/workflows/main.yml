@@ -1,0 +1,149 @@
+name: Main CICD
+
+
+#Run workflow on successful merge to development
+on:
+  - push
+  - pull_request
+
+
+jobs:
+  test-deployment:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set branch name (merge)
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr / -)" >> $GITHUB_ENV
+
+      - name: Set branch name (pull request)
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF} | tr / -)" >> $GITHUB_ENV
+
+      - name: Set dev environment for test deployment
+        run: |
+          echo "DEPLOYMENT_ENV=dev" >> $GITHUB_ENV
+
+      - name: Configure AWS credentials
+        id: aws-credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+            aws-access-key-id: ${{ secrets.PARAMS_AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.PARAMS_AWS_SECRET_KEY }}
+            aws-region: eu-central-1
+
+      - name: Get parameters from AWS SSM
+        run: |
+          set -e
+          for param in $(aws ssm describe-parameters --query "Parameters[*].Name" | sed -e 's/"//g' -e 's/,//g' -e 's/[][]//g');
+            do echo "$(echo $param | sed 's/_dev//g' | sed 's/-/_/g' | tr '[:lower:]' '[:upper:]')=$(aws ssm get-parameter --name $param --with-decryption --output text | awk '{ print $7 }')" >> $GITHUB_ENV;
+          done;
+
+
+      - name: Read secrets from AWS Secrets Manager into environment variables
+        run: |
+          set -e
+          for secret_name in $(aws secretsmanager list-secrets --query 'SecretList[*].{Name:Name,ARN:ARN}' --output text --filters Key="name",Values="ca-member-port_dev_be" | awk '{print $2}'); do
+            echo "$(echo $secret_name | sed 's/_dev//g' | sed 's/-/_/g' | tr '[:lower:]' '[:upper:]' )=$(aws secretsmanager get-secret-value --secret-id $secret_name --query SecretString --output text)" >> $GITHUB_ENV;
+          done
+
+      # Run a test deployment on the runner with ansible
+      - name: Run playbook
+        uses: dawidd6/action-ansible-playbook@671974ed60e946e11964cb0c26e69caaa4b1f559
+        with:
+          # Required, playbook filepath
+          playbook: play.yml
+          # Optional, directory where playbooks live
+          directory: ./ansible
+          # Optional, literal inventory file contents
+          inventory: |
+            [casper-mem-port-backend]
+            localhost ansible_connection=local
+
+          # Optional, additional flags to pass to ansible-playbook
+          options: |
+            --limit casper-mem-port-backend
+            --verbose
+            --extra-vars "git_version=${{ env.BRANCH_NAME }}"
+
+  deployment:
+    if: github.ref == 'refs/heads/development' || github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set branch name (merge)
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr / -)" >> $GITHUB_ENV
+
+      - name: Set branch name (pull request)
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF} | tr / -)" >> $GITHUB_ENV
+
+      - name: Set dev environment for test deployment
+        run: |
+          if [ "${{ github.ref }}" == "refs/heads/development" ]; then
+            echo "DEPLOYMENT_ENV=dev" >> $GITHUB_ENV
+          elif [ "${{ github.ref }}" == "refs/heads/staging" ]; then
+            echo "DEPLOYMENT_ENV=staging" >> $GITHUB_ENV
+          elif [ "${{ github.ref }}" == "refs/heads/master" ]; then
+            echo "DEPLOYMENT_ENV=prod" >> $GITHUB_ENV
+          fi
+
+      - name: Configure AWS credentials
+        id: aws-credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+            aws-access-key-id: ${{ secrets.PARAMS_AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.PARAMS_AWS_SECRET_KEY }}
+            aws-region: eu-central-1
+
+      - name: Get parameters from AWS SSM
+        run: |
+          set -e
+          for param in $(aws ssm describe-parameters --query "Parameters[*].Name" | sed -e 's/"//g' -e 's/,//g' -e 's/[][]//g');
+            do echo "$(echo $param | sed 's/_dev//g' | sed 's/-/_/g' | tr '[:lower:]' '[:upper:]')=$(aws ssm get-parameter --name $param --with-decryption --output text | awk '{ print $7 }')" >> $GITHUB_ENV;
+          done;
+
+      - name: Read secrets from AWS Secrets Manager into environment variables
+        run: |
+          set -e
+          export REPL_EXPR="'s/_$DEPLOYMENT_ENV//g'"
+          for secret_name in $(aws secretsmanager list-secrets --query 'SecretList[*].{Name:Name,ARN:ARN}' --output text --filters Key="name",Values="ca-member-port_dev_be" | awk '{print $2}'); do
+            echo "$(echo $secret_name | sed $REPL_EXPR | sed 's/-/_/g' | tr '[:lower:]' '[:upper:]' )=$(aws secretsmanager get-secret-value --secret-id $secret_name --query SecretString --output text)" >> $GITHUB_ENV;
+          done
+
+      - name: Configure SSH key
+        run: |
+          echo "$CA_MEMBER_PORT_BE_SSH_KEY" > ~/.ssh/id_rsa
+
+      - name: Set up ssh config for target host
+        run: |
+          echo "Host casper-mem-port-backend
+            HostName $CA_MEMBER_PORT_BE_SSH_HOST
+            User $CA_MEMBER_PORT_BE_SSH_USER
+            IdentityFile ~/.ssh/id_rsa" > ~/.ssh/config
+
+      # Run a test deployment on the runner with ansible
+      - name: Run playbook
+        uses: dawidd6/action-ansible-playbook@671974ed60e946e11964cb0c26e69caaa4b1f559
+        with:
+          # Required, playbook filepath
+          playbook: play.yml
+          # Optional, directory where playbooks live
+          directory: ./ansible
+          # Optional, literal inventory file contents
+          inventory: |
+            [casper-mem-port-backend]
+            casper-mem-port-backend
+
+          # Optional, additional flags to pass to ansible-playbook
+          options: |
+            --limit casper-mem-port-backend
+            --verbose
+            --extra-vars "git_version=${{ env.BRANCH_NAME }}"
