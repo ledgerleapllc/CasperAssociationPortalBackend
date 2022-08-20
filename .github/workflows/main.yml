@@ -71,7 +71,7 @@ jobs:
             --extra-vars "git_version=${{ env.BRANCH_NAME }}"
 
   deployment:
-    if: github.ref == 'refs/heads/development' || github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/development'
     runs-on: ubuntu-latest
 
     steps:
