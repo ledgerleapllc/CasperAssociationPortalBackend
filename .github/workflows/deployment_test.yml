@@ -36,17 +36,13 @@ jobs:
             aws-secret-access-key: ${{ secrets.PARAMS_AWS_SECRET_KEY }}
             aws-region: eu-central-1
 
-      - name: Get parameters from AWS SSM
+      - name: Set parameters and secrets AWS SSM PM and SM
         run: |
           set -e
           for param in $(aws ssm describe-parameters --query "Parameters[*].Name" | sed -e 's/"//g' -e 's/,//g' -e 's/[][]//g');
             do echo "$(echo $param | sed 's/_dev//g' | sed 's/-/_/g' | tr '[:lower:]' '[:upper:]')=$(aws ssm get-parameter --name $param --with-decryption --output text | awk '{ print $7 }')" >> $GITHUB_ENV;
           done;
 
-
-      - name: Read secrets from AWS Secrets Manager into environment variables
-        run: |
-          set -e
           for secret_name in $(aws secretsmanager list-secrets --query 'SecretList[*].{Name:Name,ARN:ARN}' --output text --filters Key="name",Values="ca-member-port_dev_be" | awk '{print $2}'); do
             echo "$(echo $secret_name | sed 's/_dev//g' | sed 's/-/_/g' | tr '[:lower:]' '[:upper:]' )=$(aws secretsmanager get-secret-value --secret-id $secret_name --query SecretString --output text)" >> $GITHUB_ENV;
           done
@@ -68,4 +64,4 @@ jobs:
           options: |
             --limit casper-mem-port-backend
             --verbose
-            --extra-vars "git_version=${{ env.BRANCH_NAME }}"
+            --extra-vars "git_version=${{ env.BRANCH_NAME }},deployment.env=local"
