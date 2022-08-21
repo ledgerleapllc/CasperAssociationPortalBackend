@@ -1,4 +1,4 @@
-name: Main CICD
+name: Deployment test
 
 
 #Run workflow on successful merge to development
@@ -40,12 +40,19 @@ jobs:
         run: |
           set -e
           for param in $(aws ssm describe-parameters --query "Parameters[*].Name" | sed -e 's/"//g' -e 's/,//g' -e 's/[][]//g');
-            do echo "$(echo $param | sed 's/_dev//g' | sed 's/-/_/g' | tr '[:lower:]' '[:upper:]')=$(aws ssm get-parameter --name $param --with-decryption --output text | awk '{ print $7 }')" >> $GITHUB_ENV;
+          do
+            secret_value=$(aws ssm get-parameter --name $param --with-decryption --output text | awk '{ print $7 }')
+            echo "::add-mask::$secret_value"
+            echo "$(echo $param | sed 's/_dev//g' | sed 's/-/_/g' | tr '[:lower:]' '[:upper:]')=$secret_value" >> $GITHUB_ENV;
+
           done;
 
           for secret_name in $(aws secretsmanager list-secrets --query 'SecretList[*].{Name:Name,ARN:ARN}' --output text --filters Key="name",Values="ca-member-port_dev_be" | awk '{print $2}'); do
-            echo "$(echo $secret_name | sed 's/_dev//g' | sed 's/-/_/g' | tr '[:lower:]' '[:upper:]' )=$(aws secretsmanager get-secret-value --secret-id $secret_name --query SecretString --output text)" >> $GITHUB_ENV;
+            secret_value=$(aws secretsmanager get-secret-value --secret-id $secret_name --query SecretString --output text)
+            echo "::add-mask::$secret_value"
+            echo "$(echo $secret_name | sed 's/_dev//g' | sed 's/-/_/g' | tr '[:lower:]' '[:upper:]' )=$secret_value" >> $GITHUB_ENV;
           done
+
 
       # Run a test deployment on the runner with ansible
       - name: Run playbook
