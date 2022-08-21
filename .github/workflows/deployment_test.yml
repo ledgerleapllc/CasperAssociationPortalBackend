@@ -71,4 +71,4 @@ jobs:
           options: |
             --limit casper-mem-port-backend
             --verbose
-            --extra-vars "git_version=${{ env.BRANCH_NAME }},deployment.env=local"
+            --extra-vars "git_version=${{ env.BRANCH_NAME }} deployment.env=local"
