@@ -36,7 +36,7 @@ jobs:
           TO_BRANCH: "staging"
           REVIEWERS: '["ledgerleapllc"]'
           CONTENT_COMPARISON: true
-          PULL_REQUEST_BODY: "This PR is created by the PR Bot to sync the development branch to the staging branch. Please check the content changes also on the development site if you want. You can feel free to ignore this or approve + merge it. If you merge, the prod deployment will start automatically. If you ignore it, it will get renewed the next time a new feature gets merged to the development branch."
+          PULL_REQUEST_BODY: "This PR is created by the PR Bot to sync the development branch to the staging branch. Please check the content changes also on the development site if you want. You can feel free to ignore this or approve + merge it. If you merge, the staging deployment will start automatically. If you ignore it, it will get renewed the next time a new feature gets merged to the development branch."
           PULL_REQUEST_TITLE: "Sync development to staging"
 
       #Display the pull request URL:

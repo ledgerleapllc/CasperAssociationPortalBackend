@@ -14,12 +14,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Get branch name (merge)
+      - name: Set branch name (merge)
         if: github.event_name != 'pull_request'
         shell: bash
         run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr / -)" >> $GITHUB_ENV
 
-      - name: Get branch name (pull request)
+      - name: Set branch name (pull request)
         if: github.event_name == 'pull_request'
         shell: bash
         run: echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF} | tr / -)" >> $GITHUB_ENV
@@ -36,24 +36,27 @@ jobs:
             aws-secret-access-key: ${{ secrets.PARAMS_AWS_SECRET_KEY }}
             aws-region: eu-central-1
 
-      - name: Get parameters from AWS SSM
+      - name: Set parameters and secrets AWS SSM PM and SM
         run: |
           set -e
           for param in $(aws ssm describe-parameters --query "Parameters[*].Name" | sed -e 's/"//g' -e 's/,//g' -e 's/[][]//g');
-            do echo "$(echo $param | sed 's/_dev//g' | sed 's/-/_/g' | tr '[:lower:]' '[:upper:]')=$(aws ssm get-parameter --name $param --with-decryption --output text | awk '{ print $7 }')" >> $GITHUB_ENV;
+          do
+            secret_value=$(aws ssm get-parameter --name $param --with-decryption --output text | awk '{ print $7 }')
+            echo "::add-mask::$secret_value"
+            echo "$(echo $param | sed 's/_dev//g' | sed 's/-/_/g' | tr '[:lower:]' '[:upper:]')=$secret_value" >> $GITHUB_ENV;
+
           done;
 
-
-      - name: Read secrets from AWS Secrets Manager into environment variables
-        run: |
-          set -e
           for secret_name in $(aws secretsmanager list-secrets --query 'SecretList[*].{Name:Name,ARN:ARN}' --output text --filters Key="name",Values="ca-member-port_dev_be" | awk '{print $2}'); do
-            echo "$(echo $secret_name | sed 's/_dev//g' | sed 's/-/_/g' | tr '[:lower:]' '[:upper:]' )=$(aws secretsmanager get-secret-value --secret-id $secret_name --query SecretString --output text)" >> $GITHUB_ENV;
+            secret_value=$(aws secretsmanager get-secret-value --secret-id $secret_name --query SecretString --output text)
+            echo "::add-mask::$secret_value"
+            echo "$(echo $secret_name | sed 's/_dev//g' | sed 's/-/_/g' | tr '[:lower:]' '[:upper:]' )=$secret_value" >> $GITHUB_ENV;
           done
+
 
       # Run a test deployment on the runner with ansible
       - name: Run playbook
-        uses: dawidd6/action-ansible-playbook@v2
+        uses: dawidd6/action-ansible-playbook@671974ed60e946e11964cb0c26e69caaa4b1f559
         with:
           # Required, playbook filepath
           playbook: play.yml
@@ -68,4 +71,4 @@ jobs:
           options: |
             --limit casper-mem-port-backend
             --verbose
-            --extra-vars "git_version=${{ env.BRANCH_NAME }}"
+            --extra-vars "git_version=${{ env.BRANCH_NAME }} deployment_env=local"
