@@ -19,8 +19,15 @@ class HelloSignController extends Controller
 
         $data = json_decode($payload, true);
         $api_key = env('HELLOSIGN_API_KEY_HOOK');
-        
+
         if (!is_array($data)) return "error";
+
+        // hellosign test check
+        $callback_test = $data['event']['event_type'] ?? '';
+
+        if ($callback_test == 'callback_test') {
+            return "Hello API Event Received";
+        }
 
         $md5_header_check = base64_encode(hash_hmac('md5', $payload, $api_key));
         $md5_header = $request->header('Content-MD5');
