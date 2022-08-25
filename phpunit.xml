@@ -18,7 +18,7 @@
         </include>
     </coverage>
     <php>
-        <server name="APP_ENV" value="development"/>
+        <server name="APP_ENV" value="dev"/>
         <server name="APP_URL" value="http://casper.local"/>
         <server name="BCRYPT_ROUNDS" value="4"/>
         <server name="CACHE_DRIVER" value="array"/>
