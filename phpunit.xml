@@ -28,13 +28,5 @@
         <server name="QUEUE_CONNECTION" value="sync"/>
         <server name="SESSION_DRIVER" value="array"/>
         <server name="TELESCOPE_ENABLED" value="false"/>
-        <env name="SITE_URL" value="http://localhost:3000"/>
-        <env name="STRIPE_SEC_KEY" value="sk_test_51Kl0SHFp9k9JM7BlFpK9zO88K6c6yUM8BtyPdTMaOgvovlDO3xumYOLzqjOC7O4K4yZCLZ2DYRKbasb0KCbMOciE0069GOxkWg"/>
-        <env name="STRIPE_PRODUCTION_ID" value="prod_LRvVwxb1uNzTlM"/>
-        <env name="HELLOSIGN_API_KEY" value="63fc7d51d45b85f4f8a76de4471bab2cd5885fb96ef7e51c796668da8a2949fc"/>
-        <env name="HELLOSIGN_CLIENT_ID" value="14f517b99b624b3485eeb5a5b856cdad"/>
-        <env name="NODE_IP" value="18.219.70.138"/>
-        <env name="BACKUP_NODE_IP" value=""/>
-        <env name="ACCOUNT_INFO_STANDARD_URLS_UREF" value="uref-0d689e987db7ee5be246282c3a7badf0411e34baeeab8e9d73c1223ae4ad02e5-007"/>
     </php>
 </phpunit>
