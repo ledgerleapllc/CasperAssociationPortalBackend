@@ -95,45 +95,6 @@ class UserFunctionsTest extends TestCase
                 ]);
     }
 
-    public function testGetDonation() {
-        $params = [
-            'sessionId' => 'cs_test_a1DLPYuwW0FCjwvnH8eRr9hdHZk8yPAQT5JFL1sEYRrEoiwlKHsEywo9Mw'
-        ];
-
-        $response = $this->withHeaders([
-            'Accept' => 'application/json',
-        ])->json('get', '/api/v1/donation', $params);
-
-        // $apiResponse = $response->baseResponse->getData();
-
-        $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'message',
-                    'data',
-                ]);
-    }
-
-    public function testSubmitDonation() {
-        $params = [
-            'first_name' => 'Test',
-            'last_name' => 'Individual',
-            'email' => 'testindividual@gmail.com',
-            'amount' => 20,
-        ];
-
-        $response = $this->withHeaders([
-            'Accept' => 'application/json',
-        ])->json('post', '/api/v1/donation', $params);
-
-        // $apiResponse = $response->baseResponse->getData();
-
-        $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'message',
-                    'data',
-                ]);
-    }
-
     public function testSubmitContact() {
         $params = [
             'name' => 'Test Individual',
@@ -238,23 +199,6 @@ class UserFunctionsTest extends TestCase
             'Accept' => 'application/json',
             'Authorization' => 'Bearer ' . $token,
         ])->json('post', '/api/v1/users/logout');
-
-        // $apiResponse = $response->baseResponse->getData();
-
-        $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'message',
-                    'data',
-                ]);
-    }
-
-    public function testHellosignRequest() {
-        $token = $this->getUserToken();
-
-        $response = $this->withHeaders([
-            'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $token,
-        ])->json('post', '/api/v1/users/hellosign-request');
 
         // $apiResponse = $response->baseResponse->getData();
 
