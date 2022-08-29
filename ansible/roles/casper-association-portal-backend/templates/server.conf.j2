@@ -1,0 +1,11 @@
+<VirtualHost *:80>
+    ServerName {{ apache_server_name.stdout }}
+    DocumentRoot {{ app.home }}/public
+    <Directory {{ app.home }}/public>
+        Options Indexes FollowSymLinks MultiViews
+        AllowOverride All
+        Require all granted
+    </Directory>
+    ErrorLog ${APACHE_LOG_DIR}/error.log
+    CustomLog ${APACHE_LOG_DIR}/access.log combineid
+</VirtualHost>
