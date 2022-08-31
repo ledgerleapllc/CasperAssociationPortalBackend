@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Date;
 use App\Models\User;
 use App\Models\Profile;
 use App\Models\VerifyUser;
+use App\Models\PagePermission;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -85,6 +86,43 @@ abstract class TestCase extends BaseTestCase
             $user->save();
         }
         return $user;
+    }
+
+    public function blockAccess($userId, $name) {
+        $permission = PagePermission::where('user_id', $userId)->where('name', $name)->first();
+        if (!$permission) $permission = new PagePermission;
+        $permission->user_id = $userId;
+        $permission->name = $name;
+        $permission->is_permission = 0;
+        $permission->save();
+    }
+
+    public function unBlockAccess($userId, $name) {
+        $permission = PagePermission::where('user_id', $userId)->where('name', $name)->first();
+        if (!$permission) $permission = new PagePermission;
+        $permission->user_id = $userId;
+        $permission->name = $name;
+        $permission->is_permission = 1;
+        $permission->save();
+    }
+
+    public function getUserTokenData($node = null) {
+        $user = $this->addUser($node);
+
+        $params = [
+            'email' => 'testindividual@gmail.com',
+            'password' => 'TestIndividual111@',
+        ];
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+        ])->json('post', '/api/v1/auth/login', $params);
+
+        $apiResponse = $response->baseResponse->getData();
+
+        if ($apiResponse && isset($apiResponse->data) && isset($apiResponse->data->access_token))
+            return ['user' => $user, 'token' => $apiResponse->data->access_token];
+        return null;
     }
 
     public function getUserToken($node = null) {

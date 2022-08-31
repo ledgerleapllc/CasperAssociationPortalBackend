@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\MetricController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PerkController;
 use App\Http\Controllers\Api\V1\VerificationController;
+use App\Http\Controllers\Api\V1\BlockAccessController;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -198,6 +199,9 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::delete('/contact-recipients/{id}',  [ContactController::class, 'deleteContactRecipients'])->where('id', '[0-9]+');
             Route::get('/membership-file',  [AdminController::class, 'getMembershipFile']);
             Route::post('/membership-file',  [AdminController::class, 'uploadMembershipFile']);
+        
+            // Block Access
+            Route::post('/block-access', [BlockAccessController::class, 'updateBlockAccess']);
         });
         
         Route::get('/verified-members/all', [UserController::class, 'getVerifiedMembers']);
