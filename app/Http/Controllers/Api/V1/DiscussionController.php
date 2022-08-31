@@ -266,8 +266,10 @@ class DiscussionController extends Controller
 
         $data['comment'] = $this->discussionCommentRepo->create($model_data);
         $discussion = $this->discussionRepo->find($id);
-        $discussion->comments = $discussion->comments + 1;
-        $discussion->save();
+        if ($discussion) {
+            $discussion->comments = $discussion->comments + 1;
+            $discussion->save();
+        }
 
         $data['comment']['user'] = $user;
 

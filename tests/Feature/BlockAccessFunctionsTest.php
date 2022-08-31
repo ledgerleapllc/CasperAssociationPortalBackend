@@ -603,29 +603,260 @@ class BlockAccessFunctionsTest extends TestCase
         $this->assertTrue($message == 'Your access is blocked');
     }
 
-    /*
     public function testPublishDraftDiscussion() {
+        $tokenData = $this->getUserTokenData();
+        $user = $tokenData['user'];
+        $token = $tokenData['token'];
 
+        $this->unBlockAccess($user->id, 'discussions');
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('post', '/api/v1/discussions/1/publish');
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+
+        $this->blockAccess($user->id, 'discussions');
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('post', '/api/v1/discussions/1/publish');
+
+        $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(400)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+
+        $message = $apiResponse->message;
+        $this->assertTrue($message == 'Your access is blocked');
     }
 
     public function testCreateComment() {
+        $tokenData = $this->getUserTokenData();
+        $user = $tokenData['user'];
+        $token = $tokenData['token'];
 
+        $this->unBlockAccess($user->id, 'discussions');
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('post', '/api/v1/discussions/1/comment', [
+            'description' => 'Comment Description'
+        ]);
+
+        $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+
+        $data = $apiResponse->data;
+        $this->assertTrue(is_object($data) && property_exists($data, 'comment'));
+
+        $this->blockAccess($user->id, 'discussions');
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('post', '/api/v1/discussions/1/comment', [
+            'description' => 'Comment Description'
+        ]);
+
+        $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(400)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+
+        $message = $apiResponse->message;
+        $this->assertTrue($message == 'Your access is blocked');
     }
 
     public function testUpdateComment() {
+        $tokenData = $this->getUserTokenData();
+        $user = $tokenData['user'];
+        $token = $tokenData['token'];
 
+        $this->unBlockAccess($user->id, 'discussions');
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('put', '/api/v1/discussions/1/comment', [
+            'description' => 'Comment Description',
+            'comment_id' => 1,
+        ]);
+
+        $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(400)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+
+        $message = $apiResponse->message;
+        $this->assertTrue($message == 'Invalid discussion id');
+
+        $this->blockAccess($user->id, 'discussions');
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('put', '/api/v1/discussions/1/comment', [
+            'description' => 'Comment Description',
+            'comment_id' => 1,
+        ]);
+
+        $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(400)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+
+        $message = $apiResponse->message;
+        $this->assertTrue($message == 'Your access is blocked');
     }
 
     public function testSetVote() {
+        $tokenData = $this->getUserTokenData();
+        $user = $tokenData['user'];
+        $token = $tokenData['token'];
 
+        $this->unBlockAccess($user->id, 'discussions');
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('post', '/api/v1/discussions/1/vote', [
+            'is_like' => true,
+        ]);
+
+        $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(400)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+
+        $message = $apiResponse->message;
+        $this->assertTrue($message == 'Invalid discussion id');
+
+        $this->blockAccess($user->id, 'discussions');
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('post', '/api/v1/discussions/1/vote', [
+            'is_like' => true,
+        ]);
+
+        $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(400)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+
+        $message = $apiResponse->message;
+        $this->assertTrue($message == 'Your access is blocked');
     }
 
     public function testSetPin() {
+        $tokenData = $this->getUserTokenData();
+        $user = $tokenData['user'];
+        $token = $tokenData['token'];
 
+        $this->unBlockAccess($user->id, 'discussions');
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('post', '/api/v1/discussions/1/pin');
+
+        $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+
+        $this->blockAccess($user->id, 'discussions');
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('post', '/api/v1/discussions/1/pin');
+
+        $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(400)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+
+        $message = $apiResponse->message;
+        $this->assertTrue($message == 'Your access is blocked');
     }
 
     public function testRemoveNewMark() {
+        $tokenData = $this->getUserTokenData();
+        $user = $tokenData['user'];
+        $token = $tokenData['token'];
 
+        $this->unBlockAccess($user->id, 'discussions');
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('delete', '/api/v1/discussions/1/new');
+
+        $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+
+        $this->blockAccess($user->id, 'discussions');
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('delete', '/api/v1/discussions/1/new');
+
+        $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(400)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+
+        $message = $apiResponse->message;
+        $this->assertTrue($message == 'Your access is blocked');
     }
-    */
 }
