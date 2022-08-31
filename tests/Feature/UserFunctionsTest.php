@@ -657,7 +657,11 @@ class UserFunctionsTest extends TestCase
     }
 
     public function testGetActiveVotes() {
-        $token = $this->getUserToken();
+        $tokenData = $this->getUserTokenData();
+        $user = $tokenData['user'];
+        $token = $tokenData['token'];
+
+        $this->unBlockAccess($user->id, 'votes');
 
         $params = [
             'status' => 'active'
@@ -668,13 +672,44 @@ class UserFunctionsTest extends TestCase
             'Authorization' => 'Bearer ' . $token,
         ])->json('get', '/api/v1/users/votes', $params);
 
-        // $apiResponse = $response->baseResponse->getData();
+        $apiResponse = $response->baseResponse->getData();
 
         $response->assertStatus(200)
                 ->assertJsonStructure([
                     'message',
                     'data',
                 ]);
+
+        $data = $apiResponse->data;
+        $this->assertTrue(is_object($data) && property_exists($data, 'current_page'));
+    }
+
+    public function testBlockedGetActiveVotes() {
+        $tokenData = $this->getUserTokenData();
+        $user = $tokenData['user'];
+        $token = $tokenData['token'];
+
+        $this->blockAccess($user->id, 'votes');
+
+        $params = [
+            'status' => 'active'
+        ];
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('get', '/api/v1/users/votes', $params);
+
+        $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+
+        $data = $apiResponse->data;
+        $this->assertTrue(!(is_object($data) && property_exists($data, 'current_page')));
     }
 
     public function testGetScheduledVotes() {

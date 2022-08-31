@@ -229,7 +229,7 @@ class UserController extends Controller
 
     public function getProfile()
     {
-        $user = auth()->user()->load(['profile', 'permissions', 'shuftipro', 'shuftiproTemp']);
+        $user = auth()->user()->load(['profile', 'pagePermissions', 'permissions', 'shuftipro', 'shuftiproTemp']);
         Helper::getAccountInfoStandard($user);
         $user->metric = Helper::getNodeInfo($user);
         return $this->successResponse($user);
@@ -773,6 +773,10 @@ class UserController extends Controller
     // get vote list
     public function getVotes(Request $request)
     {
+        $user = auth()->user()->load(['pagePermissions']);
+        if (Helper::isAccessBlocked($user, 'votes'))
+            return $this->successResponse(['data' => []]);
+
         $status = $request->status ?? 'active';
         $limit = $request->limit ?? 50;
         $sort_key = $request->sort_key ?? '';
@@ -816,7 +820,10 @@ class UserController extends Controller
     // get vote detail
     public function getVoteDetail($id)
     {
-        $user = auth()->user();
+        $user = auth()->user()->load(['pagePermissions']);
+        if (Helper::isAccessBlocked($user, 'votes'))
+            return $this->errorResponse('Your access is blocked', Response::HTTP_BAD_REQUEST);
+
         $ballot = Ballot::with(['vote', 'voteResults.user', 'files'])->where('id', $id)->first();
         if (!$ballot)
             return $this->errorResponse('Not found ballot', Response::HTTP_BAD_REQUEST);
@@ -831,7 +838,10 @@ class UserController extends Controller
     // vote the ballot
     public function vote($id, Request $request)
     {
-        $user = auth()->user();
+        $user = auth()->user()->load(['pagePermissions']);
+        if (Helper::isAccessBlocked($user, 'votes'))
+            return $this->errorResponse('Your access is blocked', Response::HTTP_BAD_REQUEST);
+
         $vote = $request->vote;
         if (!$vote || ($vote != 'for' && $vote != 'against'))
             return $this->errorResponse('Paramater invalid (vote is for or against)', Response::HTTP_BAD_REQUEST);
@@ -1058,6 +1068,10 @@ class UserController extends Controller
 
     public function getMyVotes(Request $request)
     {
+        $user = auth()->user()->load(['pagePermissions']);
+        if (Helper::isAccessBlocked($user, 'votes'))
+            return $this->successResponse(['data' => []]);
+        
         $limit = $request->limit ?? 50;
         $user = auth()->user();
         $data = VoteResult::where('vote_result.user_id', $user->id)
@@ -1257,7 +1271,7 @@ class UserController extends Controller
 
     public function getListNodesBy(Request $request)
     {
-        $user = Auth::user();
+        $user = auth()->user();
         $addresses = UserAddress::where('user_id', $user->id)->orderBy('id', 'asc')->get();
         return $this->successResponse([
             'addresses' => $addresses,
