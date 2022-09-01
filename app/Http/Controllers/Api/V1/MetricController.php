@@ -26,9 +26,10 @@ class MetricController extends Controller
     public function getMetric(Request $request)
     {
         $user = auth()->user()->load(['pagePermissions']);
+        /*
         if (Helper::isAccessBlocked($user, 'nodes'))
             return $this->successResponse([]);
-
+        */
         $public_address_node = $request->get('public_address_node');
 
         if (!$public_address_node) {

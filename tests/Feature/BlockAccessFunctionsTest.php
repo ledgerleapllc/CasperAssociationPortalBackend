@@ -55,6 +55,7 @@ class BlockAccessFunctionsTest extends TestCase
         $this->assertTrue(is_object($data) && property_exists($data, 'avg_uptime'));
     }
 
+    /*
     public function testBlockedGetMetric() {
         $tokenData = $this->getUserTokenData();
         $user = $tokenData['user'];
@@ -77,6 +78,7 @@ class BlockAccessFunctionsTest extends TestCase
         $data = $apiResponse->data;
         $this->assertTrue(!(is_object($data) && property_exists($data, 'avg_uptime')));
     }
+    */
 
     public function testGetPerks() {
         $tokenData = $this->getUserTokenData();
