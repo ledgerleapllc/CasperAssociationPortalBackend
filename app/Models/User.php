@@ -183,6 +183,10 @@ class User extends Authenticatable
         return $this->hasMany('App\Models\Permission', 'user_id');
     }
 
+    public function pagePermissions() {
+        return $this->hasMany('App\Models\PagePermission', 'user_id');
+    }
+
     public function ipHistories() {
         return $this->hasMany('App\Models\IpHistory', 'user_id');
     }

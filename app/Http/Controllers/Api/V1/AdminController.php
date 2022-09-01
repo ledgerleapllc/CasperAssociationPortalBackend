@@ -99,7 +99,7 @@ class AdminController extends Controller
         $user = User::where('id', $id)->first();
         if (!$user || $user->role == 'admin')
             return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
-        $user = $user->load(['profile', 'shuftipro', 'shuftiproTemp']);
+        $user = $user->load(['pagePermissions', 'profile', 'shuftipro', 'shuftiproTemp']);
         
         $status = 'Not Verified';
         if ($user->profile && $user->profile->status == 'approved') {

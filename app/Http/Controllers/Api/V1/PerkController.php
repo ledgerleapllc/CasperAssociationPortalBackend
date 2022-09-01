@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Console\Helper;
+
 use App\Http\Controllers\Controller;
 
 use App\Models\Perk;
@@ -277,7 +279,10 @@ class PerkController extends Controller
 
     public function getPerksUser(Request $request)
     {
-        $user = auth()->user();
+        $user = auth()->user()->load(['pagePermissions']);
+        if (Helper::isAccessBlocked($user, 'perks'))
+            return $this->successResponse(['data' => []]);
+
         $limit = $request->limit ?? 50;
         $sort_key = $request->sort_key ?? 'created_at';
         $sort_direction = $request->sort_direction ?? 'desc';
@@ -287,7 +292,10 @@ class PerkController extends Controller
 
     public function getPerkDetailUser($id)
     {
-        $user = auth()->user();
+        $user = auth()->user()->load(['pagePermissions']);
+        if (Helper::isAccessBlocked($user, 'perks'))
+            return $this->errorResponse('Your access is blocked', Response::HTTP_BAD_REQUEST);
+
         $perk = Perk::where('visibility', 'visible')->where('id', $id)->first();
         if (!$perk) {
             return $this->errorResponse('Not found perk', Response::HTTP_BAD_REQUEST);

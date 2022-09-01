@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Console\Helper;
+
 use App\Http\Controllers\Controller;
 
 use Illuminate\Http\Request;
@@ -33,7 +35,6 @@ class DiscussionController extends Controller
     private $discussionCommentRepo;
     private $discussionRemoveNewRepo;
 
-
     public function __construct(
         UserRepository $userRepo,
         DiscussionRepository $discussionRepo,
@@ -52,8 +53,11 @@ class DiscussionController extends Controller
 
     public function getTrending(Request $request)
     {
+        $user = auth()->user()->load(['pagePermissions']);
+        if (Helper::isAccessBlocked($user, 'discussions'))
+            return $this->successResponse(['data' => []]);
+
         $limit = $request->limit ?? 50;
-        $user = auth()->user();
         $trendings = Discussion::where('likes', '!=', 0)->where('is_draft', 0)->take(9)->orderBy('likes', 'desc')->paginate($limit);
         $count = Discussion::where('likes', '!=', 0)->where('is_draft', 0)->orderBy('likes', 'desc')->count();
         if ($count >= 9) {
@@ -66,10 +70,9 @@ class DiscussionController extends Controller
                 // ->whereNotIn('id', $removed_ids)
                 ->where('is_draft', 0)
                 ->take($remains)->orderBy('id', 'desc')->get();
-            $trendingArray = $trendings->toArray() ;
+            $trendingArray = $trendings->toArray();
             $trendingArray['data'] = array_merge($trendingArray['data'], $news->toArray());
-
-            return $this->successResponse( [
+            return $this->successResponse([
                 'data' => $trendingArray['data']
             ]);
         }
@@ -78,9 +81,12 @@ class DiscussionController extends Controller
     // Get Discussions
     public function getDiscussions(Request $request)
     {
+        $user = auth()->user()->load(['pagePermissions']);
+        if (Helper::isAccessBlocked($user, 'discussions'))
+            return $this->successResponse(['data' => []]);
+
         $data = array();
         $limit = $request->limit ?? 50;
-        $user = auth()->user();
         $data = Discussion::with(['user', 'user.profile'])->where('discussions.is_draft', 0)
             ->leftJoin('discussion_pins', function ($query) use ($user) {
                 $query->on('discussion_pins.discussion_id', '=', 'discussions.id')
@@ -102,8 +108,11 @@ class DiscussionController extends Controller
 
     public function getPinnedDiscussions(Request $request)
     {
+        $user = auth()->user()->load(['pagePermissions']);
+        if (Helper::isAccessBlocked($user, 'discussions'))
+            return $this->successResponse(['data' => []]);
+
         $limit = $request->limit ?? 50;
-        $user = auth()->user();
         $data = DiscussionPin::where('discussion_pins.user_id', $user->id)->with('user')
             ->join('discussions', 'discussions.id', '=', 'discussion_pins.discussion_id')
             ->leftJoin('discussion_votes', function ($query) use ($user) {
@@ -121,8 +130,11 @@ class DiscussionController extends Controller
 
     public function getMyDiscussions(Request $request)
     {
+        $user = auth()->user()->load(['pagePermissions']);
+        if (Helper::isAccessBlocked($user, 'discussions'))
+            return $this->successResponse(['data' => []]);
+
         $limit = $request->limit ?? 50;
-        $user = auth()->user();
         $data = Discussion::with(['user', 'user.profile'])->where('discussions.is_draft', 0)
             ->where('discussions.user_id', $user->id)
             ->leftJoin('discussion_pins', function ($query) use ($user) {
@@ -139,13 +151,15 @@ class DiscussionController extends Controller
                 'discussion_votes.id as is_vote',
                 'discussion_votes.is_like as is_like',
             ])->orderBy('discussions.created_at', 'DESC')->paginate($limit);
-
         return $this->successResponse($data);
     }
 
     public function getDiscussion(Request $request, $id)
     {
-        $user = auth()->user();
+        $user = auth()->user()->load(['pagePermissions']);
+        if (Helper::isAccessBlocked($user, 'discussions'))
+            return $this->errorResponse('Your access is blocked', Response::HTTP_BAD_REQUEST);
+
         $discussion = Discussion::with(['user', 'user.profile'])
             ->where('discussions.id', $id)
             ->leftJoin('discussion_pins', function ($query) use ($user) {
@@ -171,6 +185,10 @@ class DiscussionController extends Controller
     }
     
     public function updateDiscussion($id, Request $request) {
+        $user = auth()->user()->load(['pagePermissions']);
+        if (Helper::isAccessBlocked($user, 'discussions'))
+            return $this->errorResponse('Your access is blocked', Response::HTTP_BAD_REQUEST);
+
         $validator = Validator::make($request->all(), [
             'title' => 'required',
             'description' => 'required',
@@ -179,7 +197,6 @@ class DiscussionController extends Controller
             return $this->validateResponse($validator->errors());
         }
 
-        $user = auth()->user();
         $discussion = $this->discussionRepo->update($id, [
             "title" => $request->title,
             "description" => $request->description,
@@ -190,6 +207,10 @@ class DiscussionController extends Controller
 
     public function postDiscussion(Request $request)
     {
+        $user = auth()->user()->load(['pagePermissions']);
+        if (Helper::isAccessBlocked($user, 'discussions'))
+            return $this->errorResponse('Your access is blocked', Response::HTTP_BAD_REQUEST);
+
         $validator = Validator::make($request->all(), [
             'title' => 'required',
             'description' => 'required',
@@ -199,7 +220,6 @@ class DiscussionController extends Controller
             return $this->validateResponse($validator->errors());
         }
 
-        $user = auth()->user();
         $discussion = $this->discussionRepo->create([
             "title" => $request->title,
             "description" => $request->description,
@@ -212,6 +232,10 @@ class DiscussionController extends Controller
 
     public function publishDraftDiscussion($id)
     {
+        $user = auth()->user()->load(['pagePermissions']);
+        if (Helper::isAccessBlocked($user, 'discussions'))
+            return $this->errorResponse('Your access is blocked', Response::HTTP_BAD_REQUEST);
+
         $discussion = Discussion::where('id', $id)->where('is_draft', 1)->first();
         if($discussion) {
             $discussion->is_draft = 0;
@@ -222,8 +246,11 @@ class DiscussionController extends Controller
 
     public function createComment(Request $request, $id)
     {
+        $user = auth()->user()->load(['pagePermissions']);
+        if (Helper::isAccessBlocked($user, 'discussions'))
+            return $this->errorResponse('Your access is blocked', Response::HTTP_BAD_REQUEST);
+
         $data = array();
-        $user = auth()->user();
         $validator = Validator::make($request->all(), [
             'description' => 'required'
         ]);
@@ -239,8 +266,10 @@ class DiscussionController extends Controller
 
         $data['comment'] = $this->discussionCommentRepo->create($model_data);
         $discussion = $this->discussionRepo->find($id);
-        $discussion->comments = $discussion->comments + 1;
-        $discussion->save();
+        if ($discussion) {
+            $discussion->comments = $discussion->comments + 1;
+            $discussion->save();
+        }
 
         $data['comment']['user'] = $user;
 
@@ -249,8 +278,11 @@ class DiscussionController extends Controller
 
     public function updateComment(Request $request, $id)
     {
+        $user = auth()->user()->load(['pagePermissions']);
+        if (Helper::isAccessBlocked($user, 'discussions'))
+            return $this->errorResponse('Your access is blocked', Response::HTTP_BAD_REQUEST);
+
         $data = array();
-        $user = auth()->user();
         $validator = Validator::make($request->all(), [
             'description' => 'required',
             'comment_id' => 'required'
@@ -269,8 +301,11 @@ class DiscussionController extends Controller
 
     public function setVote(Request $request, $id)
     {
+        $user = auth()->user()->load(['pagePermissions']);
+        if (Helper::isAccessBlocked($user, 'discussions'))
+            return $this->errorResponse('Your access is blocked', Response::HTTP_BAD_REQUEST);
+
         $data = array();
-        $user = auth()->user();
         $validator = Validator::make($request->all(), [
             'is_like' => 'required|boolean'
         ]);
@@ -322,8 +357,11 @@ class DiscussionController extends Controller
 
     public function setPin(Request $request, $id)
     {
+        $user = auth()->user()->load(['pagePermissions']);
+        if (Helper::isAccessBlocked($user, 'discussions'))
+            return $this->errorResponse('Your access is blocked', Response::HTTP_BAD_REQUEST);
+
         $data = array();
-        $user = auth()->user();
         $pinned = $this->discussionPinRepo->first(['discussion_id' => $id, 'user_id' => $user->id]);
         if ($pinned == null) {
             $this->discussionPinRepo->create(['discussion_id' => $id, 'user_id' => $user->id]);
@@ -335,7 +373,10 @@ class DiscussionController extends Controller
 
     public function removeNewMark(Request $request, $id)
     {
-        $user = auth()->user();
+        $user = auth()->user()->load(['pagePermissions']);
+        if (Helper::isAccessBlocked($user, 'discussions'))
+            return $this->errorResponse('Your access is blocked', Response::HTTP_BAD_REQUEST);
+
         $this->discussionRemoveNewRepo->deleteConditions([['created_at', '<=',  Carbon::now()->subDays(3)]]);
         $this->discussionRemoveNewRepo->create(['discussion_id' => $id, 'user_id' => $user->id]);
 
@@ -344,8 +385,11 @@ class DiscussionController extends Controller
 
     public function getComment(Request $request, $id)
     {
+        $user = auth()->user()->load(['pagePermissions']);
+        if (Helper::isAccessBlocked($user, 'discussions'))
+            return $this->successResponse(['data' => []]);
+
         $limit = $request->limit ?? 50;
-        $user = auth()->user();
         $data = DiscussionComment::with(['user', 'user.profile'])
             ->where('discussion_comments.discussion_id', $id)
             ->select([
@@ -357,8 +401,11 @@ class DiscussionController extends Controller
 
     public function getDraftDiscussions(Request $request)
     {
+        $user = auth()->user()->load(['pagePermissions']);
+        if (Helper::isAccessBlocked($user, 'discussions'))
+            return $this->successResponse(['data' => []]);
+
         $limit = $request->limit ?? 50;
-        $user = auth()->user();
         $data = Discussion::with(['user', 'user.profile'])->where('discussions.is_draft', 1)
             ->where('discussions.user_id', $user->id)
             ->orderBy('discussions.created_at', 'DESC')->paginate($limit);
@@ -367,7 +414,10 @@ class DiscussionController extends Controller
 
     public function deleteDraftDiscussions($id)
     {
-        $user = auth()->user();
+        $user = auth()->user()->load(['pagePermissions']);
+        if (Helper::isAccessBlocked($user, 'discussions'))
+            return $this->errorResponse('Your access is blocked', Response::HTTP_BAD_REQUEST);
+
         $discussion = Discussion::where('id', $id)->where('discussions.is_draft', 1)->where('discussions.user_id', $user->id)->first();
         if($discussion) {
             $discussion->delete();
