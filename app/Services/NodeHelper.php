@@ -39,12 +39,13 @@ class NodeHelper
     public function decodePeers($__peers)
     {
         $decoded_peers = array();
-        if($__peers && gettype($__peers) == 'array') {
-            foreach($__peers as $__peer) {
+
+        if ($__peers && gettype($__peers) == 'array') {
+            foreach ($__peers as $__peer) {
                 $address = $__peer['address'] ?? '';
                 $address = explode(':', $address)[0];
 
-                if($address) {
+                if ($address) {
                     $decoded_peers[] = $address;
                 }
             }
@@ -54,7 +55,7 @@ class NodeHelper
 
     public function retrieveGlobalUptime($this_era_id)
     {
-        $total_data = array();
+        $total_data      = array();
         $event_store_url = 'https://event-store-api-clarity-mainnet.make.services/relative-average-validator-performances?limit=100&page=1&era_id='.(string)($this_era_id - 1);
 
 
@@ -64,7 +65,7 @@ class NodeHelper
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         $json = curl_exec($ch);
 
-        if(curl_errno($ch)) {
+        if (curl_errno($ch)) {
             return array();
         }
 
@@ -80,19 +81,19 @@ class NodeHelper
 
 
         // update total data object
-        $data = $object->data ?? array();
+        $data       = $object->data ?? array();
         $total_data = array_merge($total_data, $data);
 
 
         // iterate through remaining pages
-        for($i = 0; $i < $page_count; $i++) {
-            if($i != 0) {
+        for ($i = 0; $i < $page_count; $i++) {
+            if ($i != 0) {
                 $j = $i + 1;
                 $event_store_url = 'https://event-store-api-clarity-mainnet.make.services/relative-average-validator-performances?limit=100&page='.$j.'&era_id='.(string)($this_era_id - 1);
                 curl_setopt($ch, CURLOPT_URL, $event_store_url);
                 $json = curl_exec($ch);
 
-                if(curl_errno($ch)) {
+                if (curl_errno($ch)) {
                     continue;
                 }
 
@@ -104,7 +105,7 @@ class NodeHelper
 
 
                 // update total data object
-                $data = $object->data ?? array();
+                $data       = $object->data ?? array();
                 $total_data = array_merge($total_data, $data);
             }
             sleep(1);
@@ -118,8 +119,8 @@ class NodeHelper
     public function discoverPeers()
     {
         $port8888_responses = array();
-        $http_protocol = 'http://';
-        $status_port = ':8888/status';
+        $http_protocol      = 'http://';
+        $status_port        = ':8888/status';
 
 
         // Get peers from trusted node, port 8888
@@ -132,13 +133,13 @@ class NodeHelper
         // try once with main NODE_IP
         $json = curl_exec($curl);
 
-        if(curl_errno($curl) && getenv('BACKUP_NODE_IP')) {
+        if (curl_errno($curl) && getenv('BACKUP_NODE_IP')) {
             curl_setopt($curl, CURLOPT_URL, $http_protocol.getenv('BACKUP_NODE_IP').$status_port);
 
             // try twice with main BACKUP_NODE_IP
             $json = curl_exec($curl);
 
-            if(curl_errno($curl)) {
+            if (curl_errno($curl)) {
                 return array();
             }
         }
@@ -160,7 +161,7 @@ class NodeHelper
         $peers = array_unique($peers);
         $peers = array_values($peers);
 
-        if(!$peers || empty($peers)) {
+        if (!$peers || empty($peers)) {
             return array();
         }
 
@@ -170,23 +171,23 @@ class NodeHelper
 
 
         // divide up chunks for multi curl handler
-        if(count($peers) >= 20) {
+        if (count($peers) >= 20) {
             $divided = (int)(count($peers) / 20);
         } else {
             $divided = 1;
         }
 
-        $remainder = count($peers) % 20;
-        $real_index = 0;
+        $remainder   = count($peers) % 20;
+        $real_index  = 0;
         info('Requesting peers.. Total: '.count($peers));
 
 
         // multi curl handler each full chunk
-        for($chunk = 0; $chunk < $divided; $chunk++) {
+        for ($chunk = 0; $chunk < $divided; $chunk++) {
             $mh = curl_multi_init();
             $ch = array();
 
-            for($i = 0; $i < 20; $i++) {
+            for ($i = 0; $i < 20; $i++) {
                 $ch[$i] = curl_init();
                 curl_setopt($ch[$i], CURLOPT_URL, $http_protocol.$peers[$real_index].$status_port);
                 curl_setopt($ch[$i], CURLOPT_HEADER, 0);
@@ -203,16 +204,16 @@ class NodeHelper
             do {
                 $status = curl_multi_exec($mh, $active);
 
-                if($active) {
+                if ($active) {
                     curl_multi_select($mh);
                 }
-            } while($active && $status == CURLM_OK);
+            } while ($active && $status == CURLM_OK);
 
-            for($i = 0; $i < 20; $i++) {
+            for ($i = 0; $i < 20; $i++) {
                 curl_multi_remove_handle($mh, $ch[$i]);
             }
 
-            foreach($ch as $req) {
+            foreach ($ch as $req) {
                 $content = curl_multi_getcontent($req);
 
                 if($content) {
@@ -256,7 +257,7 @@ class NodeHelper
             }
         } while ($active && $status == CURLM_OK);
 
-        for($i = 0; $i < $remainder; $i++) {
+        for ($i = 0; $i < $remainder; $i++) {
             curl_multi_remove_handle($mh, $ch[$i]);
         }
 
@@ -281,12 +282,12 @@ class NodeHelper
 
     public function getValidAddresses()
     {
-        $curl = curl_init();
+        $curl      = curl_init();
         $json_data = [
-            'id' => (int) time(),
+            'id'      => (int) time(),
             'jsonrpc' => '2.0',
-            'method' => 'state_get_auction_info',
-            'params' => array()
+            'method'  => 'state_get_auction_info',
+            'params'  => array()
         ];
 
         curl_setopt($curl, CURLOPT_URL, 'http://' . getenv('NODE_IP') . ':7777/rpc');
@@ -303,23 +304,31 @@ class NodeHelper
         // parse response for bids from NODE_IP
         $response = curl_exec($curl);
 
-        if (curl_errno($curl) && getenv('BACKUP_NODE_IP')) {
-            curl_setopt($curl, CURLOPT_URL, 'http://' . getenv('BACKUP_NODE_IP') . ':7777/rpc');
+        if (
+            curl_errno($curl) &&
+            getenv('BACKUP_NODE_IP')
+        ) {
+            curl_setopt(
+                $curl,
+                CURLOPT_URL, 
+                'http://' . getenv('BACKUP_NODE_IP') . ':7777/rpc'
+            );
 
             // try twice with BACKUP_NODE_IP
             $response = curl_exec($curl);
         }
 
         curl_close($curl);
-        $decodedResponse = json_decode($response, true);
-        $auction_state = $decodedResponse['result']['auction_state'] ?? [];
-        $bids = $auction_state['bids'] ?? [];
+        $decoded_response = json_decode($response, true);
+        $auction_state    = $decoded_response['result']['auction_state'] ?? [];
+        $bids             = $auction_state['bids'] ?? [];
 
         $addresses = [];
+
         if ($bids) {
-            foreach($bids as $bid) {
+            foreach ($bids as $bid) {
                 if (isset($bid['public_key']) && $bid['public_key']) {
-                    $public_key = strtolower($bid['public_key']);
+                    $public_key  = strtolower($bid['public_key']);
                     $addresses[] = $public_key;
                 }
             }
@@ -330,16 +339,17 @@ class NodeHelper
     public function getValidatorStanding()
     {
         // get node ips from peers
-        $port8888_responses = $this->discoverPeers();
+        // $port8888_responses = $this->discoverPeers();
+        $port8888_responses = array();
 
         // get auction state from trusted node RPC
         $curl = curl_init();
 
         $json_data = array(
-            'id' => (int) time(),
+            'id'      => (int)time(),
             'jsonrpc' => '2.0',
-            'method' => 'state_get_auction_info',
-            'params' => array()
+            'method'  => 'state_get_auction_info',
+            'params'  => array()
         );
 
         curl_setopt($curl, CURLOPT_URL, 'http://' . getenv('NODE_IP') . ':7777/rpc');
@@ -354,202 +364,453 @@ class NodeHelper
         ));
 
         // parse response for bids
-        $response = curl_exec($curl);
+        $auction_response = curl_exec($curl);
 
         if (curl_errno($curl) && getenv('BACKUP_NODE_IP')) {
             curl_setopt($curl, CURLOPT_URL, 'http://' . getenv('BACKUP_NODE_IP') . ':7777/rpc');
 
             // try twice with BACKUP_NODE_IP
-            $response = curl_exec($curl);
+            $auction_response = curl_exec($curl);
         }
 
         curl_close($curl);
-        $decodedResponse = json_decode($response, true);
-        $auction_state = $decodedResponse['result']['auction_state'] ?? array();
-        $bids = $auction_state['bids'] ?? array();
+
+        // very large object. aprx 10MB
+        $decoded_response       = json_decode($auction_response, true);
+        $auction_state          = $decoded_response['result']['auction_state'] ?? array();
+        $bids                   = $auction_state['bids'] ?? array();
 
         // get era ID
-        $era_id = (int)($auction_state['era_validators'][0]['era_id'] ?? 0);
+        $era_validators         = $auction_state['era_validators'] ?? array();
+        $current_era_validators = $era_validators[0] ?? array();
+        $next_era_validators    = $era_validators[1] ?? array();
+        $current_era_id         = (int)($current_era_validators['era_id'] ?? 0);
+        $next_era_id            = (int)($next_era_validators['era_id'] ?? 0);
+
+        // loop current era
+        $current_validator_weights = $current_era_validators['validator_weights'] ?? array();
+
+        foreach ($current_validator_weights as $v) {
+            $public_key = $v['public_key'] ?? '';
+            $weight     = (int)($v['weight'] / 1000000000 ?? 0);
+
+            $check = DB::select("
+                SELECT public_key, era_id
+                FROM all_node_data
+                WHERE public_key = '$public_key'
+                AND era_id = $current_era_id
+            ");
+            $check = $check[0] ?? null;
+
+            if (!$check) {
+                DB::table('all_node_data')->insert(
+                    array(
+                        'public_key'         => $public_key,
+                        'era_id'             => $current_era_id,
+                        'current_era_weight' => $weight,
+                        'in_curent_era'      => 1,
+                        'created_at'         => Carbon::now('UTC')
+                    )
+                );
+            }
+        }
+
+        // loop next era
+        $next_validator_weights = $next_era_validators['validator_weights'] ?? array();
+
+        foreach ($next_validator_weights as $v) {
+            $public_key = $v['public_key'] ?? '';
+            $weight     = (int)($v['weight'] / 1000000000 ?? 0);
+
+            $check = DB::select("
+                SELECT public_key, era_id
+                FROM all_node_data
+                WHERE public_key = '$public_key'
+                AND era_id = $current_era_id
+            ");
+            $check = $check[0] ?? null;
+
+            if (!$check) {
+                DB::table('all_node_data')->insert(
+                    array(
+                        'public_key'      => $public_key,
+                        'era_id'          => $current_era_id,
+                        'next_era_weight' => $weight,
+                        'in_next_era'     => 1
+                    )
+                );
+            } else {
+                DB::table('all_node_data')
+                    ->where('public_key',    $public_key)
+                    ->where('era_id',        $current_era_id)
+                    ->update(
+                    array(
+                        'next_era_weight' => $weight,
+                        'in_next_era'     => 1
+                    )
+                );
+            }
+        }
 
         // set MBS array. minimum bid slot amount
         $MBS_arr = array();
 
-        // set default object
-        $global_validator_standing = array(
-            "global_block_height" => 0,
-            "global_build_version" => '1.0.0',
-            "global_chainspec_name" => 'casper',
-            "validator_standing" => array()
-        );
+        // get global uptimes from MAKE
+        $global_uptime = $this->retrieveGlobalUptime($current_era_id);
 
-        // check each bid validator against existing platform validators
-        if($bids) {
-            // get global uptimes from MAKE
-            $global_uptime = $this->retrieveGlobalUptime($era_id);
+        // loop auction era
+        foreach ($bids as $b) {
+            $public_key               = strtolower($b['public_key'] ?? 'nill');
+            $bid                      = $b['bid'] ?? array();
 
-            foreach($bids as $bid) {
-                $public_key = strtolower($bid['public_key'] ?? 'nill');
-                $node_info = UserAddress::where('public_address_node', $public_key)->first();
+            // get self
+            $self_staked_amount       = (int)($bid['staked_amount'] ?? 0);
+            $delegation_rate          = (int)($bid['delegation_rate'] ?? 0);
+            $bid_inactive             = (int)($bid['inactive'] ?? false);
 
-                // parse bid
-                $b = $bid['bid'] ?? array();
+            // calculate total stake, delegators + self stake
+            $delegators               = (array)($bid['delegators'] ?? array());
+            $delegators_count         = count($delegators);
+            $delegators_staked_amount = 0;
 
-                // get self stake amount
-                $self_staked_amount = (int)($b['staked_amount'] ?? 0);
+            foreach ($delegators as $delegator) {
+                $delegators_staked_amount += (int)($delegator['staked_amount'] ?? 0);
+            }
 
-                // calculate total stake, delegators + self stake
-                $delegators = (array)($b['delegators'] ?? array());
-                $delegators_count = count($delegators);
-                $total_staked_amount = 0 + $self_staked_amount;
+            // convert and calculate stake amounts
+            $delegators_staked_amount = (int)($delegators_staked_amount / 1000000000);
+            $self_staked_amount       = (int)($self_staked_amount / 1000000000);
+            $total_staked_amount      = $delegators_staked_amount + $self_staked_amount;
 
-                foreach($delegators as $delegator) {
-                    $staked_amount = (int)($delegator['staked_amount'] ?? 0);
-                    $total_staked_amount += $staked_amount;
+            // append to MBS array and pluck 100th place later
+            $MBS_arr[$public_key]     = $total_staked_amount;
+
+            // get node uptime from MAKE object
+            $uptime = 0;
+
+            foreach ($global_uptime as $uptime_array) {
+                $fvid = strtolower($uptime_array->public_key ?? '');
+
+                if($fvid == $public_key) {
+                    $uptime = (float)($uptime_array->average_score ?? 0);
+                    break;
                 }
+            }
 
-                $total_staked_amount = $total_staked_amount / 1000000000;
-                $self_staked_amount = $self_staked_amount / 1000000000;
+            // record auction bid data for this node
+            $check = DB::select("
+                SELECT public_key, era_id
+                FROM all_node_data
+                WHERE public_key = '$public_key'
+                AND era_id = $current_era_id
+            ");
+            $check = $check[0] ?? null;
 
-                // append to MBS array and pluck 100th place later
-                $MBS_arr[$public_key] = $total_staked_amount;
+            if (!$check) {
+                DB::table('all_node_data')->insert(
+                    array(
+                        'public_key'                   => $public_key,
+                        'era_id'                       => $current_era_id,
+                        'uptime'                       => $uptime,
+                        'in_auction'                   => 1,
+                        'bid_delegators_count'         => $delegators_count,
+                        'bid_delegation_rate'          => $delegation_rate,
+                        'bid_inactive'                 => $bid_inactive,
+                        'bid_self_staked_amount'       => $self_staked_amount,
+                        'bid_delegators_staked_amount' => $delegators_staked_amount,
+                        'bid_total_staked_amount'      => $total_staked_amount
+                    )
+                );
+            } else {
+                DB::table('all_node_data')
+                    ->where('public_key',                 $public_key)
+                    ->where('era_id',                     $current_era_id)
+                    ->update(
+                    array(
+                        'uptime'                       => $uptime,
+                        'in_auction'                   => 1,
+                        'bid_delegators_count'         => $delegators_count,
+                        'bid_delegation_rate'          => $delegation_rate,
+                        'bid_inactive'                 => $bid_inactive,
+                        'bid_self_staked_amount'       => $self_staked_amount,
+                        'bid_delegators_staked_amount' => $delegators_staked_amount,
+                        'bid_total_staked_amount'      => $total_staked_amount
+                    )
+                );
+            }
 
-                // node exists on platform, fetch/save info
-                if($node_info) {
-                    // get delegation rate
-                    $delegation_rate = (float)($b['delegation_rate'] ?? 0);
+            // save current stake amount to daily earnings table
+            $earning = new DailyEarning();
+            $earning->node_address       = $public_key;
+            $earning->self_staked_amount = (int)$self_staked_amount;
+            $earning->created_at         = Carbon::now('UTC');
+            $earning->save();
 
-                    // get active status (equivocation check)
-                    $inactive = (bool)($b['inactive'] ?? false);
+            // get difference between current self stake and yesterdays self stake
+            $get_earning = DailyEarning::where('node_address', $public_key)
+                ->where('created_at', '>', Carbon::now('UTC')->subHours(24))
+                ->orderBy('created_at', 'asc')
+                ->first();
 
-                    // save current stake amount to daily earnings table
-                    $earning = new DailyEarning();
-                    $earning->node_address = $public_key;
-                    $earning->self_staked_amount = (int)$self_staked_amount;
-                    $earning->created_at = Carbon::now('UTC');
-                    $earning->save();
+            $yesterdays_self_staked_amount = (int)($get_earning->self_staked_amount ?? 0);
+            $daily_earning = $self_staked_amount - $yesterdays_self_staked_amount;
 
-                    // get difference between current self stake and yesterdays self stake
-                    $get_earning = DailyEarning::where('node_address', $public_key)
-                        ->where('created_at', '>', Carbon::now('UTC')->subHours(24))
-                        ->orderBy('created_at', 'asc')
-                        ->first();
-                    $yesterdays_self_staked_amount = (float)($get_earning->self_staked_amount ?? 0);
-                    $daily_earning = $self_staked_amount - $yesterdays_self_staked_amount;
+            // look for existing peer by public key for port 8888 data
+            foreach ($port8888_responses as $port8888data) {
+                $our_public_signing_key = strtolower($port8888data['our_public_signing_key'] ?? '');
 
-                    // get node uptime from MAKE object
-                    $uptime = 0;
+                if ($our_public_signing_key == $public_key) {
+                    // found in peers
+                    $peer_count     = (int)($port8888data['peer_count'] ?? 0);
+                    $era_id         = (int)($port8888data['last_added_block_info']['era_id'] ?? 0);
+                    $block_height   = (int)($port8888data['last_added_block_info']['height'] ?? 0);
+                    $build_version  = $port8888data['build_version'] ?? '1.0.0';
+                    $build_version  = explode('-', $build_version)[0];
+                    $chainspec_name = $port8888data['chainspec_name'] ?? 'casper';
+                    $next_upgrade   = $port8888data['next_upgrade']['protocol_version'] ?? '';
 
-                    foreach($global_uptime as $uptime_array) {
-                        $fvid = strtolower($uptime_array->public_key ?? '');
+                    // record port 8888 data if available
+                    $check = DB::select("
+                        SELECT public_key, era_id
+                        FROM all_node_data
+                        WHERE public_key = '$public_key'
+                        AND era_id = $current_era_id
+                    ");
+                    $check = $check[0] ?? null;
 
-                        if($fvid == $public_key) {
-                            $uptime = (float)($uptime_array->average_score ?? 1);
-                            break;
-                        }
+                    if (!$check) {
+                        DB::table('all_node_data')->insert(
+                            array(
+                                'public_key'             => $public_key,
+                                'era_id'                 => $current_era_id,
+                                'port8888_peers'         => $peer_count,
+                                'port8888_era_id'        => $era_id,
+                                'port8888_block_height'  => $block_height,
+                                'port8888_build_version' => $build_version,
+                                'port8888_next_upgrade'  => $next_upgrade
+                            )
+                        );
+                    } else {
+                        DB::table('all_node_data')
+                            ->where('public_key',           $public_key)
+                            ->where('era_id',               $current_era_id)
+                            ->update(
+                            array(
+                                'port8888_peers'         => $peer_count,
+                                'port8888_era_id'        => $era_id,
+                                'port8888_block_height'  => $block_height,
+                                'port8888_build_version' => $build_version,
+                                'port8888_next_upgrade'  => $next_upgrade
+                            )
+                        );
                     }
 
-                    $float_uptime = (float)($uptime / 100.0);
-
-                    // build individual validator_standing object
-                    $global_validator_standing
-                    ['validator_standing']
-                    [$public_key]
-                    ["delegators_count"] = $delegators_count;
-
-                    $global_validator_standing
-                    ['validator_standing']
-                    [$public_key]
-                    ["total_staked_amount"] = $total_staked_amount;
-
-                    $global_validator_standing
-                    ['validator_standing']
-                    [$public_key]
-                    ["self_staked_amount"] = $self_staked_amount;
-
-                    $global_validator_standing
-                    ['validator_standing']
-                    [$public_key]
-                    ["delegation_rate"] = $delegation_rate;
-
-                    $global_validator_standing
-                    ['validator_standing']
-                    [$public_key]
-                    ["uptime"] = $float_uptime;
-
-                    $global_validator_standing
-                    ['validator_standing']
-                    [$public_key]
-                    ["update_responsiveness"] = 1;
-
-                    $global_validator_standing
-                    ['validator_standing']
-                    [$public_key]
-                    ["daily_earning"] = $daily_earning;
-
-                    $global_validator_standing
-                    ['validator_standing']
-                    [$public_key]
-                    ["inactive"] = $inactive;
-
-
-                    // look for existing peer by public key for port 8888 data
-                    foreach($port8888_responses as $port8888data) {
-                        $our_public_signing_key = strtolower($port8888data['our_public_signing_key'] ?? '');
-
-                        if($our_public_signing_key == $public_key) {
-                            // found in peers
-                            $peer_count = (int)($port8888data['peer_count'] ?? 0);
-                            $block_height = (int)($port8888data['last_added_block_info']['height'] ?? 0);
-                            $build_version = $port8888data['build_version'] ?? '1.0.0';
-                            $chainspec_name = $port8888data['chainspec_name'] ?? 'casper';
-
-                            if($block_height > $global_validator_standing["global_block_height"]) {
-                                $global_validator_standing["global_block_height"] = $block_height;
-                            }
-
-                            if($build_version > $global_validator_standing["global_build_version"]) {
-                                $global_validator_standing["global_build_version"] = $build_version;
-                            }
-
-
-                            // apply to global_validator_standing
-                            $global_validator_standing
-                            ['validator_standing']
-                            [$public_key]
-                            ["block_height"] = $block_height;
-
-                            $global_validator_standing
-                            ['validator_standing']
-                            [$public_key]
-                            ["build_version"] = $build_version;
-
-                            $global_validator_standing
-                            ['validator_standing']
-                            [$public_key]
-                            ["chainspec_name"] = $chainspec_name;
-
-                            $global_validator_standing
-                            ['validator_standing']
-                            [$public_key]
-                            ["peer_count"] = $peer_count;
-
-                            break;
-                        }
-                    }
+                    break;
                 }
             }
         }
 
         // find MBS
         rsort($MBS_arr);
-        $MBS = null;
-        if (count($MBS_arr) > 0) $MBS = $MBS_arr[99] ?? $MBS_arr[count($MBS_arr) - 1];
-        $global_validator_standing['MBS'] = $MBS;
+        $MBS = 0;
+
+        if (count($MBS_arr) > 0) {
+            $MBS = (float)($MBS_arr[99] ?? $MBS_arr[count($MBS_arr) - 1]);
+        }
+
+        // save MBS in new table by current_era
+        $check = DB::select("
+            SELECT mbs
+            FROM mbs
+            WHERE era_id = $current_era_id
+        ");
+        $check = $check[0] ?? null;
+
+        if (!$check) {
+            DB::table('mbs')->insert(
+                array(
+                    'era_id'     => $current_era_id,
+                    'mbs'        => $MBS,
+                    'created_at' => Carbon::now('UTC')
+                )
+            );
+        } else {
+            DB::table('mbs')
+                ->where('era_id', $current_era_id)
+                ->update(
+                array(
+                    'mbs'      => $MBS,
+                    'updated_at' => Carbon::now('UTC')
+                )
+            );
+        }
+
+        // Get settings for stable eras requirement
+        $eras_to_be_stable = DB::select("
+            SELECT value
+            FROM settings
+            WHERE name = 'eras_to_be_stable'
+        ");
+        $a = (array)($eras_to_be_stable[0] ?? array());
+        $eras_to_be_stable = (int)($a['value'] ?? 0);
+
+        // Create setting if not exist
+        if (!$eras_to_be_stable) {
+            $eras_to_be_stable = 100;
+
+            DB::table('settings')->insert(
+                array(
+                    'name'  => 'eras_to_be_stable',
+                    'value' => '100'
+                )
+            );
+        }
+
+        // Discover black marks - validator has sufficient stake, but failed to win slot.
+        $eras_look_back = DB::select("
+            SELECT value
+            FROM settings
+            WHERE name = 'eras_look_back'
+        ");
+        $a = (array)($eras_look_back[0] ?? array());
+        $eras_look_back = (int)($a['value'] ?? 0);
+
+        // Create setting if not exist
+        if (!$eras_look_back) {
+            $eras_look_back = 360;
+
+            DB::table('settings')->insert(
+                array(
+                    'name'  => 'eras_look_back',
+                    'value' => '360'
+                )
+            );
+        }
+
+        $previous_era_id = $current_era_id - 1;
+        $previous_mbs    = DB::select("
+            SELECT mbs
+            FROM mbs
+            WHERE era_id = $previous_era_id
+        ");
+        $previous_mbs    = (float)($previous_mbs[0]['mbs'] ?? 0);
+
+        foreach ($bids as $b) {
+            $public_key  = strtolower($b['public_key'] ?? 'nill');
+
+            // last era
+            $previous_stake = DB::select("
+                SELECT bid_total_staked_amount
+                FROM all_node_data
+                WHERE public_key = '$public_key'
+                AND era_id = $previous_era_id
+            ");
+            $a = (array)($previous_stake[0] ?? array());
+            $previous_stake = (int)($a['bid_total_staked_amount'] ?? 0);
+
+            // current era
+            $next_era_weight = DB::select("
+                SELECT next_era_weight
+                FROM all_node_data
+                WHERE public_key = '$public_key'
+                AND era_id = $current_era_id
+            ");
+            $a = (array)($next_era_weight[0] ?? array());
+            $next_era_weight = (int)($a['next_era_weight'] ?? 0);
+
+            // Calculate historical_performance from past $eras_look_back eras
+            $missed = 0;
+            $in_curent_eras = DB::select("
+                SELECT in_curent_era
+                FROM all_node_data
+                WHERE public_key = '$public_key'
+                ORDER BY era_id DESC
+                LIMIT $eras_look_back
+            ");
+
+            $in_curent_eras = $in_curent_eras ? $in_curent_eras : array();
+            $window         = $in_curent_eras ? count($in_curent_eras) : 0;
+
+            foreach ($in_curent_eras as $c) {
+                $a  = (array)$c;
+                $in = (bool)($a['in_curent_era'] ?? 0);
+
+                if (!$in) {
+                    $missed += 1;
+                }
+            }
+
+            // get node uptime from MAKE object
+            $uptime = 0;
+
+            foreach ($global_uptime as $uptime_array) {
+                $fvid = strtolower($uptime_array->public_key ?? '');
+
+                if($fvid == $public_key) {
+                    $uptime = (float)($uptime_array->average_score ?? 0);
+                    break;
+                }
+            }
+
+            $historical_performance = ($uptime * ($window - $missed)) / $window;
+            $past_era               = $current_era_id - $eras_to_be_stable;
+            $bad_mark               = 0;
+
+            if ($past_era < 0) {
+                $past_era = 0;
+            }
+
+            if (
+                $previous_stake > $previous_mbs &&
+                !$next_era_weight
+            ) {
+                // black mark
+                $bad_mark = 1;
+            }
+
+            // Update stability
+            $unstable = DB::select("
+                SELECT public_key
+                FROM all_node_data
+                WHERE public_key = '$public_key'
+                AND era_id > $past_era
+                AND (
+                    bad_mark     = 1 OR
+                    bid_inactive = 1
+                )
+            ");
+
+            $stability_count = DB::select("
+                SELECT public_key
+                FROM all_node_data
+                WHERE public_key = '$public_key'
+                AND era_id > $past_era
+            ");
+
+            $unstable        = (bool)($unstable);
+            $stable          = (int)(!$unstable);
+            $stability_count = $stability_count ? count($stability_count) : 0;
+
+            if ($stability_count < $eras_to_be_stable) {
+                $stable = 0;
+            }
+
+            DB::table('all_node_data')
+                ->where('public_key', $public_key)
+                ->where('era_id',     $current_era_id)
+                ->update(
+                array(
+                    'bad_mark'               => $bad_mark,
+                    'stable'                 => $stable,
+                    'historical_performance' => $historical_performance
+                )
+            );
+        }
 
         // DailyEarning garbage cleanup
         DailyEarning::where('created_at', '<', Carbon::now('UTC')->subDays(90))->delete();
 
-        return $global_validator_standing;
+        return true;
     }
 
     public function getTotalRewards($validatorId)
@@ -560,122 +821,14 @@ class NodeHelper
         return $response->json();
     }
 
-    public function updateStats()
-    {
-        $data = $this->getValidatorStanding();
-        $mbs = $data['MBS'] ?? 0;
-        $peers = $data['peers'] ?? 0;
-        $users = User::with('addresses')->whereNotNull('public_address_node')->get();
-        $validator_standing = $data['validator_standing'] ?? null;
-        $setting = Setting::where('name', 'peers')->first();
-
-        if (!$setting) {
-            $setting = new Setting;
-            $setting->name = 'peers';
-            $setting->value = '';
-            $setting->save();
-        }
-
-        $setting->value = $peers;
-        $setting->save();
-
-        if ($validator_standing) {
-            // Refresh Validator Standing
-            foreach ($validator_standing as $key => $value) {
-                $validator_standing[strtolower($key)] = $value;
-            }
-
-            foreach ($users as $user) {
-                if (isset($user->addresses) && count($user->addresses) > 0) {
-                    $addresses = $user->addresses;
-                    $userAddress = strtolower($user->public_address_node);
-                    foreach ($addresses as $address) {
-                        $validatorid = strtolower($address->public_address_node);
-
-                        if (isset($validator_standing[$validatorid])) {
-                            $info = $validator_standing[$validatorid];
-                            $fee = (float) $info['delegation_rate'];
-
-                            if ($userAddress == $validatorid) {
-                                $user->pending_node = 0;
-                                $user->validator_fee = round($fee, 2);
-                                $user->save();
-                            }
-
-                            $address->pending_node = 0;
-                            $address->validator_fee = round($fee, 2);
-                            $address->save();
-
-                            $totalRewards = $this->getTotalRewards($validatorid);
-
-                            $build_version = $info['build_version'] ?? null;
-
-                            if ($build_version) {
-                                $build_version = explode('-', $build_version);
-                                $build_version = $build_version[0];
-                            }
-
-                            if(
-                                isset($info['block_height']) &&
-                                isset($info['peer_count'])
-                            ) {
-                                $is_open_port = 1;
-                            } else {
-                                $is_open_port = 0;
-                            }
-
-                            $inactive = (bool)($info['inactive'] ?? false);
-                            $inactive = $inactive ? 1 : 0;
-
-                            NodeInfo::updateOrCreate(
-                                [
-                                    'node_address' => $validatorid
-                                ],
-                                [
-                                    'delegators_count' => $info['delegators_count'] ?? 0,
-                                    'total_staked_amount' => $info['total_staked_amount'],
-                                    'delegation_rate' => $info['delegation_rate'],
-                                    'daily_earning' => $info['daily_earning'] ?? 0,
-                                    'self_staked_amount' => $info['self_staked_amount'] ?? 0,
-                                    'total_earning' => isset($totalRewards['data']) &&  $totalRewards['data']  > 0 ? $totalRewards['data'] / 1000000000 : 0,
-                                    'is_open_port' => $is_open_port,
-                                    'mbs' => $mbs,
-                                    'update_responsiveness' => isset($info['update_responsiveness']) ? $info['update_responsiveness'] * 100 : 0,
-                                    'uptime' => isset($info['uptime']) ? $info['uptime'] * 100 : 0,
-                                    'block_height' => $info['block_height'] ?? 0,
-                                    'peers' => $info['peer_count'] ?? 0,
-                                    'inactive' => $inactive
-                                ]
-                            );
-
-                            Node::updateOrCreate(
-                                [
-                                    'node_address' => $validatorid
-                                ],
-                                [
-                                    'block_height' => $info['block_height'] ?? null,
-                                    'protocol_version' => $build_version,
-                                    'update_responsiveness' => isset($info['update_responsiveness']) ? $info['update_responsiveness'] * 100 : null,
-                                    'uptime' => isset($info['uptime']) ? $info['uptime'] : null,
-                                    'weight' => $info['daily_earnings'] ?? 0,
-                                    'peers' => $info['peer_count'] ?? 0,
-                                ]
-                            );
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     public function getValidatorRewards($validatorId, $_range)
     {
-        $nowtime = (int)time();
-        $range = 0;
-        $days = 30;
+        $nowtime   = (int)time();
+        $range     = 0;
+        $days      = 30;
         $leap_year = (int)date('Y');
         $leap_days = $leap_year % 4 == 0 ? 29 : 28;
-        $month = (int)date('m');
+        $month     = (int)date('m');
 
         switch($month) {
             case 1:
@@ -736,27 +889,27 @@ class NodeHelper
                 break;
         }
 
-        $timestamp = Carbon::createFromTimestamp($range, 'UTC')->toDateTimeString();
+        $timestamp     = Carbon::createFromTimestamp($range, 'UTC')->toDateTimeString();
         $total_records = DailyEarning::where('node_address', $validatorId)
             ->where('created_at', '>', $timestamp)
             ->get();
 
-        $new_array = array();
+        $new_array            = array();
         $display_record_count = 100;
 
-        if($total_records) {
-            $modded = count($total_records) % $display_record_count;
+        if ($total_records) {
+            $modded    = count($total_records) % $display_record_count;
             $numerator = count($total_records) - $modded;
-            $modulo = $numerator / $display_record_count;
+            $modulo    = $numerator / $display_record_count;
             $new_array = array();
-            $i = $modulo;
+            $i         = $modulo;
 
-            if($modulo == 0) {
+            if ($modulo == 0) {
                 $modulo = 1;
             }
 
-            foreach($total_records as $record) {
-                if($i % $modulo == 0) {
+            foreach ($total_records as $record) {
+                if ($i % $modulo == 0) {
                     $new_array[(string)strtotime($record->created_at.' UTC')] = (string)$record->self_staked_amount;
                 }
                 $i++;

@@ -52,6 +52,19 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
     Route::post('/users/check-validator-address', [UserController::class, 'checkValidatorAddress']);
     Route::middleware(['auth:api'])->group(function () {
         Route::middleware(['user_banned'])->group(function () {
+            // New dashboard endpoint
+            Route::get('/users/get-dashboard', [UserController::class, 'getUserDashboard']);
+
+            // New membership page endpoint
+            Route::get('/users/get-membership-page', [UserController::class, 'getMembershipPage']);
+
+            // New Nodes page endpoint
+            Route::get('/users/get-nodes-page', [UserController::class, 'getNodesPage']);
+
+            // New My Eras page endpoint
+            Route::get('/users/get-my-eras', [UserController::class, 'getMyEras']);
+
+
             Route::post('/users/verify-email', [AuthController::class, 'verifyEmail']);
             Route::post('/users/resend-verify-email', [AuthController::class, 'resendVerifyEmail']);
             Route::post('/users/change-email', [UserController::class, 'changeEmail']);
@@ -105,6 +118,10 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
         });
         
         Route::prefix('admin')->middleware(['role_admin'])->group(function () {
+            // New Nodes page endpoint
+            Route::get('/users/get-nodes-page', [AdminController::class, 'getNodesPage']);
+
+
             Route::get('/users', [AdminController::class, 'getUsers']);
             Route::get('/users/{id}', [AdminController::class, 'getUserDetail'])->where('id', '[0-9]+');
             Route::get('/dashboard', [AdminController::class, 'infoDashboard']);

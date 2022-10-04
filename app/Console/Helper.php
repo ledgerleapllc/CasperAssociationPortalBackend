@@ -44,6 +44,7 @@ class Helper
 	public static function getAccountInfoStandard($user)
 	{
 		$vid = strtolower($user->public_address_node ?? '');
+
 		if (!$vid) return;
 
 		// convert to account hash
@@ -86,7 +87,11 @@ class Helper
 
 		$response = curl_exec($curl);
 		$decodedResponse = [];
-		if ($response) $decodedResponse = json_decode($response, true);
+
+		if ($response) {
+			$decodedResponse = json_decode($response, true);
+		}
+
 		$parsed = $decodedResponse['result']['stored_value']['CLValue']['parsed'] ?? '';
 		$json = array();
 
