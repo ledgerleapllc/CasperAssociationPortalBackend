@@ -2811,7 +2811,7 @@ class UserController extends Controller
 
         // Calc earning
         $one_day_ago   = Carbon::now('UTC')->subHours(24);
-        $daily_earning = DB::select("
+        $daily_earningObject = DB::select("
             SELECT bid_self_staked_amount
             FROM all_node_data
             WHERE public_key = '$node'
@@ -2819,10 +2819,12 @@ class UserController extends Controller
             ORDER BY era_id DESC
             LIMIT 1
         ");
-        $daily_earning = $daily_earning[0]->bid_self_staked_amount ?? 0;
-        $daily_earning = $nodeInfo->bid_self_staked_amount - $daily_earning;
+        $daily_earning = 0;
+        if ($daily_earningObject && count($daily_earningObject) > 0) $daily_earning = $daily_earningObject[0]->bid_self_staked_amount ?? 0;
+        if ($nodeInfo) $daily_earning = $nodeInfo->bid_self_staked_amount - $daily_earning;
+        else $daily_earning = -$daily_earning;
         $daily_earning = $daily_earning < 0 ? 0 : $daily_earning;
-
+        
         $mbs      = DB::select("
             SELECT mbs
             FROM mbs
