@@ -693,7 +693,7 @@ class NodeHelper
             FROM mbs
             WHERE era_id = $previous_era_id
         ");
-        $previous_mbs    = (float)($previous_mbs[0]['mbs'] ?? 0);
+        $previous_mbs    = (float)($previous_mbs[0]->mbs ?? 0);
 
         foreach ($bids as $b) {
             $public_key  = strtolower($b['public_key'] ?? 'nill');
