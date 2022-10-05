@@ -646,42 +646,42 @@ class NodeHelper
         }
 
         // Get settings for stable eras requirement
-        $eras_to_be_stable = DB::select("
+        $voting_eras_to_vote = DB::select("
             SELECT value
             FROM settings
-            WHERE name = 'eras_to_be_stable'
+            WHERE name = 'voting_eras_to_vote'
         ");
-        $a = (array)($eras_to_be_stable[0] ?? array());
-        $eras_to_be_stable = (int)($a['value'] ?? 0);
+        $a = (array)($voting_eras_to_vote[0] ?? array());
+        $voting_eras_to_vote = (int)($a['value'] ?? 0);
 
         // Create setting if not exist
-        if (!$eras_to_be_stable) {
-            $eras_to_be_stable = 100;
+        if (!$voting_eras_to_vote) {
+            $voting_eras_to_vote = 100;
 
             DB::table('settings')->insert(
                 array(
-                    'name'  => 'eras_to_be_stable',
+                    'name'  => 'voting_eras_to_vote',
                     'value' => '100'
                 )
             );
         }
 
         // Discover black marks - validator has sufficient stake, but failed to win slot.
-        $eras_look_back = DB::select("
+        $uptime_calc_size = DB::select("
             SELECT value
             FROM settings
-            WHERE name = 'eras_look_back'
+            WHERE name = 'uptime_calc_size'
         ");
-        $a = (array)($eras_look_back[0] ?? array());
-        $eras_look_back = (int)($a['value'] ?? 0);
+        $a = (array)($uptime_calc_size[0] ?? array());
+        $uptime_calc_size = (int)($a['value'] ?? 0);
 
         // Create setting if not exist
-        if (!$eras_look_back) {
-            $eras_look_back = 360;
+        if (!$uptime_calc_size) {
+            $uptime_calc_size = 360;
 
             DB::table('settings')->insert(
                 array(
-                    'name'  => 'eras_look_back',
+                    'name'  => 'uptime_calc_size',
                     'value' => '360'
                 )
             );
@@ -718,14 +718,14 @@ class NodeHelper
             $a = (array)($next_era_weight[0] ?? array());
             $next_era_weight = (int)($a['next_era_weight'] ?? 0);
 
-            // Calculate historical_performance from past $eras_look_back eras
+            // Calculate historical_performance from past $uptime_calc_size eras
             $missed = 0;
             $in_curent_eras = DB::select("
                 SELECT in_curent_era
                 FROM all_node_data
                 WHERE public_key = '$public_key'
                 ORDER BY era_id DESC
-                LIMIT $eras_look_back
+                LIMIT $uptime_calc_size
             ");
 
             $in_curent_eras = $in_curent_eras ? $in_curent_eras : array();
@@ -753,7 +753,7 @@ class NodeHelper
             }
 
             $historical_performance = ($uptime * ($window - $missed)) / $window;
-            $past_era               = $current_era_id - $eras_to_be_stable;
+            $past_era               = $current_era_id - $voting_eras_to_vote;
             $bad_mark               = 0;
 
             if ($past_era < 0) {
@@ -791,7 +791,7 @@ class NodeHelper
             $stable          = (int)(!$unstable);
             $stability_count = $stability_count ? count($stability_count) : 0;
 
-            if ($stability_count < $eras_to_be_stable) {
+            if ($stability_count < $voting_eras_to_vote) {
                 $stable = 0;
             }
 
