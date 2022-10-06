@@ -1017,6 +1017,7 @@ class AdminController extends Controller
             'voting_eras_to_vote'       => ($request->voting_eras_to_vote ?? null),
             'voting_eras_since_redmark' => ($request->voting_eras_since_redmark ?? null),
             'redmarks_revoke'           => ($request->redmarks_revoke ?? null),
+            'redmarks_revoke_lookback'  => ($request->redmarks_revoke_lookback ?? null),
             'responsiveness_warning'    => ($request->responsiveness_warning ?? null),
             'responsiveness_probation'  => ($request->responsiveness_probation ?? null)
         ];
