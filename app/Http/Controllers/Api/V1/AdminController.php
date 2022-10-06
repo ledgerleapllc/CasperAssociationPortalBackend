@@ -1009,28 +1009,31 @@ class AdminController extends Controller
     public function updateGlobalSettings(Request $request)
     {
         $items = [
-            'quorum_rate_ballot'        => ($request->quorum_rate_ballot ?? ''),
-            'uptime_warning'            => ($request->uptime_warning ?? ''),
-            'uptime_probation'          => ($request->uptime_probation ?? ''),
-            'uptime_correction_time'    => ($request->uptime_correction_time ?? ''),
-            'uptime_calc_size'          => ($request->uptime_calc_size ?? ''),
-            'voting_eras_to_vote'       => ($request->voting_eras_to_vote ?? ''),
-            'voting_eras_since_redmark' => ($request->voting_eras_since_redmark ?? ''),
-            'redmarks_revoke'           => ($request->redmarks_revoke ?? ''),
-            'responsiveness_warning'    => ($request->responsiveness_warning ?? ''),
-            'responsiveness_probation'  => ($request->responsiveness_probation ?? '')
+            'quorum_rate_ballot'        => ($request->quorum_rate_ballot ?? null),
+            'uptime_warning'            => ($request->uptime_warning ?? null),
+            'uptime_probation'          => ($request->uptime_probation ?? null),
+            'uptime_correction_time'    => ($request->uptime_correction_time ?? null),
+            'uptime_calc_size'          => ($request->uptime_calc_size ?? null),
+            'voting_eras_to_vote'       => ($request->voting_eras_to_vote ?? null),
+            'voting_eras_since_redmark' => ($request->voting_eras_since_redmark ?? null),
+            'redmarks_revoke'           => ($request->redmarks_revoke ?? null),
+            'redmarks_revoke_lookback'  => ($request->redmarks_revoke_lookback ?? null),
+            'responsiveness_warning'    => ($request->responsiveness_warning ?? null),
+            'responsiveness_probation'  => ($request->responsiveness_probation ?? null)
         ];
 
         foreach ($items as $name => $value) {
-            $setting = Setting::where('name', $name)->first();
+            if ($value !== null) {
+                $setting = Setting::where('name', $name)->first();
 
-            if ($setting) {
-                $setting->value = $value;
-                $setting->save();
-            } else {
-                $setting        = new Setting();
-                $setting->value = $value;
-                $setting->save();
+                if ($setting) {
+                    $setting->value = $value;
+                    $setting->save();
+                } else {
+                    $setting        = new Setting();
+                    $setting->value = $value;
+                    $setting->save();
+                }
             }
         }
 
