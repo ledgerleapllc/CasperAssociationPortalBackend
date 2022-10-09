@@ -60,7 +60,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
 
             // New Nodes page endpoint
             Route::get('/users/get-nodes-page', [UserController::class, 'getNodesPage']);
-
+            
             // New My Eras page endpoint
             Route::get('/users/get-my-eras', [UserController::class, 'getMyEras']);
 
