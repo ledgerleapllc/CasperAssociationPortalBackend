@@ -910,6 +910,7 @@ class UserController extends Controller
             AND a.era_id = $current_era_id
         ");
         info($members);
+        return $this->successResponse($data);
         //// done
 
 
@@ -2113,6 +2114,7 @@ class UserController extends Controller
         }
 
         info($members);
+        return $this->successResponse($members);
         //// done
 
 
@@ -2325,6 +2327,7 @@ class UserController extends Controller
             ) OR b.id = $id
         ");
         info($response);
+        return $this->successResponse($response);
         //// done
 
 
@@ -2739,6 +2742,7 @@ class UserController extends Controller
             AND a.id = $user_id
         ");
         info($nodes);
+        return $this->successResponse($nodes);
 
 
 

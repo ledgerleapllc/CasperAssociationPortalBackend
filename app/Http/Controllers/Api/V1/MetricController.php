@@ -542,6 +542,7 @@ class MetricController extends Controller
         ");
         $return_object['monitoring_criteria'] = $monitoring_criteria;
         info($return_object);
+        return $this->successResponse($return_object);
         //// done
 
 
