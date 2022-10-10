@@ -116,7 +116,7 @@ class UserController extends Controller
         // Get current era
         $current_era_id = DB::select("
             SELECT era_id
-            FROM all_node_data
+            FROM all_node_data2
             ORDER BY era_id DESC
             LIMIT 1
         ");
@@ -147,7 +147,7 @@ class UserController extends Controller
             a.public_key,
             c.id, c.pseudonym, c.node_status,
             d.status, d.extra_status
-            FROM all_node_data AS a
+            FROM all_node_data2 AS a
             JOIN user_addresses AS b
             ON a.public_key = b.public_address_node
             JOIN users AS c
@@ -190,17 +190,15 @@ class UserController extends Controller
         // find rank
         $ranking = DB::select("
             SELECT
-            public_key, 
-            historical_performance AS uptime,
+            public_key, uptime,
             bid_delegators_count,
             bid_delegation_rate,
             bid_total_staked_amount
-            FROM all_node_data
-            WHERE era_id      = $current_era_id
-            AND in_curent_era = 1
-            AND in_next_era   = 1
-            AND in_auction    = 1
-            AND bad_mark      = 0
+            FROM all_node_data2
+            WHERE era_id       = $current_era_id
+            AND in_current_era = 1
+            AND in_next_era    = 1
+            AND in_auction     = 1
         ");
         $max_delegators       = 0;
         $max_stake_amount     = 0;
@@ -266,18 +264,18 @@ class UserController extends Controller
             $i += 1;
         }
 
-        $return["ranking"] = $sorted_ranking;
+        $return["ranking"]         = $sorted_ranking;
+        $return["node_rank_total"] = count($sorted_ranking);
 
         // parse node addresses
         $addresses = DB::select("
             SELECT 
             a.public_key,
-            a.historical_performance AS uptime,
+            a.uptime,
             a.bid_delegators_count AS delegators,
             a.port8888_peers AS peers,
-            a.bid_self_staked_amount, a.bid_total_staked_amount,
-            a.bad_mark, a.stable
-            FROM all_node_data AS a
+            a.bid_self_staked_amount, a.bid_total_staked_amount
+            FROM all_node_data2 AS a
             JOIN user_addresses AS b
             ON a.public_key = b.public_address_node
             JOIN users AS c
@@ -290,38 +288,56 @@ class UserController extends Controller
             $addresses = array();
         }
 
+        // get settings
+        $voting_eras_to_vote = DB::select("
+            SELECT value
+            FROM settings
+            WHERE name = 'voting_eras_to_vote'
+        ");
+        $voting_eras_to_vote = $voting_eras_to_vote[0] ?? array();
+        $voting_eras_to_vote = (int)($voting_eras_to_vote->value ?? 0);
+
+        $uptime_calc_size = DB::select("
+            SELECT value
+            FROM settings
+            WHERE name = 'uptime_calc_size'
+        ");
+        $uptime_calc_size = $uptime_calc_size[0] ?? array();
+        $uptime_calc_size = (int)($uptime_calc_size->value ?? 0);
+        $past_era         = $current_era_id - $uptime_calc_size;
+
+        if ($past_era < 1) {
+            $past_era = 1;
+        }
+
         // for each address belonging to a user
         foreach ($addresses as $address) {
-            $a = $address->public_key ?? '';
+            $p = $address->public_key ?? '';
 
-            $eras_sinse_bad_mark = DB::select("
-                SELECT a.era_id
-                FROM all_node_data AS a
-                JOIN user_addresses AS b
-                ON a.public_key = b.public_address_node
-                WHERE a.public_key = '$a'
-                AND a.bad_mark = 1
+            $total_bad_marks = DB::select("
+                SELECT era_id
+                FROM all_node_data2
+                WHERE public_key = '$p'
+                AND era_id > $past_era
+                AND (
+                    in_current_era = 0 OR
+                    bid_inactive   = 1
+                )
                 ORDER BY era_id DESC
-                LIMIT 1
             ");
-            $eras_sinse_bad_mark = $eras_sinse_bad_mark[0]->era_id ?? 0;
-            $eras_sinse_bad_mark = $current_era_id - $eras_sinse_bad_mark;
+
+            $eras_sinse_bad_mark = $total_bad_marks[0] ?? array();
+            $eras_sinse_bad_mark = $current_era_id - (int)($eras_sinse_bad_mark->era_id ?? 0);
+            $total_bad_marks     = count((array)$total_bad_marks);
 
             if ($eras_sinse_bad_mark < $return["eras_sinse_bad_mark"]) {
                 $return["eras_sinse_bad_mark"] = $eras_sinse_bad_mark;
             }
 
-            $total_bad_marks = DB::select("
-                SELECT bad_mark
-                FROM all_node_data
-                WHERE bad_mark = 1
-                AND public_key = '$a'
-            ");
-
             $eras_active = DB::select("
                 SELECT era_id
-                FROM all_node_data
-                WHERE public_key = '$a'
+                FROM all_node_data2
+                WHERE public_key = '$p'
                 ORDER BY era_id ASC
                 LIMIT 1
             ");
@@ -332,21 +348,45 @@ class UserController extends Controller
                 $return["eras_active"] = $current_era_id - $eras_active;
             }
 
-            if (
-                array_key_exists($a, $return["ranking"]) && (
-                    $return["node_rank"] == 0 ||
-                    $return["ranking"][$a] < $return["node_rank"]
-                )
-            ) {
-                $return["node_rank"] = $return["ranking"][$a];
+            // Calculate historical_performance from past $uptime_calc_size eras
+            $missed = 0;
+            $in_current_eras = DB::select("
+                SELECT in_current_era
+                FROM all_node_data2
+                WHERE public_key = '$p'
+                ORDER BY era_id DESC
+                LIMIT $uptime_calc_size
+            ");
+
+            $in_current_eras = $in_current_eras ? $in_current_eras : array();
+            $window          = $in_current_eras ? count($in_current_eras) : 0;
+
+            foreach ($in_current_eras as $c) {
+                $in = (bool)($c->in_current_era ?? 0);
+
+                if (!$in) {
+                    $missed += 1;
+                }
             }
 
-            $return["total_bad_marks"]  += (int)(count($total_bad_marks ?? array()));
+            $uptime                 = (float)($address->uptime ?? 0);
+            $historical_performance = ($uptime * ($window - $missed)) / $window;
+
+            if (
+                array_key_exists($p, $return["ranking"]) && (
+                    $return["node_rank"] == 0 ||
+                    $return["ranking"][$p] < $return["node_rank"]
+                )
+            ) {
+                $return["node_rank"] = $return["ranking"][$p];
+            }
+
+            $return["total_bad_marks"]  += $total_bad_marks;
             $return["total_stake"]      += (int)($address->bid_total_staked_amount ?? 0);
             $return["total_self_stake"] += (int)($address->bid_self_staked_amount ?? 0);
             $return["total_delegators"] += (int)($address->delegators ?? 0);
             $return["peers"]            += (int)($address->peers ?? 0);
-            $return["uptime"]           += (float)($address->uptime ?? 0);
+            $return["uptime"]           += $historical_performance;
         }
 
         $addresses_count  = count($addresses);
@@ -367,7 +407,7 @@ class UserController extends Controller
         // Get current era
         $current_era_id = DB::select("
             SELECT era_id
-            FROM all_node_data
+            FROM all_node_data2
             ORDER BY era_id DESC
             LIMIT 1
         ");
@@ -388,12 +428,11 @@ class UserController extends Controller
 
         $addresses = DB::select("
             SELECT 
-            a.public_key,
-            a.historical_performance AS uptime,
+            a.public_key, a.uptime,
             a.port8888_peers AS peers,
-            a.bid_inactive, a.bad_mark, a.stable,
+            a.bid_inactive, a.in_current_era,
             c.status AS kyc_status
-            FROM all_node_data AS a
+            FROM all_node_data2 AS a
             JOIN user_addresses AS b
             ON a.public_key = b.public_address_node
             LEFT JOIN shuftipro AS c
@@ -413,46 +452,83 @@ class UserController extends Controller
             $return["kyc_status"] = "Verified";
         }
 
-        foreach ($addresses as $address) {
-            $a = $address->public_key ?? '';
+        $uptime_calc_size = DB::select("
+            SELECT value
+            FROM settings
+            WHERE name = 'uptime_calc_size'
+        ");
+        $uptime_calc_size = $uptime_calc_size[0] ?? array();
+        $uptime_calc_size = (int)($uptime_calc_size->value ?? 0);
+        $past_era         = $current_era_id - $uptime_calc_size;
 
-            $eras_sinse_bad_mark = DB::select("
-                SELECT a.era_id
-                FROM all_node_data AS a
-                JOIN user_addresses AS b
-                ON a.public_key = b.public_address_node
-                WHERE a.public_key = '$a'
-                AND a.bad_mark = 1
+        if ($past_era < 1) {
+            $past_era = 1;
+        }
+
+        foreach ($addresses as $address) {
+            $p = $address->public_key ?? '';
+
+            $total_bad_marks = DB::select("
+                SELECT era_id
+                FROM all_node_data2
+                WHERE public_key = '$p'
+                AND era_id > $past_era
+                AND (
+                    in_current_era = 0 OR
+                    bid_inactive   = 1
+                )
                 ORDER BY era_id DESC
-                LIMIT 1
             ");
-            $eras_sinse_bad_mark = $eras_sinse_bad_mark[0]->era_id ?? 0;
-            $eras_sinse_bad_mark = $current_era_id - $eras_sinse_bad_mark;
+
+            $eras_sinse_bad_mark = $total_bad_marks[0] ?? array();
+            $eras_sinse_bad_mark = $current_era_id - (int)($eras_sinse_bad_mark->era_id ?? 0);
+            $total_bad_marks     = count((array)$total_bad_marks);
 
             if ($eras_sinse_bad_mark < $return["eras_sinse_bad_mark"]) {
                 $return["eras_sinse_bad_mark"] = $eras_sinse_bad_mark;
             }
 
-            $total_bad_marks = DB::select("
-                SELECT bad_mark
-                FROM all_node_data
-                WHERE bad_mark = 1
-                AND public_key = '$a'
-            ");
-
             $total_eras = DB::select("
                 SELECT era_id
-                FROM all_node_data
-                WHERE public_key = '$a'
+                FROM all_node_data2
+                WHERE public_key = '$p'
                 ORDER BY era_id ASC
                 LIMIT 1
             ");
 
-            $total_eras                  = (int)($total_eras[0]->era_id ?? 0);
-            $return["total_eras"]        = $current_era_id - $total_eras;
-            $return["total_bad_marks"]  += (int)(count($total_bad_marks ?? array()));
+            $total_eras = (int)($total_eras[0]->era_id ?? 0);
+
+            if ($current_era_id - $total_eras > $return["total_eras"]) {
+                $return["total_eras"] = $current_era_id - $total_eras;
+            }
+
+            // Calculate historical_performance from past $uptime_calc_size eras
+            $missed = 0;
+            $in_current_eras = DB::select("
+                SELECT in_current_era
+                FROM all_node_data2
+                WHERE public_key = '$p'
+                ORDER BY era_id DESC
+                LIMIT $uptime_calc_size
+            ");
+
+            $in_current_eras = $in_current_eras ? $in_current_eras : array();
+            $window          = $in_current_eras ? count($in_current_eras) : 0;
+
+            foreach ($in_current_eras as $c) {
+                $in = (bool)($c->in_current_era ?? 0);
+
+                if (!$in) {
+                    $missed += 1;
+                }
+            }
+
+            $uptime                      = (float)($address->uptime ?? 0);
+            $historical_performance      = ($uptime * ($window - $missed)) / $window;
+
+            $return["total_bad_marks"]  += $total_bad_marks;
             $return["peers"]            += (int)($address->peers ?? 0);
-            $return["uptime"][$a]        = (float)($address->uptime ?? 0);
+            $return["uptime"][$p]        = (float)($address->uptime ?? 0);
             $return["avg_uptime"]       += (float)($address->uptime ?? 0);
 
             if ((int)$address->bid_inactive == 0) {
@@ -475,7 +551,7 @@ class UserController extends Controller
         // Get current era
         $current_era_id = DB::select("
             SELECT era_id
-            FROM all_node_data
+            FROM all_node_data2
             ORDER BY era_id DESC
             LIMIT 1
         ");
@@ -515,16 +591,15 @@ class UserController extends Controller
         // get ranking
         $ranking = DB::select("
             SELECT
-            public_key, 
-            historical_performance AS uptime,
+            public_key, uptime,
             bid_delegators_count,
             bid_delegation_rate,
             bid_total_staked_amount
-            FROM all_node_data
-            WHERE in_curent_era = 1
-            AND in_next_era     = 1
-            AND in_auction      = 1
-            AND bad_mark        = 0
+            FROM all_node_data2
+            WHERE era_id       = $current_era_id
+            AND in_current_era = 1
+            AND in_next_era    = 1
+            AND in_auction     = 1
         ");
         $max_delegators   = 0;
         $max_stake_amount = 0;
@@ -596,10 +671,9 @@ class UserController extends Controller
             SELECT 
             a.public_key, a.bid_delegators_count,
             a.bid_total_staked_amount, a.bid_self_staked_amount,
-            a.historical_performance AS uptime,
-            a.port8888_peers AS peers,
-            a.bid_inactive, a.bad_mark, a.stable
-            FROM all_node_data AS a
+            a.uptime, a.bid_inactive, a.in_current_era,
+            a.port8888_peers AS peers
+            FROM all_node_data2 AS a
             JOIN user_addresses AS b
             ON a.public_key = b.public_address_node
             JOIN users AS c
@@ -612,47 +686,79 @@ class UserController extends Controller
             $addresses = array();
         }
 
+        $uptime_calc_size = DB::select("
+            SELECT value
+            FROM settings
+            WHERE name = 'uptime_calc_size'
+        ");
+        $uptime_calc_size = $uptime_calc_size[0] ?? array();
+        $uptime_calc_size = (int)($uptime_calc_size->value ?? 0);
+        $past_era         = $current_era_id - $uptime_calc_size;
+
+        if ($past_era < 1) {
+            $past_era = 1;
+        }
+
         // for each member's node address
         foreach ($addresses as $address) {
-            $a = $address->public_key ?? '';
-
-            $eras_sinse_bad_mark = DB::select("
-                SELECT a.era_id
-                FROM all_node_data AS a
-                JOIN user_addresses AS b
-                ON a.public_key = b.public_address_node
-                WHERE a.public_key = '$a'
-                AND a.bad_mark = 1
-                ORDER BY era_id DESC
-                LIMIT 1
-            ");
-            $eras_sinse_bad_mark = $eras_sinse_bad_mark[0]->era_id ?? 0;
-            $eras_sinse_bad_mark = $current_era_id - $eras_sinse_bad_mark;
+            $p = $address->public_key ?? '';
 
             $total_bad_marks = DB::select("
-                SELECT bad_mark
-                FROM all_node_data
-                WHERE bad_mark = 1
-                AND public_key = '$a'
+                SELECT era_id
+                FROM all_node_data2
+                WHERE public_key = '$p'
+                AND era_id > $past_era
+                AND (
+                    in_current_era = 0 OR
+                    bid_inactive   = 1
+                )
+                ORDER BY era_id DESC
             ");
+
+            $eras_sinse_bad_mark = $total_bad_marks[0] ?? array();
+            $eras_sinse_bad_mark = $current_era_id - (int)($eras_sinse_bad_mark->era_id ?? 0);
+            $total_bad_marks     = count((array)$total_bad_marks);
 
             $total_eras = DB::select("
                 SELECT era_id
-                FROM all_node_data
-                WHERE public_key = '$a'
+                FROM all_node_data2
+                WHERE public_key = '$p'
                 ORDER BY era_id ASC
                 LIMIT 1
             ");
 
             $total_eras = (int)($total_eras[0]->era_id ?? 0);
-            $total_eras = $current_era_id - $total_eras;
+
+            // Calculate historical_performance from past $uptime_calc_size eras
+            $missed = 0;
+            $in_current_eras = DB::select("
+                SELECT in_current_era
+                FROM all_node_data2
+                WHERE public_key = '$p'
+                ORDER BY era_id DESC
+                LIMIT $uptime_calc_size
+            ");
+
+            $in_current_eras = $in_current_eras ? $in_current_eras : array();
+            $window          = $in_current_eras ? count($in_current_eras) : 0;
+
+            foreach ($in_current_eras as $c) {
+                $in = (bool)($c->in_current_era ?? 0);
+
+                if (!$in) {
+                    $missed += 1;
+                }
+            }
+
+            $uptime                 = (float)($address->uptime ?? 0);
+            $historical_performance = ($uptime * ($window - $missed)) / $window;
 
             // Calc earning
             $one_day_ago   = Carbon::now('UTC')->subHours(24);
             $daily_earning = DB::select("
                 SELECT bid_self_staked_amount
-                FROM all_node_data
-                WHERE public_key = '$a'
+                FROM all_node_data2
+                WHERE public_key = '$p'
                 AND created_at < '$one_day_ago'
                 ORDER BY era_id DESC
                 LIMIT 1
@@ -661,21 +767,21 @@ class UserController extends Controller
             $daily_earning = $address->bid_self_staked_amount - $daily_earning;
             $daily_earning = $daily_earning < 0 ? 0 : $daily_earning;
 
-            $earning_day   = $nodeHelper->getValidatorRewards($a, 'day');
-            $earning_week  = $nodeHelper->getValidatorRewards($a, 'week');
-            $earning_month = $nodeHelper->getValidatorRewards($a, 'month');
-            $earning_year  = $nodeHelper->getValidatorRewards($a, 'year');
+            $earning_day   = $nodeHelper->getValidatorRewards($p, 'day');
+            $earning_week  = $nodeHelper->getValidatorRewards($p, 'week');
+            $earning_month = $nodeHelper->getValidatorRewards($p, 'month');
+            $earning_year  = $nodeHelper->getValidatorRewards($p, 'year');
 
-            $return["addresses"][$a] = array(
+            $return["addresses"][$p] = array(
                 "stake_amount"          => $address->bid_total_staked_amount,
                 "delegators"            => $address->bid_delegators_count,
-                "uptime"                => $address->uptime,
+                "uptime"                => $historical_performance,
                 "update_responsiveness" => 100,
-                "peers"                 => $address->peers,
+                "peers"                 => (int)($address->peers),
                 "daily_earning"         => $daily_earning,
-                "total_eras"            => $total_eras,
+                "total_eras"            => $current_era_id - $total_eras,
                 "eras_sinse_bad_mark"   => $eras_sinse_bad_mark,
-                "total_bad_marks"       => count($total_bad_marks ?? array()),
+                "total_bad_marks"       => $total_bad_marks,
                 "validator_rewards"     => array(
                     "day"               => $earning_day,
                     "week"              => $earning_week,
@@ -705,7 +811,7 @@ class UserController extends Controller
         // Get current era
         $current_era_id = DB::select("
             SELECT era_id
-            FROM all_node_data
+            FROM all_node_data2
             ORDER BY era_id DESC
             LIMIT 1
         ");
@@ -741,9 +847,8 @@ class UserController extends Controller
         // get addresses data
         $addresses = DB::select("
             SELECT 
-            a.public_key,
-            a.historical_performance AS uptime
-            FROM all_node_data AS a
+            a.public_key, a.uptime
+            FROM all_node_data2 AS a
             JOIN user_addresses AS b
             ON a.public_key = b.public_address_node
             JOIN users AS c
@@ -756,51 +861,92 @@ class UserController extends Controller
             $addresses = array();
         }
 
+        // get settings
+        $voting_eras_to_vote = DB::select("
+            SELECT value
+            FROM settings
+            WHERE name = 'voting_eras_to_vote'
+        ");
+        $voting_eras_to_vote = $voting_eras_to_vote[0] ?? array();
+        $voting_eras_to_vote = (int)($voting_eras_to_vote->value ?? 0);
+
+        $uptime_calc_size = DB::select("
+            SELECT value
+            FROM settings
+            WHERE name = 'uptime_calc_size'
+        ");
+        $uptime_calc_size = $uptime_calc_size[0] ?? array();
+        $uptime_calc_size = (int)($uptime_calc_size->value ?? 0);
+        $past_era         = $current_era_id - $uptime_calc_size;
+
+        if ($past_era < 1) {
+            $past_era = 1;
+        }
+
         // for each member's node address
         foreach ($addresses as $address) {
-            $a = $address->public_key ?? '';
-
-            $eras_sinse_bad_mark = DB::select("
-                SELECT a.era_id
-                FROM all_node_data AS a
-                JOIN user_addresses AS b
-                ON a.public_key = b.public_address_node
-                WHERE a.public_key = '$a'
-                AND a.bad_mark = 1
-                ORDER BY era_id DESC
-                LIMIT 1
-            ");
-            $eras_sinse_bad_mark = $eras_sinse_bad_mark[0]->era_id ?? 0;
-            $eras_sinse_bad_mark = $current_era_id - $eras_sinse_bad_mark;
+            $p = $address->public_key ?? '';
 
             $total_bad_marks = DB::select("
-                SELECT bad_mark
-                FROM all_node_data
-                WHERE bad_mark = 1
-                AND public_key = '$a'
+                SELECT era_id
+                FROM all_node_data2
+                WHERE public_key = '$p'
+                AND era_id > $past_era
+                AND (
+                    in_current_era = 0 OR
+                    bid_inactive   = 1
+                )
+                ORDER BY era_id DESC
             ");
+
+            $eras_sinse_bad_mark = $total_bad_marks[0] ?? array();
+            $eras_sinse_bad_mark = $current_era_id - (int)($eras_sinse_bad_mark->era_id ?? 0);
+            $total_bad_marks     = count((array)$total_bad_marks);
 
             $eras_active = DB::select("
                 SELECT era_id
-                FROM all_node_data
-                WHERE public_key = '$a'
+                FROM all_node_data2
+                WHERE public_key = '$p'
                 ORDER BY era_id ASC
                 LIMIT 1
             ");
 
             $eras_active = (int)($eras_active[0]->era_id ?? 0);
-            $eras_active = $current_era_id - $eras_active;
 
-            $return["addresses"][$a]   = array(
-                "uptime"              => $address->uptime,
-                "eras_active"         => $eras_active,
+            // Calculate historical_performance from past $uptime_calc_size eras
+            $missed = 0;
+            $in_current_eras = DB::select("
+                SELECT in_current_era
+                FROM all_node_data2
+                WHERE public_key = '$p'
+                ORDER BY era_id DESC
+                LIMIT $uptime_calc_size
+            ");
+
+            $in_current_eras = $in_current_eras ? $in_current_eras : array();
+            $window          = $in_current_eras ? count($in_current_eras) : 0;
+
+            foreach ($in_current_eras as $c) {
+                $in = (bool)($c->in_current_era ?? 0);
+
+                if (!$in) {
+                    $missed += 1;
+                }
+            }
+
+            $uptime                 = (float)($address->uptime ?? 0);
+            $historical_performance = ($uptime * ($window - $missed)) / $window;
+
+            $return["addresses"][$p]   = array(
+                "uptime"              => $historical_performance,
+                "eras_active"         => $current_era_id - $eras_active,
                 "eras_sinse_bad_mark" => $eras_sinse_bad_mark,
-                "total_bad_marks"     => count($total_bad_marks ?? array())
+                "total_bad_marks"     => $total_bad_marks
             );
         }
 
         // get eras table data
-        $era_minus_360 = $current_era_id - 360;
+        $era_minus_360 = $current_era_id - $uptime_calc_size;
 
         if ($era_minus_360 < 1) {
             $era_minus_360 = 1;
@@ -809,10 +955,9 @@ class UserController extends Controller
         $eras = DB::select("
             SELECT
             a.public_key, a.era_id, a.created_at, 
-            a.in_curent_era, a.in_auction,
-            a.bid_inactive, a.bad_mark,
-            a.uptime
-            FROM all_node_data AS a
+            a.in_current_era, a.in_auction,
+            a.bid_inactive, a.uptime
+            FROM all_node_data2 AS a
             JOIN user_addresses
             ON a.public_key = user_addresses.public_address_node
             JOIN users
@@ -888,7 +1033,7 @@ class UserController extends Controller
 
         $current_era_id = DB::select("
             SELECT era_id
-            FROM all_node_data
+            FROM all_node_data2
             ORDER BY era_id DESC
             LIMIT 1
         ");
@@ -899,7 +1044,7 @@ class UserController extends Controller
             a.public_key,
             c.id, c.pseudonym, c.node_status,
             d.extra_status
-            FROM all_node_data AS a
+            FROM all_node_data2 AS a
             JOIN user_addresses AS b
             ON a.public_key = b.public_address_node
             JOIN users AS c
@@ -1872,16 +2017,34 @@ class UserController extends Controller
             $addresses = array();
         }
 
+        // get settings
+        $voting_eras_to_vote = DB::select("
+            SELECT value
+            FROM settings
+            WHERE name = 'voting_eras_to_vote'
+        ");
+        $voting_eras_to_vote = $voting_eras_to_vote[0] ?? array();
+        $voting_eras_to_vote = (int)($voting_eras_to_vote->value ?? 0);
+        $past_era            = $current_era_id - $voting_eras_to_vote;
+
+        if ($past_era < 1) {
+            $past_era = 1;
+        }
+
         foreach ($addresses as $address) {
+            $p = $address->public_address_node ?? '';
             $stable_check = DB::select("
-                SELECT stable
-                FROM all_node_data
-                WHERE public_key = '$address'
-                ORDER BY era_id DESC
-                LIMIT 1
+                SELECT uptime
+                FROM all_node_data2
+                WHERE public_key = '$p'
+                AND era_id > $past_era
+                AND (
+                    in_current_era = 0 OR
+                    bid_inactive   = 1
+                )
             ");
 
-            if ((bool)($stable_check[0]->stable ?? 0)) {
+            if (!$stable_check) {
                 $stable = true;
             }
         }
@@ -2030,7 +2193,7 @@ class UserController extends Controller
     {
         $current_era_id = DB::select("
             SELECT era_id
-            FROM all_node_data
+            FROM all_node_data2
             ORDER BY era_id DESC
             LIMIT 1
         ");
@@ -2041,13 +2204,11 @@ class UserController extends Controller
                 'users.pseudonym',
                 'users.created_at',
                 'user_addresses.node_verified_at',
-                'all_node_data.public_key',
-                'all_node_data.uptime',
-                'all_node_data.historical_performance',
-                'all_node_data.stable',
-                'all_node_data.bid_delegators_count',
-                'all_node_data.bid_delegation_rate',
-                'all_node_data.bid_total_staked_amount'
+                'all_node_data2.public_key',
+                'all_node_data2.uptime',
+                'all_node_data2.bid_delegators_count',
+                'all_node_data2.bid_delegation_rate',
+                'all_node_data2.bid_total_staked_amount'
             )
             ->join(
                 'user_addresses',
@@ -2056,14 +2217,14 @@ class UserController extends Controller
                 'users.id'
             )
             ->join(
-                'all_node_data', 
-                'all_node_data.public_key', 
+                'all_node_data2', 
+                'all_node_data2.public_key', 
                 '=', 
                 'user_addresses.public_address_node'
             )
             ->where([
                 'users.banned' => 0,
-                'all_node_data.era_id' => $current_era_id
+                'all_node_data2.era_id' => $current_era_id
             ])
             ->get();
 
@@ -2300,24 +2461,24 @@ class UserController extends Controller
 
         $current_era_id = DB::select("
             SELECT era_id
-            FROM all_node_data
+            FROM all_node_data2
             ORDER BY era_id DESC
             LIMIT 1
         ");
         $current_era_id = (int)($current_era_id[0]->era_id ?? 0);
 
-        $response   = DB::select("
+        $response = DB::select("
             SELECT 
             a.public_address_node, a.node_verified_at,
             b.email, b.first_name, b.last_name, b.created_at, 
             b.kyc_verified_at, b.entity_name,
-            c.historical_performance AS uptime, c.bid_delegators_count,
+            c.uptime, c.bid_delegators_count,
             c.bid_delegation_rate, c.bid_self_staked_amount, c.bid_total_staked_amount,
             d.casper_association_kyc_hash, d.blockchain_name, d.blockchain_desc
             FROM user_addresses AS a 
             JOIN users AS b 
             ON a.user_id = b.id
-            JOIN all_node_data AS c
+            JOIN all_node_data2 AS c
             ON a.public_address_node = c.public_key
             JOIN profile AS d
             ON b.id = d.user_id
@@ -2719,7 +2880,7 @@ class UserController extends Controller
 
         $current_era_id = DB::select("
             SELECT era_id
-            FROM all_node_data
+            FROM all_node_data2
             ORDER BY era_id DESC
             LIMIT 1
         ");
@@ -2729,12 +2890,11 @@ class UserController extends Controller
             SELECT
             a.id AS user_id, a.pseudonym,
             b.public_address_node,
-            c.stable, c.bad_mark,
             d.blockchain_name, d.blockchain_desc
             FROM users AS a
             JOIN user_addresses AS b
             ON a.id = b.user_id
-            JOIN all_node_data AS c
+            JOIN all_node_data2 AS c
             ON b.public_address_node = c.public_key
             JOIN profile AS d
             ON a.id = d.user_id
@@ -2777,7 +2937,7 @@ class UserController extends Controller
 
         $nodeInfo = DB::select("
             SELECT *
-            FROM all_node_data
+            FROM all_node_data2
             WHERE public_key = '$lower_address'
             ORDER BY era_id DESC
             LIMIT 1
@@ -2806,7 +2966,7 @@ class UserController extends Controller
 
         $nodeInfo = DB::select("
             SELECT *
-            FROM all_node_data
+            FROM all_node_data2
             WHERE public_key = '$node'
             ORDER BY era_id DESC
             LIMIT 1
@@ -2817,7 +2977,7 @@ class UserController extends Controller
         $one_day_ago   = Carbon::now('UTC')->subHours(24);
         $daily_earningObject = DB::select("
             SELECT bid_self_staked_amount
-            FROM all_node_data
+            FROM all_node_data2
             WHERE public_key = '$node'
             AND created_at < '$one_day_ago'
             ORDER BY era_id DESC
