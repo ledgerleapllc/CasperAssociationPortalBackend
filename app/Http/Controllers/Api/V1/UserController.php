@@ -910,7 +910,7 @@ class UserController extends Controller
             AND a.era_id = $current_era_id
         ");
         info($members);
-        return $this->successResponse($data);
+        return $this->successResponse($members);
         //// done
 
 
