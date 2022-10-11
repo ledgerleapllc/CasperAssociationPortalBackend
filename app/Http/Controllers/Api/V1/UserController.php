@@ -391,7 +391,7 @@ class UserController extends Controller
 
         $addresses_count  = count($addresses);
         $addresses_count  = $addresses_count ? $addresses_count : 1;
-        $return["uptime"] = $return["uptime"] / $addresses_count;
+        $return["uptime"] = round($return["uptime"] / $addresses_count, 2);
 
         // remove ranking object. not needed
         unset($return["ranking"]);
@@ -803,7 +803,7 @@ class UserController extends Controller
         info($return);
         return $this->successResponse($return);
     }
-    
+
     public function getMyEras() {
         $user    = auth()->user();
         $user_id = $user->id ?? 0;
