@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Console\Helper;
+
 use App\Http\Controllers\Controller;
 
 use App\Models\Metric;
@@ -24,8 +26,12 @@ class MetricController extends Controller
     public function getMetric(Request $request)
     {
         $return_object       = array();
-        $user                = auth()->user();
+        $user = auth()->user()->load(['pagePermissions']);
         $user_id             = $user->id;
+        /*
+        if (Helper::isAccessBlocked($user, 'nodes'))
+            return $this->successResponse([]);
+        */
         $public_address_node = $request->get('public_address_node');
 
         if (!$public_address_node) {

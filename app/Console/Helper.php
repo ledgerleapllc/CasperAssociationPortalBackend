@@ -22,6 +22,20 @@ use App\Services\Blake2b;
 
 class Helper
 {
+	public static function isAccessBlocked($user, $page) {
+		if ($user->role == 'admin') return false;
+		$flag = false;
+		if (isset($user->pagePermissions) && $user->pagePermissions) {
+			foreach ($user->pagePermissions as $item) {
+				if ($item->name == $page && !$item->is_permission) {
+					$flag = true;
+					break;
+				}
+			}
+		}
+		return $flag;
+	}
+
 	public static function publicKeyToAccountHash($public_key)
 	{
 		$public_key = (string)$public_key;

@@ -393,12 +393,15 @@ class AdminController extends Controller
     public function getUserDetail($id)
     {
         $user = User::where('id', $id)->first();
-
-        if (!$user || $user->role == 'admin') {
-            return $this->errorResponse(
-                __('api.error.not_found'), 
-                Response::HTTP_NOT_FOUND
-            );
+        if (!$user || $user->role == 'admin')
+            return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
+        $user = $user->load(['pagePermissions', 'profile', 'shuftipro', 'shuftiproTemp']);
+        
+        $status = 'Not Verified';
+        if ($user->profile && $user->profile->status == 'approved') {
+            $status = 'Verified';
+            if ($user->profile->extra_status)
+                $status = $user->profile->extra_status;
         }
 
         $user   = $user->load(['profile', 'shuftipro', 'shuftiproTemp']);
