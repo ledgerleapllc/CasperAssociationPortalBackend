@@ -248,7 +248,7 @@ class HistoricalData extends Command
         011117189c666f81c5160cd610ee383dc9b2d0361f004934754d39752eedc64957
 
         34 seconds per era
-        47 seconds per era
+        85 seconds per era
         */
 
         $get_block      = 'casper-client get-block ';
