@@ -383,8 +383,10 @@ class HistoricalData extends Command
         // $historic_block = 614408; // pre-calculated
         $historic_era   = 4874; // bookmark
         $historic_block = 775014; // bookmark
+        // $historic_era   = 5701; // bookmark
+        // $historic_block = 955831; // bookmark
 
-        // current seconds per era: 152
+        // current seconds per era: 296
 
         $i = 0;
 
