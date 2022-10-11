@@ -304,11 +304,6 @@ class UserController extends Controller
         ");
         $uptime_calc_size = $uptime_calc_size[0] ?? array();
         $uptime_calc_size = (int)($uptime_calc_size->value ?? 0);
-        $past_era         = $current_era_id - $uptime_calc_size;
-
-        if ($past_era < 1) {
-            $past_era = 1;
-        }
 
         // for each address belonging to a user
         foreach ($addresses as $address) {
@@ -318,7 +313,6 @@ class UserController extends Controller
                 SELECT era_id
                 FROM all_node_data2
                 WHERE public_key = '$p'
-                AND era_id > $past_era
                 AND (
                     in_current_era = 0 OR
                     bid_inactive   = 1
@@ -459,11 +453,6 @@ class UserController extends Controller
         ");
         $uptime_calc_size = $uptime_calc_size[0] ?? array();
         $uptime_calc_size = (int)($uptime_calc_size->value ?? 0);
-        $past_era         = $current_era_id - $uptime_calc_size;
-
-        if ($past_era < 1) {
-            $past_era = 1;
-        }
 
         foreach ($addresses as $address) {
             $p = $address->public_key ?? '';
@@ -472,7 +461,6 @@ class UserController extends Controller
                 SELECT era_id
                 FROM all_node_data2
                 WHERE public_key = '$p'
-                AND era_id > $past_era
                 AND (
                     in_current_era = 0 OR
                     bid_inactive   = 1
@@ -693,11 +681,6 @@ class UserController extends Controller
         ");
         $uptime_calc_size = $uptime_calc_size[0] ?? array();
         $uptime_calc_size = (int)($uptime_calc_size->value ?? 0);
-        $past_era         = $current_era_id - $uptime_calc_size;
-
-        if ($past_era < 1) {
-            $past_era = 1;
-        }
 
         // for each member's node address
         foreach ($addresses as $address) {
@@ -707,7 +690,6 @@ class UserController extends Controller
                 SELECT era_id
                 FROM all_node_data2
                 WHERE public_key = '$p'
-                AND era_id > $past_era
                 AND (
                     in_current_era = 0 OR
                     bid_inactive   = 1
@@ -877,11 +859,6 @@ class UserController extends Controller
         ");
         $uptime_calc_size = $uptime_calc_size[0] ?? array();
         $uptime_calc_size = (int)($uptime_calc_size->value ?? 0);
-        $past_era         = $current_era_id - $uptime_calc_size;
-
-        if ($past_era < 1) {
-            $past_era = 1;
-        }
 
         // for each member's node address
         foreach ($addresses as $address) {
@@ -891,7 +868,6 @@ class UserController extends Controller
                 SELECT era_id
                 FROM all_node_data2
                 WHERE public_key = '$p'
-                AND era_id > $past_era
                 AND (
                     in_current_era = 0 OR
                     bid_inactive   = 1
