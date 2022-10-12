@@ -28,10 +28,6 @@ class MetricController extends Controller
         $return_object       = array();
         $user = auth()->user()->load(['pagePermissions']);
         $user_id             = $user->id;
-        /*
-        if (Helper::isAccessBlocked($user, 'nodes'))
-            return $this->successResponse([]);
-        */
         $public_address_node = $request->get('public_address_node');
 
         if (!$public_address_node) {
@@ -68,7 +64,7 @@ class MetricController extends Controller
         foreach ($addresses as &$address) {
             $a = $address->public_key;
 
-            $eras_sinse_bad_mark = DB::select("
+            $eras_since_bad_mark = DB::select("
                 SELECT a.era_id
                 FROM all_node_data AS a
                 JOIN user_addresses AS b
@@ -78,9 +74,9 @@ class MetricController extends Controller
                 ORDER BY era_id DESC
                 LIMIT 1
             ");
-            $eras_sinse_bad_mark          = $eras_sinse_bad_mark[0]->era_id ?? 0;
-            $eras_sinse_bad_mark          = $current_era_id - $eras_sinse_bad_mark;
-            $address->eras_sinse_bad_mark = $eras_sinse_bad_mark;
+            $eras_since_bad_mark          = $eras_since_bad_mark[0]->era_id ?? 0;
+            $eras_since_bad_mark          = $current_era_id - $eras_since_bad_mark;
+            $address->eras_since_bad_mark = $eras_since_bad_mark;
         }
 
         $monitoring_criteria = DB::select("
@@ -359,7 +355,7 @@ class MetricController extends Controller
         foreach ($addresses as &$address) {
             $a = $address->public_key;
 
-            $eras_sinse_bad_mark = DB::select("
+            $eras_since_bad_mark = DB::select("
                 SELECT a.era_id
                 FROM all_node_data AS a
                 JOIN user_addresses AS b
@@ -369,9 +365,9 @@ class MetricController extends Controller
                 ORDER BY era_id DESC
                 LIMIT 1
             ");
-            $eras_sinse_bad_mark          = $eras_sinse_bad_mark[0]->era_id ?? 0;
-            $eras_sinse_bad_mark          = $current_era_id - $eras_sinse_bad_mark;
-            $address->eras_sinse_bad_mark = $eras_sinse_bad_mark;
+            $eras_since_bad_mark          = $eras_since_bad_mark[0]->era_id ?? 0;
+            $eras_since_bad_mark          = $current_era_id - $eras_since_bad_mark;
+            $address->eras_since_bad_mark = $eras_since_bad_mark;
         }
 
         $monitoring_criteria = DB::select("
@@ -527,7 +523,7 @@ class MetricController extends Controller
         foreach ($addresses as &$address) {
             $a = $address->public_key;
 
-            $eras_sinse_bad_mark = DB::select("
+            $eras_since_bad_mark = DB::select("
                 SELECT a.era_id
                 FROM all_node_data AS a
                 JOIN user_addresses AS b
@@ -537,9 +533,9 @@ class MetricController extends Controller
                 ORDER BY era_id DESC
                 LIMIT 1
             ");
-            $eras_sinse_bad_mark          = $eras_sinse_bad_mark[0]->era_id ?? 0;
-            $eras_sinse_bad_mark          = $current_era_id - $eras_sinse_bad_mark;
-            $address->eras_sinse_bad_mark = $eras_sinse_bad_mark;
+            $eras_since_bad_mark          = $eras_since_bad_mark[0]->era_id ?? 0;
+            $eras_since_bad_mark          = $current_era_id - $eras_since_bad_mark;
+            $address->eras_since_bad_mark = $eras_since_bad_mark;
         }
 
         $monitoring_criteria = DB::select("

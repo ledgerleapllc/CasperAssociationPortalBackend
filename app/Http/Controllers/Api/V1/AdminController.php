@@ -86,7 +86,7 @@ class AdminController extends Controller
                     "peers"                 => 0,
                     "daily_earning"         => 0,
                     "total_eras"            => 0,
-                    "eras_sinse_bad_mark"   => $current_era_id,
+                    "eras_since_bad_mark"   => $current_era_id,
                     "total_bad_marks"       => 0,
                     "faling"                => 0,
                     "validator_rewards"     => array(
@@ -207,7 +207,7 @@ class AdminController extends Controller
         foreach ($addresses as $address) {
             $a = $address->public_key ?? '';
 
-            $eras_sinse_bad_mark = DB::select("
+            $eras_since_bad_mark = DB::select("
                 SELECT a.era_id
                 FROM all_node_data AS a
                 JOIN user_addresses AS b
@@ -217,8 +217,8 @@ class AdminController extends Controller
                 ORDER BY era_id DESC
                 LIMIT 1
             ");
-            $eras_sinse_bad_mark = $eras_sinse_bad_mark[0]->era_id ?? 0;
-            $eras_sinse_bad_mark = $current_era_id - $eras_sinse_bad_mark;
+            $eras_since_bad_mark = $eras_since_bad_mark[0]->era_id ?? 0;
+            $eras_since_bad_mark = $current_era_id - $eras_since_bad_mark;
 
             $total_bad_marks = DB::select("
                 SELECT bad_mark
@@ -274,7 +274,7 @@ class AdminController extends Controller
                 "peers"                 => $address->peers,
                 "daily_earning"         => $daily_earning,
                 "total_eras"            => $total_eras,
-                "eras_sinse_bad_mark"   => $eras_sinse_bad_mark,
+                "eras_since_bad_mark"   => $eras_since_bad_mark,
                 "total_bad_marks"       => count($total_bad_marks ?? array()),
                 "failing"               => $failing,
                 "validator_rewards"     => array(

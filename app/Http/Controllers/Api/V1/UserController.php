@@ -131,7 +131,7 @@ class UserController extends Controller
             "total_delegators"        => 0,
             "uptime"                  => 0,
             "eras_active"             => 0,
-            "eras_sinse_bad_mark"     => $current_era_id,
+            "eras_since_bad_mark"     => $current_era_id,
             "total_bad_marks"         => 0,
             "update_responsiveness"   => 100,
             "peers"                   => 0,
@@ -320,12 +320,12 @@ class UserController extends Controller
                 ORDER BY era_id DESC
             ");
 
-            $eras_sinse_bad_mark = $total_bad_marks[0] ?? array();
-            $eras_sinse_bad_mark = $current_era_id - (int)($eras_sinse_bad_mark->era_id ?? 0);
+            $eras_since_bad_mark = $total_bad_marks[0] ?? array();
+            $eras_since_bad_mark = $current_era_id - (int)($eras_since_bad_mark->era_id ?? 0);
             $total_bad_marks     = count((array)$total_bad_marks);
 
-            if ($eras_sinse_bad_mark < $return["eras_sinse_bad_mark"]) {
-                $return["eras_sinse_bad_mark"] = $eras_sinse_bad_mark;
+            if ($eras_since_bad_mark < $return["eras_since_bad_mark"]) {
+                $return["eras_since_bad_mark"] = $eras_since_bad_mark;
             }
 
             $eras_active = DB::select("
@@ -414,7 +414,7 @@ class UserController extends Controller
             "uptime"                => array(),
             "avg_uptime"            => 0,
             "total_eras"            => 0,
-            "eras_sinse_bad_mark"   => $current_era_id,
+            "eras_since_bad_mark"   => $current_era_id,
             "total_bad_marks"       => 0,
             "update_responsiveness" => 100,
             "peers"                 => 0
@@ -468,12 +468,12 @@ class UserController extends Controller
                 ORDER BY era_id DESC
             ");
 
-            $eras_sinse_bad_mark = $total_bad_marks[0] ?? array();
-            $eras_sinse_bad_mark = $current_era_id - (int)($eras_sinse_bad_mark->era_id ?? 0);
+            $eras_since_bad_mark = $total_bad_marks[0] ?? array();
+            $eras_since_bad_mark = $current_era_id - (int)($eras_since_bad_mark->era_id ?? 0);
             $total_bad_marks     = count((array)$total_bad_marks);
 
-            if ($eras_sinse_bad_mark < $return["eras_sinse_bad_mark"]) {
-                $return["eras_sinse_bad_mark"] = $eras_sinse_bad_mark;
+            if ($eras_since_bad_mark < $return["eras_since_bad_mark"]) {
+                $return["eras_since_bad_mark"] = $eras_since_bad_mark;
             }
 
             $total_eras = DB::select("
@@ -560,7 +560,7 @@ class UserController extends Controller
                     "peers"                 => 0,
                     "daily_earning"         => 0,
                     "total_eras"            => 0,
-                    "eras_sinse_bad_mark"   => $current_era_id,
+                    "eras_since_bad_mark"   => $current_era_id,
                     "total_bad_marks"       => 0,
                     "validator_rewards"     => array(
                         "day"               => array(),
@@ -697,8 +697,8 @@ class UserController extends Controller
                 ORDER BY era_id DESC
             ");
 
-            $eras_sinse_bad_mark = $total_bad_marks[0] ?? array();
-            $eras_sinse_bad_mark = $current_era_id - (int)($eras_sinse_bad_mark->era_id ?? 0);
+            $eras_since_bad_mark = $total_bad_marks[0] ?? array();
+            $eras_since_bad_mark = $current_era_id - (int)($eras_since_bad_mark->era_id ?? 0);
             $total_bad_marks     = count((array)$total_bad_marks);
 
             $total_eras = DB::select("
@@ -733,7 +733,7 @@ class UserController extends Controller
             }
 
             $uptime                 = (float)($address->uptime ?? 0);
-            $historical_performance = ($uptime * ($window - $missed)) / $window;
+            $historical_performance = round(($uptime * ($window - $missed)) / $window, 2);
 
             // Calc earning
             $one_day_ago   = Carbon::now('UTC')->subHours(24);
@@ -762,7 +762,7 @@ class UserController extends Controller
                 "peers"                 => (int)($address->peers),
                 "daily_earning"         => $daily_earning,
                 "total_eras"            => $current_era_id - $total_eras,
-                "eras_sinse_bad_mark"   => $eras_sinse_bad_mark,
+                "eras_since_bad_mark"   => $eras_since_bad_mark,
                 "total_bad_marks"       => $total_bad_marks,
                 "validator_rewards"     => array(
                     "day"               => $earning_day,
@@ -805,7 +805,7 @@ class UserController extends Controller
                 "0123456789abcdef"          => array(
                     "uptime"                => 0,
                     "eras_active"           => 0,
-                    "eras_sinse_bad_mark"   => $current_era_id,
+                    "eras_since_bad_mark"   => $current_era_id,
                     "total_bad_marks"       => 0
                 )
             ),
@@ -875,8 +875,8 @@ class UserController extends Controller
                 ORDER BY era_id DESC
             ");
 
-            $eras_sinse_bad_mark = $total_bad_marks[0] ?? array();
-            $eras_sinse_bad_mark = $current_era_id - (int)($eras_sinse_bad_mark->era_id ?? 0);
+            $eras_since_bad_mark = $total_bad_marks[0] ?? array();
+            $eras_since_bad_mark = $current_era_id - (int)($eras_since_bad_mark->era_id ?? 0);
             $total_bad_marks     = count((array)$total_bad_marks);
 
             $eras_active = DB::select("
@@ -916,7 +916,7 @@ class UserController extends Controller
             $return["addresses"][$p]   = array(
                 "uptime"              => $historical_performance,
                 "eras_active"         => $current_era_id - $eras_active,
-                "eras_sinse_bad_mark" => $eras_sinse_bad_mark,
+                "eras_since_bad_mark" => $eras_since_bad_mark,
                 "total_bad_marks"     => $total_bad_marks
             );
         }
