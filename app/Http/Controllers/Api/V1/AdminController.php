@@ -1890,25 +1890,117 @@ class AdminController extends Controller
 
     public function getListNodes(Request $request)
     {
-        $limit         = $request->limit ?? 50;
-        $node_failing  = $request->node_failing  ?? '';
+        $current_era_id = DB::select("
+            SELECT era_id
+            FROM all_node_data2
+            ORDER BY era_id DESC
+            LIMIT 1
+        ");
+        $current_era_id = (int)($current_era_id[0]->era_id ?? 0);
 
-        $nodes = UserAddress::select([
-            'user_addresses.user_id as user_id',
-            'user_addresses.public_address_node as public_address_node',
-            'user_addresses.is_fail_node as is_fail_node',
-            'user_addresses.rank as rank',
-        ])
-            ->join('users', 'users.id', '=', 'user_addresses.user_id')
-            ->where('users.banned', 0)
-            ->whereNotNull('user_addresses.public_address_node')
-            ->where(function ($query) use ($node_failing) {
-                if ($node_failing == 1) $query->where('user_addresses.is_fail_node', 1);
-            })
-            ->orderBy('user_addresses.rank', 'asc')
-            ->paginate($limit);
+        // define return object
+        $return = array(
+            "nodes"           => array(),
+            "ranking"         => array(),
+            "node_rank_total" => 100
+        );
 
-        return $this->successResponse($nodes);
+        // find rank
+        $ranking = DB::select("
+            SELECT
+            public_key, uptime,
+            bid_delegators_count,
+            bid_delegation_rate,
+            bid_total_staked_amount
+            FROM all_node_data2
+            WHERE era_id       = $current_era_id
+            AND in_current_era = 1
+            AND in_next_era    = 1
+            AND in_auction     = 1
+        ");
+        $max_delegators       = 0;
+        $max_stake_amount     = 0;
+
+        foreach ($ranking as $r) {
+            if ((int)$r->bid_delegators_count > $max_delegators) {
+                $max_delegators   = (int)$r->bid_delegators_count;
+            }
+
+            if ((int)$r->bid_total_staked_amount > $max_stake_amount) {
+                $max_stake_amount = (int)$r->bid_total_staked_amount;
+            }
+        }
+
+        foreach ($ranking as $r) {
+            $uptime_score     = (
+                25 * (float)$r->uptime
+            ) / 100;
+            $uptime_score     = $uptime_score < 0 ? 0 : $uptime_score;
+
+            $fee_score        = (
+                25 * 
+                (1 - ((float)$r->bid_delegation_rate / 100))
+            );
+            $fee_score        = $fee_score < 0 ? 0 : $fee_score;
+
+            $count_score      = (
+                (float)$r->bid_delegators_count / 
+                $max_delegators
+            ) * 25;
+            $count_score      = $count_score < 0 ? 0 : $count_score;
+
+            $stake_score      = (
+                (float)$r->bid_total_staked_amount / 
+                $max_stake_amount
+            ) * 25;
+            $stake_score      = $stake_score < 0 ? 0 : $stake_score;
+
+            $return["ranking"][$r->public_key] = (
+                $uptime_score +
+                $fee_score    +
+                $count_score  + 
+                $stake_score
+            );
+        }
+
+        uasort(
+            $return["ranking"],
+            function($x, $y) {
+                if ($x == $y) {
+                    return 0;
+                }
+
+                return ($x > $y) ? -1 : 1;
+            }
+        );
+
+        $sorted_ranking = array();
+        $i = 1;
+
+        foreach ($return["ranking"] as $public_key => $score) {
+            $sorted_ranking[$public_key] = $i;
+            $i += 1;
+        }
+
+        $return["ranking"]         = $sorted_ranking;
+        $return["node_rank_total"] = count($sorted_ranking);
+
+        $return["nodes"]           = DB::select("
+            SELECT
+            a.public_address_node, 
+            b.id, 
+            b.pseudonym, 
+            c.blockchain_name, 
+            c.blockchain_desc 
+            FROM user_addresses AS a 
+            JOIN users AS b 
+            ON a.user_id = b.id 
+            JOIN profile AS c 
+            ON b.id = c.user_id 
+            WHERE b.banned = 0
+        ");
+        // info($nodes);
+        return $this->successResponse($return);
     }
 
     // Get GraphInfo
