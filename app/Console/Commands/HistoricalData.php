@@ -14,17 +14,6 @@ use Carbon\Carbon;
 
 /*
 *** New Updates
-// User
-// New Nodes page endpoint
-Route::get('/users/get-nodes-page', [UserController::class, 'getNodesPage']);
-
-// New My Eras page endpoint
-Route::get('/users/get-my-eras', [UserController::class, 'getMyEras']);
-
-// Admin
-// New Nodes page endpoint
-Route::get('/users/get-nodes-page', [AdminController::class, 'getNodesPage']);
-
 Function that have also changed:
 UserController::getVerifiedMembers()
 UserController::getMembers()
