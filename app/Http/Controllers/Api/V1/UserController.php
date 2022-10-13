@@ -2868,7 +2868,7 @@ class UserController extends Controller
             ORDER BY era_id DESC
             LIMIT 1
         ");
-        $current_era_id = (int)($current_era_id[0]->era_id ?? 0);
+        $current_era_id = (int) ($current_era_id[0]->era_id ?? 0);
 
         // define return object
         $return = array(
@@ -2880,12 +2880,12 @@ class UserController extends Controller
         $return["nodes"] = DB::select("
             SELECT
             a.public_address_node, 
-            b.id, 
+            b.id,
             b.pseudonym, 
             c.blockchain_name, 
             c.blockchain_desc 
             FROM user_addresses AS a 
-            JOIN users AS b 
+            JOIN users AS b
             ON a.user_id = b.id 
             JOIN profile AS c 
             ON b.id = c.user_id 
@@ -2973,8 +2973,6 @@ class UserController extends Controller
         $return["node_rank_total"] = count($sorted_ranking);
 
         return $this->successResponse($return);
-
-
 
 
         $limit = $request->limit ?? 50;
