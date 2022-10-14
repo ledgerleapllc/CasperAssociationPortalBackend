@@ -61,6 +61,278 @@ use Aws\S3\S3Client;
 
 class AdminController extends Controller
 {
+    public function allErasUser($id) {
+        $user = User::where('id', $id)->first();
+
+        if (!$user || $user->role == 'admin') {
+            return $this->errorResponse(
+                __('api.error.not_found'),
+                Response::HTTP_NOT_FOUND
+            );
+        }
+
+        $user_id = $id;
+
+        // Get current era
+        $current_era_id = DB::select("
+            SELECT era_id
+            FROM all_node_data2
+            ORDER BY era_id DESC
+            LIMIT 1
+        ");
+        $current_era_id = (int)($current_era_id[0]->era_id ?? 0);
+
+        // define return object
+        $return  = array(
+            "column_count" => 2,
+            "eras"         => array(
+                array(
+                    "era_start_time"        => '',
+                    "addresses"             => array(
+                        "0123456789abcdef"  => array(
+                            "in_pool"       => false,
+                            "rewards"       => 0
+                        )
+                    )
+                )
+            )
+        );
+
+        unset($return["eras"][0]);
+
+        // get settings
+        $voting_eras_to_vote = DB::select("
+            SELECT value
+            FROM settings
+            WHERE name = 'voting_eras_to_vote'
+        ");
+        $voting_eras_to_vote = $voting_eras_to_vote[0] ?? array();
+        $voting_eras_to_vote = (int)($voting_eras_to_vote->value ?? 0);
+
+        $uptime_calc_size = DB::select("
+            SELECT value
+            FROM settings
+            WHERE name = 'uptime_calc_size'
+        ");
+        $uptime_calc_size = $uptime_calc_size[0] ?? array();
+        $uptime_calc_size = (int)($uptime_calc_size->value ?? 0);
+
+        // get eras table data
+        $era_minus_360 = $current_era_id - $uptime_calc_size;
+
+        if ($era_minus_360 < 1) {
+            $era_minus_360 = 1;
+        }
+
+        $eras = DB::select("
+            SELECT
+            a.public_key, a.era_id, a.created_at, 
+            a.in_current_era, a.in_auction,
+            a.bid_inactive, a.uptime
+            FROM all_node_data2 AS a
+            JOIN user_addresses
+            ON a.public_key = user_addresses.public_address_node
+            JOIN users
+            ON user_addresses.user_id = users.id
+            WHERE users.id = $user_id
+            AND era_id > $era_minus_360
+            ORDER BY a.era_id DESC
+        ");
+
+        if (!$eras) {
+            $eras = array();
+        }
+
+        $sorted_eras = array();
+
+        // for each node address's era
+        foreach ($eras as $era) {
+            $era_id               = $era->era_id ?? 0;
+            $era_start_time       = $era->created_at ?? '';
+            $public_key           = $era->public_key;
+
+            if (!isset($sorted_eras[$era_id])) {
+                $sorted_eras[$era_id] = array(
+                    "era_start_time"  => $era_start_time,
+                    "addresses"       => array()
+                );
+            }
+
+            $sorted_eras
+            [$era_id]
+            ["addresses"]
+            [$public_key] = array(
+                "in_pool" => $era->in_auction,
+                "rewards" => $era->uptime,
+            );
+        }
+
+        $return["eras"] = $sorted_eras;
+        $column_count   = 0;
+
+        foreach ($return["eras"] as $era) {
+            $count = $era["addresses"] ? count($era["addresses"]) : 0;
+
+            if ($count > $column_count) {
+                $column_count = $count;
+            }
+        }
+
+        $return["column_count"] = $column_count + 1;
+
+        info($return);
+        return $this->successResponse($return);
+    }
+
+    public function allEras() {
+        // Get current era
+        $current_era_id = DB::select("
+            SELECT era_id
+            FROM all_node_data2
+            ORDER BY era_id DESC
+            LIMIT 1
+        ");
+        $current_era_id = (int)($current_era_id[0]->era_id ?? 0);
+
+        // define return object
+        $return = array(
+            "addresses" => array(
+                "0123456789abcdef"          => array(
+                    "uptime"                => 0,
+                    "eras_active"           => 0,
+                    "eras_since_bad_mark"   => $current_era_id,
+                    "total_bad_marks"       => 0
+                )
+            ),
+            "users" => array(
+                array(
+                    "user_id"       => 0,
+                    "name"          => "Jason Stone",
+                    "pseudonym"     => "jsnstone"
+                )
+            )
+        );
+
+        unset($return["addresses"]["0123456789abcdef"]);
+        unset($return["eras"][0]);
+
+        // get addresses data
+        $addresses = DB::select("
+            SELECT 
+            a.public_key, a.uptime, b.user_id
+            FROM all_node_data2 AS a
+            JOIN user_addresses AS b
+            ON a.public_key = b.public_address_node
+            WHERE a.era_id  = $current_era_id
+        ");
+
+        if (!$addresses) {
+            $addresses = array();
+        }
+
+        // get settings
+        $voting_eras_to_vote = DB::select("
+            SELECT value
+            FROM settings
+            WHERE name = 'voting_eras_to_vote'
+        ");
+        $voting_eras_to_vote = $voting_eras_to_vote[0] ?? array();
+        $voting_eras_to_vote = (int)($voting_eras_to_vote->value ?? 0);
+
+        $uptime_calc_size = DB::select("
+            SELECT value
+            FROM settings
+            WHERE name = 'uptime_calc_size'
+        ");
+        $uptime_calc_size = $uptime_calc_size[0] ?? array();
+        $uptime_calc_size = (int)($uptime_calc_size->value ?? 0);
+
+        // for each member's node address
+        foreach ($addresses as $address) {
+            $p = $address->public_key ?? '';
+
+            $total_bad_marks = DB::select("
+                SELECT era_id
+                FROM all_node_data2
+                WHERE public_key = '$p'
+                AND (
+                    in_current_era = 0 OR
+                    bid_inactive   = 1
+                )
+                ORDER BY era_id DESC
+            ");
+
+            $eras_since_bad_mark = $total_bad_marks[0] ?? array();
+            $eras_since_bad_mark = $current_era_id - (int)($eras_since_bad_mark->era_id ?? 0);
+            $total_bad_marks     = count((array)$total_bad_marks);
+
+            $eras_active = DB::select("
+                SELECT era_id
+                FROM all_node_data2
+                WHERE public_key = '$p'
+                ORDER BY era_id ASC
+                LIMIT 1
+            ");
+
+            $eras_active = (int)($eras_active[0]->era_id ?? 0);
+
+            // Calculate historical_performance from past $uptime_calc_size eras
+            $missed = 0;
+            $in_current_eras = DB::select("
+                SELECT in_current_era
+                FROM all_node_data2
+                WHERE public_key = '$p'
+                ORDER BY era_id DESC
+                LIMIT $uptime_calc_size
+            ");
+
+            $in_current_eras = $in_current_eras ? $in_current_eras : array();
+            $window          = $in_current_eras ? count($in_current_eras) : 0;
+
+            foreach ($in_current_eras as $c) {
+                $in = (bool)($c->in_current_era ?? 0);
+
+                if (!$in) {
+                    $missed += 1;
+                }
+            }
+
+            $uptime                 = (float)($address->uptime ?? 0);
+            $historical_performance = ($uptime * ($window - $missed)) / $window;
+
+            $return["addresses"][$p]   = array(
+                "uptime"              => $historical_performance,
+                "eras_active"         => $current_era_id - $eras_active,
+                "eras_since_bad_mark" => $eras_since_bad_mark,
+                "total_bad_marks"     => $total_bad_marks
+            );
+        }
+
+        $users = DB::select("
+            SELECT
+            a.id, a.first_name, a.last_name, a.pseudonym
+            FROM users AS a
+            WHERE a.role      = 'member'
+            AND a.has_address = 1
+            AND a.banned      = 0;
+        ");
+
+        foreach ($users as $user) {
+            $return["users"][] = array(
+                "user_id"   => $user->id,
+                "name"      => $user->first_name.' '.$user->last_name,
+                "pseudonym" => $user->pseudonym,
+            );
+        }
+
+        if (!$users) {
+            $users = array();
+        }
+
+        info($return);
+        return $this->successResponse($return);
+    }
+
     public function getNodesPage() {
         // Get current era
         $current_era_id = DB::select("
@@ -341,6 +613,7 @@ class AdminController extends Controller
             }
         }
         info($users);
+        return $this->successResponse($users);
         //// done
 
 
@@ -393,15 +666,24 @@ class AdminController extends Controller
     public function getUserDetail($id)
     {
         $user = User::where('id', $id)->first();
-        if (!$user || $user->role == 'admin')
-            return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
+
+        if (!$user || $user->role == 'admin') {
+            return $this->errorResponse(
+                __('api.error.not_found'),
+                Response::HTTP_NOT_FOUND
+            );
+        }
+
         $user = $user->load(['pagePermissions', 'profile', 'shuftipro', 'shuftiproTemp']);
         
         $status = 'Not Verified';
+
         if ($user->profile && $user->profile->status == 'approved') {
             $status = 'Verified';
-            if ($user->profile->extra_status)
+
+            if ($user->profile->extra_status) {
                 $status = $user->profile->extra_status;
+            }
         }
 
         $user   = $user->load(['profile', 'shuftipro', 'shuftiproTemp']);

@@ -121,6 +121,12 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             // New Nodes page endpoint
             Route::get('/users/get-nodes-page', [AdminController::class, 'getNodesPage']);
 
+            // New Eras page endpoint
+            Route::get('/users/all-eras', [AdminController::class, 'allEras']);
+
+            // New Eras page endpoint for specific selected user
+            Route::get('/users/all-eras-user/{id}', [AdminController::class, 'allErasUser'])->where('id', '[0-9]+');
+
             Route::get('/users', [AdminController::class, 'getUsers']);
             Route::get('/users/{id}', [AdminController::class, 'getUserDetail'])->where('id', '[0-9]+');
             Route::get('/dashboard', [AdminController::class, 'infoDashboard']);

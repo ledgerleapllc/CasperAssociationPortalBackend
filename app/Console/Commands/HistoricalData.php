@@ -43,8 +43,8 @@ class HistoricalData extends Command
 
         011117189c666f81c5160cd610ee383dc9b2d0361f004934754d39752eedc64957
 
-        34 seconds per era
-        93 seconds per era
+        34  seconds per era
+        136 seconds per era
         */
 
         $get_block      = 'casper-client get-block ';
@@ -56,8 +56,8 @@ class HistoricalData extends Command
         $current_era    = (int)($json->result->block->header->era_id ?? 0);
         // $historic_era   = 4135; // pre-calculated
         // $historic_block = 614408; // pre-calculated
-        $historic_era   = 5030; // bookmark
-        $historic_block = 809059; // bookmark
+        $historic_era   = 6708; // bookmark
+        $historic_block = 1176213; // bookmark
 
         while ($current_era > $historic_era) {
             // first see if we have this era's auction info
@@ -112,8 +112,15 @@ class HistoricalData extends Command
                     // get global uptimes from MAKE
                     $global_uptime = $nodeHelper->retrieveGlobalUptime($current_era_id);
 
+
+                    // Set validator key object
+                    $data = array(
+                        "era_id"     => $era_id,
+                        "validators" => array()
+                    );
+
                     // loop auction era
-                    info('Looping auction era - Saving uptime, bid, and daily earnings data');
+                    info('Looping auction era - Appending uptime, bid, and daily earnings data');
                     foreach ($bids as $b) {
                         $public_key               = strtolower($b->public_key ?? 'nill');
                         $bid                      = $b->bid ?? array();
@@ -152,37 +159,25 @@ class HistoricalData extends Command
                             }
                         }
 
-                        DB::table('all_node_data2')->insert(
-                            array(
-                                'public_key'                   => $public_key,
-                                'era_id'                       => $current_era_id,
-                                'created_at'                   => Carbon::now('UTC'),
-                                'uptime'                       => $uptime,
-                                'in_auction'                   => 1,
-                                'bid_delegators_count'         => $delegators_count,
-                                'bid_delegation_rate'          => $delegation_rate,
-                                'bid_inactive'                 => $bid_inactive,
-                                'bid_self_staked_amount'       => $self_staked_amount,
-                                'bid_delegators_staked_amount' => $delegators_staked_amount,
-                                'bid_total_staked_amount'      => $total_staked_amount
-                            )
+                        // define DB insert object for all public keys in this era
+                        $data["validators"][$public_key]   = array(
+                            "public_key"                   => $public_key,
+                            "uptime"                       => $uptime,
+                            "current_era_weight"           => 0,
+                            "next_era_weight"              => 0,
+                            "in_current_era"               => 0,
+                            "in_next_era"                  => 0,
+                            "in_auction"                   => 1,
+                            "bid_delegators_count"         => $delegators_count,
+                            "bid_delegation_rate"          => $delegation_rate,
+                            "bid_inactive"                 => $bid_inactive,
+                            "bid_self_staked_amount"       => $self_staked_amount,
+                            "bid_delegators_staked_amount" => $delegators_staked_amount,
+                            "bid_total_staked_amount"      => $total_staked_amount,
+                            "port8888_peers"               => 0,
+                            "port8888_build_version"       => "",
+                            "port8888_next_upgrade"        => ""
                         );
-
-                        // save current stake amount to daily earnings table
-                        $earning = new DailyEarning();
-                        $earning->node_address       = $public_key;
-                        $earning->self_staked_amount = (int)$self_staked_amount;
-                        $earning->created_at         = Carbon::now('UTC');
-                        $earning->save();
-
-                        // get difference between current self stake and yesterdays self stake
-                        $get_earning = DailyEarning::where('node_address', $public_key)
-                            ->where('created_at', '>', Carbon::now('UTC')->subHours(24))
-                            ->orderBy('created_at', 'asc')
-                            ->first();
-
-                        $yesterdays_self_staked_amount = (int)($get_earning->self_staked_amount ?? 0);
-                        $daily_earning = $self_staked_amount - $yesterdays_self_staked_amount;
 
                         // look for existing peer by public key for port 8888 data
                         foreach ($port8888_responses as $port8888data) {
@@ -198,19 +193,6 @@ class HistoricalData extends Command
                                 $chainspec_name = $port8888data['chainspec_name'] ?? 'casper';
                                 $next_upgrade   = $port8888data['next_upgrade']['protocol_version'] ?? '';
 
-                                DB::table('all_node_data2')
-                                    ->where('public_key',           $public_key)
-                                    ->where('era_id',               $current_era_id)
-                                    ->update(
-                                    array(
-                                        'port8888_peers'         => $peer_count,
-                                        'port8888_era_id'        => $era_id,
-                                        'port8888_block_height'  => $block_height,
-                                        'port8888_build_version' => $build_version,
-                                        'port8888_next_upgrade'  => $next_upgrade
-                                    )
-                                );
-
                                 break;
                             }
                         }
@@ -218,82 +200,129 @@ class HistoricalData extends Command
 
                     // loop current era
                     $current_validator_weights = $current_era_validators->validator_weights ?? array();
-                    info('Saving current era validator weights');
+                    info('Appending current era validator weights');
 
                     foreach ($current_validator_weights as $v) {
-                        $public_key = $v->public_key ?? '';
+                        $public_key = strtolower($v->public_key ?? '');
                         $weight     = (int)($v->weight / 1000000000 ?? 0);
 
-                        $check = DB::select("
-                            SELECT public_key, era_id
-                            FROM all_node_data2
-                            WHERE public_key = '$public_key'
-                            AND era_id = $current_era_id
-                        ");
-                        $check = $check[0] ?? null;
+                        if (isset($data["validators"][$public_key])) {
+                            $data
+                                ["validators"]
+                                [$public_key]
+                                ["current_era_weight"] = $weight;
 
-                        if (!$check) {
-                            DB::table('all_node_data2')->insert(
-                                array(
-                                    'public_key'         => $public_key,
-                                    'era_id'             => $current_era_id,
-                                    'current_era_weight' => $weight,
-                                    'in_current_era'     => 1,
-                                    'created_at'         => Carbon::now('UTC')
-                                )
-                            );
+                            $data
+                                ["validators"]
+                                [$public_key]
+                                ["in_current_era"] = 1;
                         } else {
-                            DB::table('all_node_data2')
-                                ->where('public_key',    $public_key)
-                                ->where('era_id',        $current_era_id)
-                                ->update(
-                                array(
-                                    'current_era_weight' => $weight,
-                                    'in_current_era'     => 1
-                                )
+                            $data["validators"][$public_key] = array(
+                                "public_key"                   => $public_key,
+                                "uptime"                       => 0,
+                                "current_era_weight"           => $weight,
+                                "next_era_weight"              => 0,
+                                "in_current_era"               => 1,
+                                "in_next_era"                  => 0,
+                                "in_auction"                   => 0,
+                                "bid_delegators_count"         => 0,
+                                "bid_delegation_rate"          => 0,
+                                "bid_inactive"                 => 1,
+                                "bid_self_staked_amount"       => 0,
+                                "bid_delegators_staked_amount" => 0,
+                                "bid_total_staked_amount"      => 0,
+                                "port8888_peers"               => 0,
+                                "port8888_build_version"       => "",
+                                "port8888_next_upgrade"        => ""
                             );
                         }
                     }
 
                     // loop next era
                     $next_validator_weights = $next_era_validators->validator_weights ?? array();
-                    info('Saving next era validator weights');
+                    info('Appending next era validator weights');
 
                     foreach ($next_validator_weights as $v) {
                         $public_key = $v->public_key ?? '';
                         $weight     = (int)($v->weight / 1000000000 ?? 0);
 
-                        $check = DB::select("
-                            SELECT public_key, era_id
-                            FROM all_node_data2
-                            WHERE public_key = '$public_key'
-                            AND era_id = $current_era_id
-                        ");
-                        $check = $check[0] ?? null;
+                        if (isset($data["validators"][$public_key])) {
+                            $data
+                                ["validators"]
+                                [$public_key]
+                                ["next_era_weight"] = $weight;
 
-                        if (!$check) {
-                            // info('Saved: '.$public_key);
-                            DB::table('all_node_data2')->insert(
-                                array(
-                                    'public_key'      => $public_key,
-                                    'era_id'          => $current_era_id,
-                                    'next_era_weight' => $weight,
-                                    'in_next_era'     => 1,
-                                    'created_at'      => Carbon::now('UTC')
-                                )
-                            );
+                            $data
+                                ["validators"]
+                                [$public_key]
+                                ["in_next_era"] = 1;
                         } else {
-                            // info('Updated: '.$public_key);
-                            DB::table('all_node_data2')
-                                ->where('public_key',    $public_key)
-                                ->where('era_id',        $current_era_id)
-                                ->update(
-                                array(
-                                    'next_era_weight' => $weight,
-                                    'in_next_era'     => 1
-                                )
+                            $data["validators"][$public_key] = array(
+                                "public_key"                   => $public_key,
+                                "uptime"                       => 0,
+                                "current_era_weight"           => $weight,
+                                "next_era_weight"              => 0,
+                                "in_current_era"               => 1,
+                                "in_next_era"                  => 0,
+                                "in_auction"                   => 0,
+                                "bid_delegators_count"         => 0,
+                                "bid_delegation_rate"          => 0,
+                                "bid_inactive"                 => 1,
+                                "bid_self_staked_amount"       => 0,
+                                "bid_delegators_staked_amount" => 0,
+                                "bid_total_staked_amount"      => 0,
+                                "port8888_peers"               => 0,
+                                "port8888_build_version"       => "",
+                                "port8888_next_upgrade"        => ""
                             );
                         }
+                    }
+
+                    // Primary DB insertion (time consuming)
+                    info('Saving validator objects to DB...');
+                    $created_at = Carbon::now('UTC');
+
+                    foreach ($data["validators"] as $v) {
+                        DB::table('all_node_data2')->insert(
+                            array(
+                                'public_key'                   => $v["public_key"],
+                                'era_id'                       => $data["era_id"],
+                                'uptime'                       => $v["uptime"],
+                                'current_era_weight'           => $v["current_era_weight"],
+                                'next_era_weight'              => $v["next_era_weight"],
+                                'in_current_era'               => $v["in_current_era"],
+                                'in_next_era'                  => $v["in_next_era"],
+                                'in_auction'                   => $v["in_auction"],
+                                'bid_delegators_count'         => $v["bid_delegators_count"],
+                                'bid_delegation_rate'          => $v["bid_delegation_rate"],
+                                'bid_inactive'                 => $v["bid_inactive"],
+                                'bid_self_staked_amount'       => $v["bid_self_staked_amount"],
+                                'bid_delegators_staked_amount' => $v["bid_delegators_staked_amount"],
+                                'bid_total_staked_amount'      => $v["bid_total_staked_amount"],
+                                'port8888_peers'               => $v["port8888_peers"],
+                                'port8888_build_version'       => $v["port8888_build_version"],
+                                'port8888_next_upgrade'        => $v["port8888_next_upgrade"],
+                                'created_at'                   => $created_at
+                            )
+                        );
+
+                        // save current stake amount to daily earnings table
+                        $earning = new DailyEarning();
+                        $earning->node_address       = $public_key;
+                        $earning->self_staked_amount = (int)$self_staked_amount;
+                        $earning->created_at         = Carbon::now('UTC');
+                        $earning->save();
+
+                        // get difference between current self stake and yesterdays self stake
+                        // $get_earning = DailyEarning::where('node_address', $public_key)
+                        //     ->where('created_at', '>', Carbon::now('UTC')->subHours(24))
+                        //     ->orderBy('created_at', 'asc')
+                        //     ->first();
+
+                        // $yesterdays_self_staked_amount = (int)($get_earning->self_staked_amount ?? 0);
+                        // $daily_earning = $self_staked_amount - $yesterdays_self_staked_amount;
+
+                        info($v["public_key"].' - done');
                     }
 
                     // find MBS
@@ -318,7 +347,7 @@ class HistoricalData extends Command
                             array(
                                 'era_id'     => $current_era_id,
                                 'mbs'        => $MBS,
-                                'created_at' => Carbon::now('UTC')
+                                'created_at' => $created_at
                             )
                         );
                     } else {
@@ -326,8 +355,8 @@ class HistoricalData extends Command
                             ->where('era_id', $current_era_id)
                             ->update(
                             array(
-                                'mbs'      => $MBS,
-                                'updated_at' => Carbon::now('UTC')
+                                'mbs'        => $MBS,
+                                'updated_at' => $created_at
                             )
                         );
                     }
