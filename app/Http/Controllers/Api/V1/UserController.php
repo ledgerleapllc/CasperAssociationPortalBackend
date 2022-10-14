@@ -825,7 +825,7 @@ class UserController extends Controller
 
         unset($return["addresses"]["0123456789abcdef"]);
         unset($return["eras"][0]);
-
+        
         // get addresses data
         $addresses = DB::select("
             SELECT 

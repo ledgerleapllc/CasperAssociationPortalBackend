@@ -1297,12 +1297,13 @@ class AdminController extends Controller
             'quorum_rate_ballot'        => ($request->quorum_rate_ballot ?? null),
             'uptime_warning'            => ($request->uptime_warning ?? null),
             'uptime_probation'          => ($request->uptime_probation ?? null),
-            'uptime_correction_time'    => ($request->uptime_correction_time ?? null),
+            'uptime_correction_unit'    => ($request->uptime_correction_unit ?? null),
+            'uptime_correction_value'    => ($request->uptime_correction_value ?? null),
             'uptime_calc_size'          => ($request->uptime_calc_size ?? null),
             'voting_eras_to_vote'       => ($request->voting_eras_to_vote ?? null),
             'voting_eras_since_redmark' => ($request->voting_eras_since_redmark ?? null),
             'redmarks_revoke'           => ($request->redmarks_revoke ?? null),
-            'redmarks_revoke_lookback'  => ($request->redmarks_revoke_lookback ?? null),
+            'redmarks_revoke_calc_size'  => ($request->redmarks_revoke_calc_size ?? null),
             'responsiveness_warning'    => ($request->responsiveness_warning ?? null),
             'responsiveness_probation'  => ($request->responsiveness_probation ?? null)
         ];
@@ -1315,7 +1316,8 @@ class AdminController extends Controller
                     $setting->value = $value;
                     $setting->save();
                 } else {
-                    $setting        = new Setting();
+                    $setting = new Setting();
+                    $setting->name = $name;
                     $setting->value = $value;
                     $setting->save();
                 }
