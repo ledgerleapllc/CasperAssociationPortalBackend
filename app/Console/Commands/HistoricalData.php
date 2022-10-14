@@ -12,19 +12,6 @@ use Illuminate\Support\Facades\DB;
 
 use Carbon\Carbon;
 
-/*
-*** New Updates
-Function that have also changed:
-UserController::getVerifiedMembers()
-UserController::getMembers()
-UserController::getMemberDetail()
-UserController::getListNodes()
-UserController::getEarningByNode()
-MetricController::getMetric()
-MetricController::getMetricUser()
-MetricController::getMetricUserByNodeName()
-*/
-
 class HistoricalData extends Command
 {
     /**
