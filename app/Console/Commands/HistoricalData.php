@@ -58,6 +58,8 @@ class HistoricalData extends Command
 
         34  seconds per era
         136 seconds per era
+
+        ~100 block per era
         */
 
         $get_block      = 'casper-client get-block ';
@@ -69,8 +71,36 @@ class HistoricalData extends Command
         $current_era    = (int)($json->result->block->header->era_id ?? 0);
         // $historic_era   = 4135; // pre-calculated
         // $historic_block = 614408; // pre-calculated
-        $historic_era   = 6708; // bookmark
-        $historic_block = 1176213; // bookmark
+
+        $historic_era   = DB::select("
+            SELECT era_id
+            FROM all_node_data2
+            ORDER BY era_id DESC
+            LIMIT 1
+        ");
+        $historic_era   = (int)($historic_era[0]->era_id ?? 0);
+        info('historic_era: '.$historic_era);
+        $blocks_per_era = 100;
+        $historic_block = $blocks_per_era * $historic_era;
+        info('historic_block: '.$historic_block);
+        $test_era       = 0;
+
+        while ($test_era < $historic_era) {
+            $json       = shell_exec($get_block.$node_arg.'-b '.$historic_block);
+            $json       = json_decode($json);
+            $test_era   = (int)($json->result->block->header->era_id ?? 0);
+
+            if ($test_era < $historic_era) {
+                $era_diff = $historic_era - $test_era;
+
+                if ($era_diff < 0) {
+                    $blocks_per_era = (int)($blocks_per_era / 2);
+                }
+
+                $historic_block += ($blocks_per_era * $era_diff);
+                info('Using historic_block: '.$historic_block);
+            }
+        }
 
         while ($current_era > $historic_era) {
             // first see if we have this era's auction info
