@@ -594,8 +594,8 @@ class AdminController extends Controller
 
     public function getUsers(Request $request)
     {
-        $users = DB::select("
-            SELECT 
+        /*
+        SELECT 
             a.id, a.first_name, a.last_name, a.email,
             a.pseudonym, a.telegram, a.email_verified_at,
             a.entity_name, a.last_login_at, a.created_at,
@@ -616,6 +616,23 @@ class AdminController extends Controller
             ON user_addresses.user_id = a.id
             JOIN all_node_data AS c
             ON c.public_key = user_addresses.public_address_node
+        */
+        $users = DB::select("
+            SELECT 
+            a.id, a.first_name, a.last_name, a.email,
+            a.pseudonym, a.telegram, a.email_verified_at,
+            a.entity_name, a.last_login_at, a.created_at,
+            a.signature_request_id, a.node_verified_at,
+            a.member_status, a.kyc_verified_at,
+            b.dob, b.country_citizenship, b.country_residence,
+            b.status AS profile_status, b.extra_status,
+            b.type, b.casper_association_kyc_hash,
+            b.blockchain_name, b.blockchain_desc
+            FROM users AS a
+            LEFT JOIN profile AS b
+            ON a.id = b.user_id
+            WHERE a.role = 'member'
+            ORDER BY a.id asc
         ");
 
         if ($users) {
@@ -636,10 +653,6 @@ class AdminController extends Controller
         info($users);
         return $this->successResponse($users);
         //// done
-
-
-
-
 
         $limit          = $request->limit ?? 50;
         $sort_key       = $request->sort_key ?? 'created_at';
