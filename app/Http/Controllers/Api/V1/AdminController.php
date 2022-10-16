@@ -41,6 +41,7 @@ use App\Models\UserAddress;
 use App\Models\VerifyUser;
 use App\Models\Vote;
 use App\Models\VoteResult;
+use App\Models\ContactRecipient;
 
 use App\Services\NodeHelper;
 
@@ -95,7 +96,8 @@ class AdminController extends Controller
                         )
                     )
                 )
-            )
+            ),
+            "addresses" => []
         );
 
         unset($return["eras"][0]);
@@ -122,6 +124,25 @@ class AdminController extends Controller
 
         if ($era_minus_360 < 1) {
             $era_minus_360 = 1;
+        }
+
+        // get addresses data
+        $addresses = DB::select("
+            SELECT 
+            a.public_key
+            FROM all_node_data2 AS a
+            JOIN user_addresses AS b
+            ON a.public_key = b.public_address_node
+            WHERE a.era_id  > $era_minus_360 and a.era_id  = $current_era_id and b.user_id = $user_id
+            ORDER BY a.era_id DESC
+        ");
+
+        if (!$addresses) {
+            $addresses = [];
+        }
+
+        foreach ($addresses as $address) {
+            $return['addresses'][] = $address->public_key;
         }
 
         $eras = DB::select("
@@ -214,8 +235,8 @@ class AdminController extends Controller
         );
 
         unset($return["addresses"]["0123456789abcdef"]);
-        unset($return["eras"][0]);
-
+        unset($return['users']);
+        
         // get addresses data
         $addresses = DB::select("
             SELECT 
@@ -320,7 +341,7 @@ class AdminController extends Controller
         foreach ($users as $user) {
             $return["users"][] = array(
                 "user_id"   => $user->id,
-                "name"      => $user->first_name.' '.$user->last_name,
+                "name"      => $user->first_name . ' ' . $user->last_name,
                 "pseudonym" => $user->pseudonym,
             );
         }
@@ -1280,14 +1301,36 @@ class AdminController extends Controller
     {
         $items    = Setting::get();
         $settings = [];
-
         if ($items) {
             foreach ($items as $item) {
                 $settings[$item->name] = $item->value;
             }
         }
 
-        return $this->successResponse($settings);
+        $ruleKycNotVerify = LockRules::where('type', 'kyc_not_verify')
+            ->orderBy('id', 'ASC')
+            ->select(['id', 'screen', 'is_lock'])
+            ->get();
+        $ruleStatusIsPoor = LockRules::where('type', 'status_is_poor')
+            ->orderBy('id', 'ASC')
+            ->select(['id', 'screen', 'is_lock'])
+            ->get();
+        
+        $membershipAgreementFile = MembershipAgreementFile::first();
+
+        $contactRecipients = ContactRecipient::orderBy('created_at', 'desc')->get();
+
+        $data = [
+            'globalSettings' => $settings,
+            'lockRules' => [
+                'kyc_not_verify' => $ruleKycNotVerify,
+                'status_is_poor' => $ruleStatusIsPoor
+            ],
+            'membershipAgreementFile' => $membershipAgreementFile,
+            'contactRecipients' => $contactRecipients
+        ];
+
+        return $this->successResponse($data);
     }
 
     // Update Global Settings

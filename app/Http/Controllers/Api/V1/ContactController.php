@@ -44,10 +44,9 @@ class ContactController extends Controller
 
     public function getContactRecipients(Request $request)
     {
-        $limit = $request->limit ?? 50;
         $sort_key = $request->sort_key ?? 'created_at';
         $sort_direction = $request->sort_direction ?? 'desc';
-        $contactRecipients = ContactRecipient::orderBy($sort_key, $sort_direction)->paginate($limit);
+        $contactRecipients = ContactRecipient::orderBy($sort_key, $sort_direction)->get();
         return $this->successResponse($contactRecipients);
     }
 
