@@ -89,7 +89,7 @@ class HistoricalData extends Command
             }
         }
 
-        while ($current_era > $historic_era) {
+        while ($current_era >= $historic_era) {
             // first see if we have this era's auction info
             $node_data = DB::select("
                 SELECT era_id

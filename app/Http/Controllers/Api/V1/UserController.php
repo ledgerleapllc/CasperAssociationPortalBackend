@@ -1971,6 +1971,114 @@ class UserController extends Controller
         return $this->successResponse($ballot);
     }
 
+    public function canVote()
+    {
+        $user    = auth()->user();
+        $user_id = $user->id;
+
+        $return = array(
+            'voting_eras' => 0,
+            'good_standing_eras' => 0,
+            'total_active_eras' => 0,
+            'can_vote' = false
+        );
+
+        // current era
+        $current_era_id = DB::select("
+            SELECT era_id
+            FROM all_node_data2
+            ORDER BY era_id DESC
+            LIMIT 1
+        ");
+        $current_era_id = (int)($current_era_id[0]->era_id ?? 0);
+
+        // get settings
+        $voting_eras_to_vote = DB::select("
+            SELECT value
+            FROM settings
+            WHERE name = 'voting_eras_to_vote'
+        ");
+
+        // voting_eras
+        $voting_eras_to_vote = $voting_eras_to_vote[0] ?? array();
+        $voting_eras_to_vote = (int)($voting_eras_to_vote->value ?? 0);
+        $past_era            = $current_era_id - $voting_eras_to_vote;
+
+        $return['voting_eras'] = $voting_eras_to_vote;
+
+        $user_addresses = DB::select("
+            SELECT public_address_node
+            FROM user_addresses
+            WHERE user_id = $user_id
+        ");
+        $user_addresses = $user_addresses ?? array();
+
+        foreach ($user_addresses as $a) {
+            $p = $a->public_address_node ?? '';
+
+            // find smallest number of eras since public_key encountered a bad mark
+            // good_standing_eras
+            $good_standing_eras = DB::select("
+                SELECT era_id 
+                FROM all_node_data2
+                WHERE public_key = '$p'
+                AND (
+                    in_current_era = 0 OR
+                    bid_inactive   = 1
+                )
+                ORDER BY era_id DESC
+                LIMIT 1
+            ");
+            $good_standing_eras = $good_standing_eras[0] ?? array();
+            $good_standing_eras = (int)($good_standing_eras->era_id ?? 0);
+            $good_standing_eras = $current_era_id - $good_standing_eras;
+
+            if ($good_standing_eras < 0) {
+                $good_standing_eras = 0;
+            }
+
+            if ($good_standing_eras > $return['good_standing_eras']) {
+                $return['good_standing_eras'] = $good_standing_eras;
+            }
+
+            // total_active_eras
+            $eras = DB::select("
+                SELECT count(id)
+                FROM all_node_data2
+                WHERE public_key = '$p'
+            ");
+
+            $eras = (array)($eras[0]);
+            $eras = (int)($eras['count(id)'] ?? 0);
+
+            if ($current_era_id - $eras > $return['total_active_eras']) {
+                $return['total_active_eras'] = $current_era_id - $eras;
+            }
+
+            // can_vote
+            $stable_check = DB::select("
+                SELECT uptime
+                FROM all_node_data2
+                WHERE public_key = '$p'
+                AND era_id > $past_era
+                AND (
+                    in_current_era = 0 OR
+                    bid_inactive   = 1
+                )
+            ");
+
+            if (!$stable_check) {
+                $stable = true;
+            }
+
+            if ($stable) {
+                $return['can_vote'] = true;
+            }
+        }
+
+        return $this->successResponse($return);
+    }
+
     // vote the ballot
     public function vote($id, Request $request)
     {
