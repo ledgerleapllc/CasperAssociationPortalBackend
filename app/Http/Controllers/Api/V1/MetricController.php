@@ -368,6 +368,34 @@ class MetricController extends Controller
             $eras_since_bad_mark          = $eras_since_bad_mark[0]->era_id ?? 0;
             $eras_since_bad_mark          = $current_era_id - $eras_since_bad_mark;
             $address->eras_since_bad_mark = $eras_since_bad_mark;
+
+            $eras_active = DB::select("
+                SELECT era_id
+                FROM all_node_data2
+                WHERE public_key = '$a'
+                ORDER BY era_id ASC
+                LIMIT 1
+            ");
+            $eras_active = (int) ($eras_active[0]->era_id ?? 0);
+            if ($current_era_id - $eras_active > 0) {
+                $address->eras_active = $current_era_id - $eras_active;
+            } else {
+                $address->eras_active = 0;
+            }
+
+            $total_bad_marks = DB::select("
+                SELECT era_id
+                FROM all_node_data2
+                WHERE public_key = '$a'
+                AND (
+                    in_current_era = 0 OR
+                    bid_inactive   = 1
+                )
+                ORDER BY era_id DESC
+            ");
+            $address->total_bad_marks     = count((array)$total_bad_marks);
+
+            $address->update_responsiveness = 100;
         }
 
         $monitoring_criteria = DB::select("
