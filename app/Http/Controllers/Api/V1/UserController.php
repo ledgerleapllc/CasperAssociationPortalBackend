@@ -1977,10 +1977,11 @@ class UserController extends Controller
         $user_id = $user->id;
 
         $return = array(
-            'voting_eras' => 0,
-            'good_standing_eras' => 0,
-            'total_active_eras' => 0,
-            'can_vote' => false
+            'setting_voting_eras'        => 0,
+            'setting_good_standing_eras' => 0,
+            'good_standing_eras'         => 0,
+            'total_active_eras'          => 0,
+            'can_vote' = false
         );
 
         // current era
@@ -1998,13 +1999,19 @@ class UserController extends Controller
             FROM settings
             WHERE name = 'voting_eras_to_vote'
         ");
-
-        // voting_eras
         $voting_eras_to_vote = $voting_eras_to_vote[0] ?? array();
         $voting_eras_to_vote = (int)($voting_eras_to_vote->value ?? 0);
-        $past_era            = $current_era_id - $voting_eras_to_vote;
 
-        $return['voting_eras'] = $voting_eras_to_vote;
+        $voting_eras_since_redmark = DB::select("
+            SELECT value
+            FROM settings
+            WHERE name = 'voting_eras_since_redmark'
+        ");
+        $voting_eras_since_redmark = $voting_eras_since_redmark[0] ?? array();
+        $voting_eras_since_redmark = (int)($voting_eras_since_redmark->value ?? 0);
+
+        $return['setting_voting_eras']        = $voting_eras_to_vote;
+        $return['setting_good_standing_eras'] = $voting_eras_since_redmark;
 
         $user_addresses = DB::select("
             SELECT public_address_node
@@ -2055,23 +2062,10 @@ class UserController extends Controller
                 $return['total_active_eras'] = $current_era_id - $eras;
             }
 
-            // can_vote
-            $stable_check = DB::select("
-                SELECT uptime
-                FROM all_node_data2
-                WHERE public_key = '$p'
-                AND era_id > $past_era
-                AND (
-                    in_current_era = 0 OR
-                    bid_inactive   = 1
-                )
-            ");
-
-            if (!$stable_check) {
-                $stable = true;
-            }
-
-            if ($stable) {
+            if (
+                $return['total_active_eras']  >= $voting_eras_to_vote &&
+                $return['good_standing_eras'] >= $voting_eras_since_redmark
+            ) {
                 $return['can_vote'] = true;
             }
         }
