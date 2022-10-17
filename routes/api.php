@@ -64,7 +64,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             
             // New My Eras page endpoint
             Route::get('/users/get-my-eras', [UserController::class, 'getMyEras']);
-
+            
             // New endpoint for User voting eligibility check
             Route::get('/users/can-vote', [UserController::class, 'canVote']);
 
