@@ -2055,7 +2055,7 @@ class UserController extends Controller
                 WHERE public_key = '$p'
             ");
 
-            $eras = (array)($eras[0]);
+            $eras = (array)($eras[0] ?? array());
             $eras = (int)($eras['count(id)'] ?? 0);
 
             if ($current_era_id - $eras > $return['total_active_eras']) {
@@ -2110,26 +2110,54 @@ class UserController extends Controller
         ");
         $voting_eras_to_vote = $voting_eras_to_vote[0] ?? array();
         $voting_eras_to_vote = (int)($voting_eras_to_vote->value ?? 0);
-        $past_era            = $current_era_id - $voting_eras_to_vote;
 
-        if ($past_era < 1) {
-            $past_era = 1;
-        }
+        $voting_eras_since_redmark = DB::select("
+            SELECT value
+            FROM settings
+            WHERE name = 'voting_eras_since_redmark'
+        ");
+        $voting_eras_since_redmark = $voting_eras_since_redmark[0] ?? array();
+        $voting_eras_since_redmark = (int)($voting_eras_since_redmark->value ?? 0);
 
         foreach ($addresses as $address) {
             $p = $address->public_address_node ?? '';
-            $stable_check = DB::select("
-                SELECT uptime
+
+            // find smallest number of eras since public_key encountered a bad mark
+            // good_standing_eras
+            $good_standing_eras = DB::select("
+                SELECT era_id 
                 FROM all_node_data2
                 WHERE public_key = '$p'
-                AND era_id > $past_era
                 AND (
                     in_current_era = 0 OR
                     bid_inactive   = 1
                 )
+                ORDER BY era_id DESC
+                LIMIT 1
+            ");
+            $good_standing_eras = $good_standing_eras[0] ?? array();
+            $good_standing_eras = (int)($good_standing_eras->era_id ?? 0);
+            $good_standing_eras = $current_era_id - $good_standing_eras;
+
+            if ($good_standing_eras < 0) {
+                $good_standing_eras = 0;
+            }
+
+            // total_active_eras
+            $total_active_eras = DB::select("
+                SELECT count(id)
+                FROM all_node_data2
+                WHERE public_key = '$p'
             ");
 
-            if (!$stable_check) {
+            $total_active_eras = (array)($total_active_eras[0] ?? array());
+            $total_active_eras = (int)($total_active_eras['count(id)'] ?? 0);
+            $total_active_eras = $current_era_id - $total_active_eras;
+
+            if (
+                $total_active_eras  >= $voting_eras_to_vote &&
+                $good_standing_eras >= $voting_eras_since_redmark
+            ) {
                 $stable = true;
             }
         }
