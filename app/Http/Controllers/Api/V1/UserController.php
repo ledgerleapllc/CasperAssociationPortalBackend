@@ -1981,7 +1981,7 @@ class UserController extends Controller
             'setting_good_standing_eras' => 0,
             'good_standing_eras'         => 0,
             'total_active_eras'          => 0,
-            'can_vote' = false
+            'can_vote' => false
         );
 
         // current era
