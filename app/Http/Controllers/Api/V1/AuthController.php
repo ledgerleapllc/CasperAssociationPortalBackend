@@ -74,7 +74,7 @@ class AuthController extends Controller
             WHERE a.public_address_node = '$address'
         ");
 
-        $user_id = $query[0] ?? array();
+        $query   = $query[0] ?? array();
         $user_id = $query->user_id ?? 0;
 
         if ($user_id) {
