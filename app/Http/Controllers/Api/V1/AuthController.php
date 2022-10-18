@@ -61,6 +61,48 @@ class AuthController extends Controller
         exit(Hash::make('ledgerleapllc'));
     }
 
+    public function devVerifyNode($address)
+    {
+        $query = DB::select("
+            SELECT
+            a.user_id, a.node_verified_at, a.signed_file, a.node_status,
+            b.id, b.email, b.node_verified_at, b.signed_file,
+            b.node_status, b.has_verified_address
+            FROM user_addresses AS a
+            JOIN users AS b
+            ON a.user_id = b.id
+            WHERE a.public_address_node = '$address'
+        ");
+
+        $user_id = $query[0] ?? array();
+        $user_id = $query->user_id ?? 0;
+
+        if ($user_id) {
+            $update = DB::table('user_addresses')
+            ->where('public_key',    $address)
+            ->update(
+                array(
+                    'node_verified_at' => '2022-03-18 19:26:51',
+                    'signed_file'      => 'https://casper-assoc-portal-dev.s3.us-east-2.amazonaws.com/signatures/db49744f7535b218c20a48cb833da6a1',
+                    'node_status'      => 'Online'
+                )
+            );
+
+            $update = DB::table('users')
+            ->where('id',    $user_id)
+            ->update(
+                array(
+                    'node_verified_at'     => '2022-03-18 19:26:51',
+                    'signed_file'          => 'https://casper-assoc-portal-dev.s3.us-east-2.amazonaws.com/signatures/db49744f7535b218c20a48cb833da6a1',
+                    'node_status'          => 'Online',
+                    'has_verified_address' => 1,
+                )
+            );
+        }
+
+        return $this->metaSuccess();
+    }
+
     /**
      * Auth user function
      *
