@@ -425,12 +425,12 @@ class UserController extends Controller
             a.public_key, a.uptime,
             a.port8888_peers AS peers,
             a.bid_inactive, a.in_current_era,
-            c.status AS kyc_status
+            c.kyc_verified_at AS kyc_status
             FROM all_node_data2 AS a
             JOIN user_addresses AS b
             ON a.public_key = b.public_address_node
-            LEFT JOIN shuftipro AS c
-            ON b.user_id    = c.user_id
+            LEFT JOIN users AS c
+            ON b.user_id    = c.id
             WHERE a.era_id  = $current_era_id
             AND b.user_id   = $user_id
         ");
