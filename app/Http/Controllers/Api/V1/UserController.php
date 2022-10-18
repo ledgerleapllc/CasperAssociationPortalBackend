@@ -528,7 +528,7 @@ class UserController extends Controller
         $addresses_count      = $addresses_count ? $addresses_count : 1;
         $return["avg_uptime"] = $return["avg_uptime"] / $addresses_count;
 
-        info($return);
+        // info($return);
         return $this->successResponse($return);
     }
 
@@ -782,7 +782,7 @@ class UserController extends Controller
         ");
         $return["mbs"] = (int)($mbs[0]->mbs ?? 0);
 
-        info($return);
+        // info($return);
         return $this->successResponse($return);
     }
 
@@ -984,7 +984,7 @@ class UserController extends Controller
 
         $return["column_count"] = $column_count + 1;
 
-        info($return);
+        // info($return);
         return $this->successResponse($return);
     }
 
@@ -1030,7 +1030,7 @@ class UserController extends Controller
             WHERE d.status = 'approved'
             AND a.era_id = $current_era_id
         ");
-        info($members);
+        // info($members);
         return $this->successResponse($members);
         //// done
 
@@ -1050,7 +1050,7 @@ class UserController extends Controller
         ->where('profile.status', 'approved')
         ->whereNotNull('users.public_address_node')
         ->paginate($limit);
-        info($data);
+        // info($data);
         return $this->successResponse($data);
     }
 
@@ -2388,7 +2388,7 @@ class UserController extends Controller
             );
         }
 
-        info($members);
+        // info($members);
         return $this->successResponse($members);
         //// done
 
@@ -2604,7 +2604,7 @@ class UserController extends Controller
                 c.era_id     = $current_era_id
             )
         ");
-        info($response);
+        // info($response);
         // return $this->successResponse($response);
         //// done
 
@@ -3183,9 +3183,17 @@ class UserController extends Controller
             LIMIT 1
         ");
         $daily_earning = 0;
-        if ($daily_earningObject && count($daily_earningObject) > 0) $daily_earning = $daily_earningObject[0]->bid_self_staked_amount ?? 0;
-        if ($nodeInfo) $daily_earning = $nodeInfo->bid_self_staked_amount - $daily_earning;
-        else $daily_earning = -$daily_earning;
+
+        if ($daily_earningObject && count($daily_earningObject) > 0) {
+            $daily_earning = $daily_earningObject[0]->bid_self_staked_amount ?? 0;
+        }
+
+        if ($nodeInfo) {
+            $daily_earning = $nodeInfo->bid_self_staked_amount - $daily_earning;
+        } else {
+            $daily_earning = -$daily_earning;
+        }
+
         $daily_earning = $daily_earning < 0 ? 0 : $daily_earning;
         
         $mbs      = DB::select("
