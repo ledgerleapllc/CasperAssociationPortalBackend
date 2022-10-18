@@ -79,7 +79,7 @@ class AuthController extends Controller
 
         if ($user_id) {
             $update = DB::table('user_addresses')
-            ->where('public_key',    $address)
+            ->where('public_address_node',    $address)
             ->update(
                 array(
                     'node_verified_at' => '2022-03-18 19:26:51',
