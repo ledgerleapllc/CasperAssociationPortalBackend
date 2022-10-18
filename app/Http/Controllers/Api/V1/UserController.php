@@ -2597,12 +2597,12 @@ class UserController extends Controller
             JOIN profile AS d
             ON b.id = d.user_id
             WHERE (
-                a.public_address_node = '$public_address_node' AND
+                b.id = $id AND
                 c.era_id = $current_era_id
-            ) OR b.id = $id
+            )
         ");
         info($response);
-        return $this->successResponse($response);
+        // return $this->successResponse($response);
         //// done
 
         $user = User::where('id', $id)->first();
