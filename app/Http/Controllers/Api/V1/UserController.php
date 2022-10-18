@@ -441,7 +441,7 @@ class UserController extends Controller
 
         if (
             isset($addresses[0]) &&
-            $addresses[0]->kyc_status == 'approved'
+            $addresses[0]->kyc_status
         ) {
             $return["kyc_status"] = "Verified";
         }
