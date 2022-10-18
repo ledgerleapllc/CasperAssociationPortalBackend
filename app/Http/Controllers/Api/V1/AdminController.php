@@ -41,6 +41,9 @@ use App\Models\UserAddress;
 use App\Models\VerifyUser;
 use App\Models\Vote;
 use App\Models\VoteResult;
+use App\Models\ContactRecipient;
+
+use App\Services\NodeHelper;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -59,77 +62,828 @@ use Aws\S3\S3Client;
 
 class AdminController extends Controller
 {
+    public function allErasUser($id) {
+        $user = User::where('id', $id)->first();
+
+        if (!$user || $user->role == 'admin') {
+            return $this->errorResponse(
+                __('api.error.not_found'),
+                Response::HTTP_NOT_FOUND
+            );
+        }
+
+        $user_id = $id;
+
+        // Get current era
+        $current_era_id = DB::select("
+            SELECT era_id
+            FROM all_node_data2
+            ORDER BY era_id DESC
+            LIMIT 1
+        ");
+        $current_era_id = (int)($current_era_id[0]->era_id ?? 0);
+
+        // define return object
+        $return  = array(
+            "column_count" => 2,
+            "eras"         => array(
+                array(
+                    "era_start_time"        => '',
+                    "addresses"             => array(
+                        "0123456789abcdef"  => array(
+                            "in_pool"       => false,
+                            "rewards"       => 0
+                        )
+                    )
+                )
+            ),
+            "addresses" => []
+        );
+
+        unset($return["eras"][0]);
+
+        // get settings
+        $voting_eras_to_vote = DB::select("
+            SELECT value
+            FROM settings
+            WHERE name = 'voting_eras_to_vote'
+        ");
+        $voting_eras_to_vote = $voting_eras_to_vote[0] ?? array();
+        $voting_eras_to_vote = (int)($voting_eras_to_vote->value ?? 0);
+
+        $uptime_calc_size = DB::select("
+            SELECT value
+            FROM settings
+            WHERE name = 'uptime_calc_size'
+        ");
+        $uptime_calc_size = $uptime_calc_size[0] ?? array();
+        $uptime_calc_size = (int)($uptime_calc_size->value ?? 0);
+
+        // get eras table data
+        $era_minus_360 = $current_era_id - $uptime_calc_size;
+
+        if ($era_minus_360 < 1) {
+            $era_minus_360 = 1;
+        }
+
+        // get addresses data
+        $addresses = DB::select("
+            SELECT 
+            a.public_key
+            FROM all_node_data2 AS a
+            JOIN user_addresses AS b
+            ON a.public_key = b.public_address_node
+            WHERE a.era_id  > $era_minus_360 and a.era_id  = $current_era_id and b.user_id = $user_id
+            ORDER BY a.era_id DESC
+        ");
+
+        if (!$addresses) {
+            $addresses = [];
+        }
+
+        foreach ($addresses as $address) {
+            $return['addresses'][] = $address->public_key;
+        }
+
+        $eras = DB::select("
+            SELECT
+            a.public_key, a.era_id, a.created_at, 
+            a.in_current_era, a.in_auction,
+            a.bid_inactive, a.uptime
+            FROM all_node_data2 AS a
+            JOIN user_addresses
+            ON a.public_key = user_addresses.public_address_node
+            JOIN users
+            ON user_addresses.user_id = users.id
+            WHERE users.id = $user_id
+            AND era_id > $era_minus_360
+            ORDER BY a.era_id DESC
+        ");
+
+        if (!$eras) {
+            $eras = array();
+        }
+
+        $sorted_eras = array();
+
+        // for each node address's era
+        foreach ($eras as $era) {
+            $era_id               = $era->era_id ?? 0;
+            $era_start_time       = $era->created_at ?? '';
+            $public_key           = $era->public_key;
+
+            if (!isset($sorted_eras[$era_id])) {
+                $sorted_eras[$era_id] = array(
+                    "era_start_time"  => $era_start_time,
+                    "addresses"       => array()
+                );
+            }
+
+            $sorted_eras
+            [$era_id]
+            ["addresses"]
+            [$public_key] = array(
+                "in_pool" => $era->in_auction,
+                "rewards" => $era->uptime,
+            );
+        }
+
+        $return["eras"] = $sorted_eras;
+        $column_count   = 0;
+
+        foreach ($return["eras"] as $era) {
+            $count = $era["addresses"] ? count($era["addresses"]) : 0;
+
+            if ($count > $column_count) {
+                $column_count = $count;
+            }
+        }
+
+        $return["column_count"] = $column_count + 1;
+
+        info($return);
+        return $this->successResponse($return);
+    }
+
+    public function allEras() {
+        // Get current era
+        $current_era_id = DB::select("
+            SELECT era_id
+            FROM all_node_data2
+            ORDER BY era_id DESC
+            LIMIT 1
+        ");
+        $current_era_id = (int)($current_era_id[0]->era_id ?? 0);
+
+        // define return object
+        $return = array(
+            "addresses" => array(
+                "0123456789abcdef"          => array(
+                    "uptime"                => 0,
+                    "eras_active"           => 0,
+                    "eras_since_bad_mark"   => $current_era_id,
+                    "total_bad_marks"       => 0
+                )
+            ),
+            "users" => array(
+                array(
+                    "user_id"       => 0,
+                    "name"          => "Jason Stone",
+                    "pseudonym"     => "jsnstone"
+                )
+            )
+        );
+
+        unset($return["addresses"]["0123456789abcdef"]);
+        unset($return['users']);
+        
+        // get addresses data
+        $addresses = DB::select("
+            SELECT 
+            a.public_key, a.uptime, b.user_id
+            FROM all_node_data2 AS a
+            JOIN user_addresses AS b
+            ON a.public_key = b.public_address_node
+            WHERE a.era_id  = $current_era_id
+        ");
+
+        if (!$addresses) {
+            $addresses = array();
+        }
+
+        // get settings
+        $voting_eras_to_vote = DB::select("
+            SELECT value
+            FROM settings
+            WHERE name = 'voting_eras_to_vote'
+        ");
+        $voting_eras_to_vote = $voting_eras_to_vote[0] ?? array();
+        $voting_eras_to_vote = (int)($voting_eras_to_vote->value ?? 0);
+
+        $uptime_calc_size = DB::select("
+            SELECT value
+            FROM settings
+            WHERE name = 'uptime_calc_size'
+        ");
+        $uptime_calc_size = $uptime_calc_size[0] ?? array();
+        $uptime_calc_size = (int)($uptime_calc_size->value ?? 0);
+
+        // for each member's node address
+        foreach ($addresses as $address) {
+            $p = $address->public_key ?? '';
+
+            $total_bad_marks = DB::select("
+                SELECT era_id
+                FROM all_node_data2
+                WHERE public_key = '$p'
+                AND (
+                    in_current_era = 0 OR
+                    bid_inactive   = 1
+                )
+                ORDER BY era_id DESC
+            ");
+
+            $eras_since_bad_mark = $total_bad_marks[0] ?? array();
+            $eras_since_bad_mark = $current_era_id - (int)($eras_since_bad_mark->era_id ?? 0);
+            $total_bad_marks     = count((array)$total_bad_marks);
+
+            $eras_active = DB::select("
+                SELECT era_id
+                FROM all_node_data2
+                WHERE public_key = '$p'
+                ORDER BY era_id ASC
+                LIMIT 1
+            ");
+
+            $eras_active = (int)($eras_active[0]->era_id ?? 0);
+
+            // Calculate historical_performance from past $uptime_calc_size eras
+            $missed = 0;
+            $in_current_eras = DB::select("
+                SELECT in_current_era
+                FROM all_node_data2
+                WHERE public_key = '$p'
+                ORDER BY era_id DESC
+                LIMIT $uptime_calc_size
+            ");
+
+            $in_current_eras = $in_current_eras ? $in_current_eras : array();
+            $window          = $in_current_eras ? count($in_current_eras) : 0;
+
+            foreach ($in_current_eras as $c) {
+                $in = (bool)($c->in_current_era ?? 0);
+
+                if (!$in) {
+                    $missed += 1;
+                }
+            }
+
+            $uptime                 = (float)($address->uptime ?? 0);
+            $historical_performance = ($uptime * ($window - $missed)) / $window;
+
+            $return["addresses"][$p]   = array(
+                "uptime"              => $historical_performance,
+                "eras_active"         => $current_era_id - $eras_active,
+                "eras_since_bad_mark" => $eras_since_bad_mark,
+                "total_bad_marks"     => $total_bad_marks
+            );
+        }
+
+        $users = DB::select("
+            SELECT
+            a.id, a.first_name, a.last_name, a.pseudonym
+            FROM users AS a
+            WHERE a.role      = 'member'
+            AND a.has_address = 1
+            AND a.banned      = 0;
+        ");
+
+        foreach ($users as $user) {
+            $return["users"][] = array(
+                "user_id"   => $user->id,
+                "name"      => $user->first_name . ' ' . $user->last_name,
+                "pseudonym" => $user->pseudonym,
+            );
+        }
+
+        if (!$users) {
+            $users = array();
+        }
+
+        info($return);
+        return $this->successResponse($return);
+    }
+
+    public function getNodesPage() {
+        // Get current era
+        $current_era_id = DB::select("
+            SELECT era_id
+            FROM all_node_data
+            ORDER BY era_id DESC
+            LIMIT 1
+        ");
+        $current_era_id = (int)($current_era_id[0]->era_id ?? 0);
+
+        // Define complete return object
+        $return = array(
+            "mbs" => 0,
+            "ranking" => array(
+                "0123456789abcdef" => 0
+            ),
+            "addresses" => array(
+                "0123456789abcdef"          => array(
+                    "stake_amount"          => 0,
+                    "delegators"            => 0,
+                    "uptime"                => 0,
+                    "update_responsiveness" => 100,
+                    "peers"                 => 0,
+                    "daily_earning"         => 0,
+                    "total_eras"            => 0,
+                    "eras_since_bad_mark"   => $current_era_id,
+                    "total_bad_marks"       => 0,
+                    "faling"                => 0,
+                    "validator_rewards"     => array(
+                        "day"               => array(),
+                        "week"              => array(),
+                        "month"             => array(),
+                        "year"              => array()
+                    )
+                )
+            )
+        );
+
+        unset($return["ranking"]["0123456789abcdef"]);
+        unset($return["addresses"]["0123456789abcdef"]);
+        $nodeHelper = new NodeHelper();
+
+        // get ranking
+        $ranking = DB::select("
+            SELECT
+            public_key, 
+            historical_performance AS uptime,
+            bid_delegators_count,
+            bid_delegation_rate,
+            bid_total_staked_amount
+            FROM all_node_data
+            WHERE in_curent_era = 1
+            AND in_next_era     = 1
+            AND in_auction      = 1
+            AND bad_mark        = 0
+        ");
+        $max_delegators   = 0;
+        $max_stake_amount = 0;
+
+        foreach ($ranking as $r) {
+            if ((int)$r->bid_delegators_count > $max_delegators) {
+                $max_delegators   = (int)$r->bid_delegators_count;
+            }
+
+            if ((int)$r->bid_total_staked_amount > $max_stake_amount) {
+                $max_stake_amount = (int)$r->bid_total_staked_amount;
+            }
+        }
+
+        foreach ($ranking as $r) {
+            $uptime_score     = (
+                25 * (float)$r->uptime
+            ) / 100;
+            $uptime_score     = $uptime_score < 0 ? 0 : $uptime_score;
+
+            $fee_score        = (
+                25 * 
+                (1 - ((float)$r->bid_delegation_rate / 100))
+            );
+            $fee_score        = $fee_score < 0 ? 0 : $fee_score;
+
+            $count_score      = (
+                (float)$r->bid_delegators_count / 
+                $max_delegators
+            ) * 25;
+            $count_score      = $count_score < 0 ? 0 : $count_score;
+
+            $stake_score      = (
+                (float)$r->bid_total_staked_amount / 
+                $max_stake_amount
+            ) * 25;
+            $stake_score      = $stake_score < 0 ? 0 : $stake_score;
+
+            $return["ranking"][$r->public_key] = (
+                $uptime_score +
+                $fee_score    +
+                $count_score  + 
+                $stake_score
+            );
+        }
+
+        uasort(
+            $return["ranking"],
+            function($x, $y) {
+                if ($x == $y) {
+                    return 0;
+                }
+
+                return ($x > $y) ? -1 : 1;
+            }
+        );
+
+        $sorted_ranking = array();
+        $i = 1;
+
+        foreach ($return["ranking"] as $public_key => $score) {
+            $sorted_ranking[$public_key] = $i;
+            $i += 1;
+        }
+
+        $return["ranking"] = $sorted_ranking;
+
+        // get user addresses
+        $addresses = DB::select("
+            SELECT 
+            a.public_key, a.bid_delegators_count,
+            a.bid_total_staked_amount, a.bid_self_staked_amount,
+            a.historical_performance AS uptime,
+            a.port8888_peers AS peers,
+            a.bid_inactive, a.bad_mark, a.stable
+            FROM all_node_data AS a
+            JOIN user_addresses AS b
+            ON a.public_key = b.public_address_node
+            JOIN users AS c
+            ON b.user_id    = c.id
+            WHERE a.era_id  = $current_era_id
+        ");
+
+        if (!$addresses) {
+            $addresses = array();
+        }
+
+        // for each member's node address
+        foreach ($addresses as $address) {
+            $a = $address->public_key ?? '';
+
+            $eras_since_bad_mark = DB::select("
+                SELECT a.era_id
+                FROM all_node_data AS a
+                JOIN user_addresses AS b
+                ON a.public_key = b.public_address_node
+                WHERE a.public_key = '$a'
+                AND a.bad_mark = 1
+                ORDER BY era_id DESC
+                LIMIT 1
+            ");
+            $eras_since_bad_mark = $eras_since_bad_mark[0]->era_id ?? 0;
+            $eras_since_bad_mark = $current_era_id - $eras_since_bad_mark;
+
+            $total_bad_marks = DB::select("
+                SELECT bad_mark
+                FROM all_node_data
+                WHERE bad_mark = 1
+                AND public_key = '$a'
+            ");
+
+            $total_eras = DB::select("
+                SELECT era_id
+                FROM all_node_data
+                WHERE public_key = '$a'
+                ORDER BY era_id ASC
+                LIMIT 1
+            ");
+
+            $total_eras = (int)($total_eras[0]->era_id ?? 0);
+            $total_eras = $current_era_id - $total_eras;
+
+            // Calc earning
+            $one_day_ago   = Carbon::now('UTC')->subHours(24);
+            $daily_earning = DB::select("
+                SELECT bid_self_staked_amount
+                FROM all_node_data
+                WHERE public_key = '$a'
+                AND created_at < '$one_day_ago'
+                ORDER BY era_id DESC
+                LIMIT 1
+            ");
+            $daily_earning = $daily_earning[0]->bid_self_staked_amount ?? 0;
+            $daily_earning = $address->bid_self_staked_amount - $daily_earning;
+            $daily_earning = $daily_earning < 0 ? 0 : $daily_earning;
+
+            $earning_day   = $nodeHelper->getValidatorRewards($a, 'day');
+            $earning_week  = $nodeHelper->getValidatorRewards($a, 'week');
+            $earning_month = $nodeHelper->getValidatorRewards($a, 'month');
+            $earning_year  = $nodeHelper->getValidatorRewards($a, 'year');
+
+            if (
+                $address->bad_mark     == 1 ||
+                $address->bid_inactive == 1
+            ) {
+                $failing = 1;
+            } else {
+                $failing = 0;
+            }
+
+            $return["addresses"][$a] = array(
+                "stake_amount"          => $address->bid_total_staked_amount,
+                "delegators"            => $address->bid_delegators_count,
+                "uptime"                => $address->uptime,
+                "update_responsiveness" => 100,
+                "peers"                 => $address->peers,
+                "daily_earning"         => $daily_earning,
+                "total_eras"            => $total_eras,
+                "eras_since_bad_mark"   => $eras_since_bad_mark,
+                "total_bad_marks"       => count($total_bad_marks ?? array()),
+                "failing"               => $failing,
+                "validator_rewards"     => array(
+                    "day"               => $earning_day,
+                    "week"              => $earning_week,
+                    "month"             => $earning_month,
+                    "year"              => $earning_year
+                )
+            );
+        }
+
+        // get mbs
+        $mbs = DB::select("
+            SELECT mbs
+            FROM mbs
+            ORDER BY era_id DESC
+            LIMIT 1
+        ");
+        $return["mbs"] = (int)($mbs[0]->mbs ?? 0);
+
+        info($return);
+        return $this->successResponse($return);
+    }
+
     public function getUsers(Request $request)
     {
-        $limit = $request->limit ?? 50;
-        $sort_key = $request->sort_key ?? '';
-        $sort_direction = $request->sort_direction ?? '';
-        if (!$sort_key) $sort_key = 'created_at';
-        if (!$sort_direction) $sort_direction = 'desc';
+        /*
+        SELECT 
+            a.id, a.first_name, a.last_name, a.email,
+            a.pseudonym, a.telegram, a.email_verified_at,
+            a.entity_name, a.last_login_at, a.created_at,
+            a.signature_request_id, a.node_verified_at,
+            a.member_status, a.kyc_verified_at,
+            b.dob, b.country_citizenship, b.country_residence,
+            b.status AS profile_status, b.extra_status,
+            b.type, b.casper_association_kyc_hash,
+            b.blockchain_name, b.blockchain_desc,
+            c.bid_delegators_count,
+            c.bid_delegation_rate,
+            c.bid_self_staked_amount,
+            c.bid_total_staked_amount
+            FROM users AS a
+            JOIN profile AS b
+            ON a.id = b.user_id
+            JOIN user_addresses
+            ON user_addresses.user_id = a.id
+            JOIN all_node_data AS c
+            ON c.public_key = user_addresses.public_address_node
+        */
+        $users = DB::select("
+            SELECT 
+            a.id, a.first_name, a.last_name, a.email,
+            a.pseudonym, a.telegram, a.email_verified_at,
+            a.entity_name, a.last_login_at, a.created_at,
+            a.signature_request_id, a.node_verified_at,
+            a.member_status, a.kyc_verified_at,
+            b.dob, b.country_citizenship, b.country_residence,
+            b.status AS profile_status, b.extra_status,
+            b.type, b.casper_association_kyc_hash,
+            b.blockchain_name, b.blockchain_desc
+            FROM users AS a
+            LEFT JOIN profile AS b
+            ON a.id = b.user_id
+            WHERE a.role = 'member'
+            ORDER BY a.id asc
+        ");
+
+        if ($users) {
+            foreach ($users as &$user) {
+                $status = 'Not Verified';
+
+                if ($user->profile_status == 'approved') {
+                    $status = 'Verified';
+
+                    if ($user->extra_status) {
+                        $status = $user->extra_status;
+                    }
+                }
+
+                $user->membership_status = $status;
+            }
+        }
+        info($users);
+        return $this->successResponse($users);
+        //// done
+
+        $limit          = $request->limit ?? 50;
+        $sort_key       = $request->sort_key ?? 'created_at';
+        $sort_direction = $request->sort_direction ?? 'desc';
+
         $users = User::where('role', 'member')
-                        ->with(['profile'])
-                        ->leftJoin('node_info', 'users.public_address_node', '=', 'node_info.node_address')
-                        ->select([
-                            'users.*',
-                            'node_info.delegation_rate',
-                            'node_info.delegators_count',
-                            'node_info.self_staked_amount',
-                            'node_info.total_staked_amount',
-                        ])
-                        ->get();
+            ->with(['profile'])
+            ->leftJoin('node_info', 'users.public_address_node', '=', 'node_info.node_address')
+            ->select([
+                'users.*',
+                'node_info.delegation_rate',
+                'node_info.delegators_count',
+                'node_info.self_staked_amount',
+                'node_info.total_staked_amount',
+            ])
+            ->get();
+
         foreach ($users as $user) {
             $status = 'Not Verified';
+
             if ($user->profile && $user->profile->status == 'approved') {
                 $status = 'Verified';
-                if ($user->profile->extra_status)
+
+                if ($user->profile->extra_status) {
                     $status = $user->profile->extra_status;
+                }
             }
+
             $user->membership_status = $status;
         }
-        if ($sort_direction == 'desc') $users = $users->sortByDesc($sort_key)->values();
-        else $users = $users->sortBy($sort_key)->values();
-        $users = Helper::paginate($users, $limit, $request->page);
-        $users = $users->toArray();
+
+        if ($sort_direction == 'desc') {
+            $users = $users->sortByDesc($sort_key)->values();
+        } else {
+            $users = $users->sortBy($sort_key)->values();
+        }
+
+        $users         = Helper::paginate($users, $limit, $request->page);
+        $users         = $users->toArray();
         $users['data'] = (collect($users['data'])->values());
+
         return $this->successResponse($users);
     }
 
     public function getUserDetail($id)
     {
         $user = User::where('id', $id)->first();
-        if (!$user || $user->role == 'admin')
-            return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
+
+        if (!$user || $user->role == 'admin') {
+            return $this->errorResponse(
+                __('api.error.not_found'),
+                Response::HTTP_NOT_FOUND
+            );
+        }
+
         $user = $user->load(['pagePermissions', 'profile', 'shuftipro', 'shuftiproTemp']);
         
         $status = 'Not Verified';
+
         if ($user->profile && $user->profile->status == 'approved') {
             $status = 'Verified';
-            if ($user->profile->extra_status)
+
+            if ($user->profile->extra_status) {
                 $status = $user->profile->extra_status;
+            }
         }
+
+        $user   = $user->load(['profile', 'shuftipro', 'shuftiproTemp']);
+        $status = 'Not Verified';
+
+        if (
+            $user->profile && 
+            $user->profile->status == 'approved'
+        ) {
+            $status = 'Verified';
+
+            if ($user->profile->extra_status) {
+                $status = $user->profile->extra_status;
+            }
+        }
+
         $user->membership_status = $status;
-        $user->metric = Helper::getNodeInfo($user);
+        $user->metric            = Helper::getNodeInfo($user);
         return $this->successResponse($user);
     }
 
     public function infoDashboard(Request $request)
     {
-        $timeframe_perk = $request->timeframe_perk ?? 'last_7days';
-        $timeframe_comments = $request->timeframe_comments ?? 'last_7days';
-        $timeframe_discussions = $request->timeframe_discussions ?? 'last_7days';
-        // last_24hs, last_7days, last_30days, last_year
-        if ($timeframe_perk == 'last_24hs')
-            $timeframe_perk =  Carbon::now('UTC')->subHours(24);
-        else if ($timeframe_perk == 'last_30days')
-            $timeframe_perk =  Carbon::now('UTC')->subDays(30);
-        else if ($timeframe_perk == 'last_year')
-            $timeframe_perk =  Carbon::now('UTC')->subYear();
-        else
-            $timeframe_perk =  Carbon::now('UTC')->subDays(7);
+        $current_era_id = DB::select("
+            SELECT era_id
+            FROM all_node_data
+            ORDER BY era_id DESC
+            LIMIT 1
+        ");
+        $current_era_id = (int)($current_era_id[0]->era_id ?? 0);
 
-        if ($timeframe_comments == 'last_24hs')
+        // define return object
+        $return = array(
+            "total_users"        => 0,
+            "total_stake"        => 0,
+            "total_delegators"   => 0,
+            "avg_uptime"         => 0,
+            "avg_responsiveness" => 0,
+            "peers"              => 0,
+            "new_users_ready"    => 0,
+            "id_to_review"       => 0,
+            "failing_nodes"      => 0,
+            "perks_active"       => 0,
+            "perks_views"        => 0,
+            "new_comments"       => 0,
+            "new_threads"        => 0
+        );
+
+        // get total users
+        $total_users        = DB::select("
+            SELECT pseudonym
+            FROM users
+            WHERE role      = 'member'
+        ");
+        $total_users        = $total_users ? count($total_users) : 0;
+
+        // get total member stake
+        $total_stake        = DB::select("
+            SELECT 
+            SUM(a.bid_total_staked_amount)
+            FROM all_node_data AS a
+            LEFT JOIN user_addresses AS b
+            ON a.public_key = b.public_address_node
+            WHERE a.era_id  = $current_era_id
+            AND b.user_id IS NOT NULL
+        ");
+        $total_stake        = (array)($total_stake[0] ?? array());
+        $total_stake        = (int)($total_stake['SUM(a.bid_total_staked_amount)'] ?? 0);
+
+        // get total delegators across all member nodes
+        $total_delegators   = DB::select("
+            SELECT 
+            SUM(a.bid_delegators_count)
+            FROM all_node_data AS a
+            LEFT JOIN user_addresses AS b
+            ON a.public_key = b.public_address_node
+            WHERE a.era_id  = $current_era_id
+            AND b.user_id IS NOT NULL
+        ");
+        $total_delegators   = (array)($total_delegators[0] ?? array());
+        $total_delegators   = (int)($total_delegators['SUM(a.bid_delegators_count)'] ?? 0);
+
+        // get avg uptime of all user nodes
+        $uptime_nodes = DB::select("
+            SELECT 
+            SUM(a.historical_performance) AS numerator,
+            COUNT(a.historical_performance) AS denominator
+            FROM all_node_data AS a
+            LEFT JOIN user_addresses AS b
+            ON a.public_key = b.public_address_node
+            WHERE era_id    = $current_era_id
+            AND b.user_id IS NOT NULL
+        ");
+        $avg_uptime         = (array)($uptime_nodes[0] ?? array());
+        $avg_uptime         = (
+            ($avg_uptime['numerator'] ?? 0) / 
+            ($avg_uptime['denominator'] ? $avg_uptime['denominator'] : 1)
+        );
+
+        // get avg responsiveness
+        $avg_responsiveness = 100;
+
+        // get max peers
+        $max_peers          = DB::select("
+            SELECT MAX(a.port8888_peers) AS max_peers
+            FROM all_node_data AS a
+            LEFT JOIN user_addresses AS b
+            ON a.public_key = b.public_address_node
+            WHERE era_id    = $current_era_id
+            AND b.user_id IS NOT NULL
+        ");
+        $max_peers          = (array)($max_peers[0] ?? array());
+        $max_peers          = $max_peers['max_peers'] ?? 0;
+
+        // get new users ready for admin review
+        $new_users_ready    = User::where('banned', 0)
+            ->where('role', 'member')
+            ->where(function ($q) {
+                $q->where('users.node_verified_at', null)
+                    ->orWhere('users.letter_verified_at', null)
+                    ->orWhere('users.signature_request_id', null);
+            })->count();
+
+        // get new users ready for kyc review
+        $id_to_review       = User::where('users.role', 'member')
+            ->where('banned', 0)
+            ->join('profile', function ($query) {
+                $query->on('profile.user_id', '=', 'users.id')
+                        ->where('profile.status', 'pending');
+            })
+            ->join('shuftipro', 'shuftipro.user_id', '=', 'users.id')
+            ->count();
+
+        // get failing member nodes
+        $failing_nodes      = DB::select("
+            SELECT 
+            a.bid_inactive, a.bad_mark
+            FROM all_node_data AS a
+            JOIN user_addresses AS b
+            ON a.public_key = b.public_address_node
+            WHERE a.era_id  = $current_era_id
+            AND b.user_id IS NOT NULL
+            AND (
+                a.bid_inactive = 1 OR
+                a.bad_mark     = 1
+            )
+        ");
+
+        $timeframe_perk        = $request->timeframe_perk ?? 'last_7days';
+        $timeframe_comments    = $request->timeframe_comments ?? 'last_7days';
+        $timeframe_discussions = $request->timeframe_discussions ?? 'last_7days';
+
+        // last_24hs, last_7days, last_30days, last_year
+        if ($timeframe_perk == 'last_24hs') {
+            $timeframe_perk =  Carbon::now('UTC')->subHours(24);
+        } else if ($timeframe_perk == 'last_30days') {
+            $timeframe_perk =  Carbon::now('UTC')->subDays(30);
+        } else if ($timeframe_perk == 'last_year') {
+            $timeframe_perk =  Carbon::now('UTC')->subYear();
+        } else {
+            $timeframe_perk =  Carbon::now('UTC')->subDays(7);
+        }
+
+        if ($timeframe_comments == 'last_24hs') {
             $timeframe_comments =  Carbon::now('UTC')->subHours(24);
-        else if ($timeframe_comments == 'last_30days') {
+        } else if ($timeframe_comments == 'last_30days') {
             $timeframe_comments =  Carbon::now('UTC')->subDays(30);
         } else if ($timeframe_comments == 'last_year') {
             $timeframe_comments =  Carbon::now('UTC')->subYear();
@@ -147,76 +901,59 @@ class AdminController extends Controller
             $timeframe_discussions =  Carbon::now('UTC')->subDays(7);
         }
 
-        $totalUser = User::where('role', 'member')->count();
-        $toTalStake = NodeInfo::sum('total_staked_amount');
-        $totalDelagateer = NodeInfo::sum('delegators_count');
-        $totalNewUserReady =  User::where('banned', 0)
-            ->where('role', 'member')
-            ->where(function ($q) {
-                $q->where('users.node_verified_at', null)
-                    ->orWhere('users.letter_verified_at', null)
-                    ->orWhere('users.signature_request_id', null);
-            })->count();
+        // get active perks
+        $perks_active = Perk::where('status', 'active')
+            ->where('created_at', '>=', $timeframe_perk)
+            ->count();
 
-        $totalUserVerification = User::where('users.role', 'member')
-                                    ->where('banned', 0)
-                                    ->join('profile', function ($query) {
-                                        $query->on('profile.user_id', '=', 'users.id')
-                                                ->where('profile.status', 'pending');
-                                    })
-                                    ->join('shuftipro', 'shuftipro.user_id', '=', 'users.id')
-                                    ->count();
-        $totalFailNode = User::where('banned', 0)->whereNotNull('public_address_node')->where('is_fail_node', 1)->count();
+        // get total perk views
+        $perks_views  = Perk::where('status', 'active')
+            ->where('created_at', '>=', $timeframe_perk)
+            ->sum('total_views');
 
-        $totalPerksActive = Perk::where('status', 'active')->where('created_at', '>=', $timeframe_perk)->count();
-        $totalPerksViews = Perk::where('status', 'active')->where('created_at', '>=', $timeframe_perk)->sum('total_views');
+        // get comments
+        $new_comments = DiscussionComment::where(
+            'created_at',
+            '>=',
+            $timeframe_comments
+        )->count();
 
-        $totalNewComments = DiscussionComment::where('created_at', '>=', $timeframe_comments)->count();
-        $totalNewDiscussions = Discussion::where('created_at', '>=', $timeframe_discussions)->count();
+        // get discussions
+        $new_threads  = Discussion::where(
+            'created_at',
+            '>=',
+            $timeframe_discussions
+        )->count();
 
-        $uptime_nodes = NodeInfo::whereNotNull('uptime')->pluck('uptime');
-        $uptime_metrics = Metric::whereNotNull('uptime')->pluck('uptime');
 
-        $blocks_hight_nodes = NodeInfo::whereNotNull('block_height_average')->pluck('block_height_average');
-        $blocks_hight_metrics = Metric::whereNotNull('block_height_average')->pluck('block_height_average');
-        $total_blocks_hight_metrics = 0;
-        $base_block = 10;
-        foreach ($blocks_hight_metrics as $value) {
-            $avg = ($base_block - $value) * 10;
-            if ($avg > 0) {
-                $total_blocks_hight_metrics += $avg;
-            }
-        }
+        $return["total_users"]        = $total_users;
+        $return["total_stake"]        = $total_stake;
+        $return["total_delegators"]   = $total_delegators;
+        $return["avg_uptime"]         = $avg_uptime;
+        $return["avg_responsiveness"] = $avg_responsiveness;
+        $return["peers"]              = $max_peers;
+        $return["new_users_ready"]    = $new_users_ready;
+        $return["id_to_review"]       = $id_to_review;
+        $return["failing_nodes"]      = $failing_nodes;
+        $return["perks_active"]       = $perks_active;
+        $return["perks_views"]        = $perks_views;
+        $return["new_comments"]       = $new_comments;
+        $return["new_threads"]        = $new_threads;
 
-        $responsiveness_nodes = NodeInfo::whereNotNull('update_responsiveness')->pluck('update_responsiveness');
-        $responsiveness_metrics = Metric::whereNotNull('update_responsiveness')->pluck('update_responsiveness');
-
-        $countUptime = count($uptime_nodes) + count($uptime_metrics) > 0 ?  count($uptime_nodes) + count($uptime_metrics) : 1;
-        $count_responsiveness_nodes =  count($responsiveness_nodes) + count($responsiveness_metrics);
-        $count_responsiveness_nodes = $count_responsiveness_nodes > 0 ? $count_responsiveness_nodes : 1;
-        $count_blocks_hight = (count($blocks_hight_nodes) + count($blocks_hight_metrics)) > 0 ? (count($blocks_hight_nodes) + count($blocks_hight_metrics)) : 1;
-        $response['totalUser'] = $totalUser;
-        $response['totalStake'] = $toTalStake;
-        $response['totalDelegators'] = $totalDelagateer;
-        $response['totalNewUserReady'] = $totalNewUserReady;
-        $response['totalUserVerification'] = $totalUserVerification;
-        $response['totalFailNode'] = $totalFailNode;
-        $response['totalPerksActive'] = $totalPerksActive;
-        $response['totalPerksViews'] = $totalPerksViews;
-        $response['totalNewComments'] = $totalNewComments;
-        $response['totalNewDiscussions'] = $totalNewDiscussions;
-        $response['avgUptime'] = ($uptime_nodes->sum() + $uptime_metrics->sum()) /  $countUptime;
-        $response['avgBlockHeightAverage'] = ($blocks_hight_nodes->sum() + $total_blocks_hight_metrics) / $count_blocks_hight;
-        $response['avgUpdateResponsiveness'] = ($responsiveness_nodes->sum() + $responsiveness_metrics->sum()) / $count_responsiveness_nodes;
-        return $this->successResponse($response);
+        return $this->successResponse($return);
     }
 
     public function getKYC($id)
     {
         $user = User::with(['shuftipro', 'profile'])->where('id', $id)->first();
+
         if (!$user || $user->role == 'admin') {
-            return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->errorResponse(
+                __('api.error.not_found'), 
+                Response::HTTP_NOT_FOUND
+            );
         }
+
         $response = $user->load(['profile', 'shuftipro']);
         return $this->successResponse($response);
     }
@@ -227,8 +964,16 @@ class AdminController extends Controller
         $limit = $request->limit ?? 50;
         $search = $request->search ?? '';
         $users =  User::select([
-            'id', 'email', 'node_verified_at', 'letter_verified_at', 'signature_request_id', 'created_at',
-            'first_name', 'last_name', 'letter_file', 'letter_rejected_at'
+            'id', 
+            'email', 
+            'node_verified_at', 
+            'letter_verified_at', 
+            'signature_request_id', 
+            'created_at',
+            'first_name', 
+            'last_name', 
+            'letter_file', 
+            'letter_rejected_at'
         ])
             ->where('banned', 0)
             ->where('role', 'member')
@@ -238,7 +983,9 @@ class AdminController extends Controller
                     ->orWhere('users.signature_request_id', null);
             })
             ->where(function ($query) use ($search) {
-                if ($search) $query->where('users.email', 'like', '%' . $search . '%');
+                if ($search) {
+                    $query->where('users.email', 'like', '%' . $search . '%');
+                }
             })
             ->orderBy('users.id', 'desc')
             ->paginate($limit);
@@ -253,24 +1000,24 @@ class AdminController extends Controller
             $user = auth()->user();
             // Validator
             $validator = Validator::make($request->all(), [
-                'title' => 'required',
+                'title'       => 'required',
                 'description' => 'required',
-                // 'time' => 'required',
-                // 'time_unit' => 'required|in:minutes,hours,days',
-                'files' => 'array',
-                'files.*' => 'file|max:10240|mimes:pdf,docx,doc,txt,rtf',
-                'start_date' => 'required',
-                'start_time' => 'required',
-                'end_date' => 'required',
-                'end_time' => 'required',
+                'files'       => 'array',
+                'files.*'     => 'file|max:10240|mimes:pdf,docx,doc,txt,rtf',
+                'start_date'  => 'required',
+                'start_time'  => 'required',
+                'end_date'    => 'required',
+                'end_time'    => 'required',
             ]);
+
             if ($validator->fails()) {
                 return $this->validateResponse($validator->errors());
             }
 
-            $time = $request->time;
+            $time     = $request->time;
             $timeUnit = $request->time_unit;
-            $mins = 0;
+            $mins     = 0;
+
             if ($timeUnit == 'minutes') {
                 $mins = $time;
             } else if ($timeUnit == 'hours') {
@@ -278,63 +1025,66 @@ class AdminController extends Controller
             } else if ($timeUnit == 'days') {
                 $mins = $time * 60 * 24;
             }
-            $start = Carbon::createFromFormat("Y-m-d H:i:s", Carbon::now('UTC'), "UTC");
-            $now = Carbon::now('UTC');
-            $timeEnd = $start->addMinutes($mins);
-            
-            $endTime = $request->end_date . ' ' . $request->end_time;
+
+            $start         = Carbon::createFromFormat("Y-m-d H:i:s", Carbon::now('UTC'), "UTC");
+            $now           = Carbon::now('UTC');
+            $timeEnd       = $start->addMinutes($mins);
+            $endTime       = $request->end_date . ' ' . $request->end_time;
             $endTimeCarbon = Carbon::createFromFormat('Y-m-d H:i:s', $endTime, 'EST');
             $endTimeCarbon->setTimezone('UTC');
 
             $ballot = new Ballot();
-            $ballot->user_id = $user->id;
-            $ballot->title = $request->title;
+            $ballot->user_id     = $user->id;
+            $ballot->title       = $request->title;
             $ballot->description = $request->description;
-            // $ballot->time = $time;
-            // $ballot->time_unit = $timeUnit;
-            // $ballot->time_end = $timeEnd;
-            $ballot->time_end = $endTimeCarbon;
-            $ballot->start_date = $request->start_date;
-            $ballot->start_time = $request->start_time;
-            $ballot->end_date = $request->end_date;
-            $ballot->end_time = $request->end_time;
-            $ballot->status = 'active';
-            $ballot->created_at = $now;
+            $ballot->time_end    = $endTimeCarbon;
+            $ballot->start_date  = $request->start_date;
+            $ballot->start_time  = $request->start_time;
+            $ballot->end_date    = $request->end_date;
+            $ballot->end_time    = $request->end_time;
+            $ballot->status      = 'active';
+            $ballot->created_at  = $now;
             $ballot->save();
+
             $vote = new Vote();
-            $vote->ballot_id = $ballot->id;
+            $vote->ballot_id     = $ballot->id;
             $vote->save();
+
             if ($request->hasFile('files')) {
                 $files = $request->file('files');
+
                 foreach ($files as $file) {
-                    $name = $file->getClientOriginalName();
-                    $extension = $file->getClientOriginalExtension();
-                    $filenamehash = md5(Str::random(10) . '_' . (string)time());
+                    $name            = $file->getClientOriginalName();
+                    $extension       = $file->getClientOriginalExtension();
+                    $filenamehash    = md5(Str::random(10) . '_' . (string)time());
                     $fileNameToStore = $filenamehash . '.' . $extension;
 
                     // S3 file upload
                     $S3 = new S3Client([
-                        'version' => 'latest',
-                        'region' => getenv('AWS_DEFAULT_REGION'),
+                        'version'     => 'latest',
+                        'region'      => getenv('AWS_DEFAULT_REGION'),
                         'credentials' => [
-                            'key' => getenv('AWS_ACCESS_KEY_ID'),
-                            'secret' => getenv('AWS_SECRET_ACCESS_KEY'),
+                            'key'     => getenv('AWS_ACCESS_KEY_ID'),
+                            'secret'  => getenv('AWS_SECRET_ACCESS_KEY'),
                         ],
                     ]);
 
                     $s3result = $S3->putObject([
-                        'Bucket' => getenv('AWS_BUCKET'),
-                        'Key' => 'perks/' . $fileNameToStore,
+                        'Bucket'     => getenv('AWS_BUCKET'),
+                        'Key'        => 'perks/' . $fileNameToStore,
                         'SourceFile' => $file
                     ]);
 
-                    // $ObjectURL = 'https://'.getenv('AWS_BUCKET') . '.s3.amazonaws.com/perks/'.$fileNameToStore;
-                    $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL') . '/not-found';
-                    $ballotFile = new BallotFile();
+                    $ObjectURL             = (
+                        $s3result['ObjectURL'] ?? 
+                        getenv('SITE_URL') . '/not-found')
+                    ;
+
+                    $ballotFile            = new BallotFile();
                     $ballotFile->ballot_id = $ballot->id;
-                    $ballotFile->name = $name;
-                    $ballotFile->path = $ObjectURL;
-                    $ballotFile->url = $ObjectURL;
+                    $ballotFile->name      = $name;
+                    $ballotFile->path      = $ObjectURL;
+                    $ballotFile->url       = $ObjectURL;
                     $ballotFile->save();
                 }
             }
@@ -343,7 +1093,12 @@ class AdminController extends Controller
             return $this->metaSuccess();
         } catch (\Exception $ex) {
             DB::rollBack();
-            return $this->errorResponse('Submit ballot fail', Response::HTTP_BAD_REQUEST, $ex->getMessage());
+
+            return $this->errorResponse(
+                'Submit ballot fail', 
+                Response::HTTP_BAD_REQUEST, 
+                $ex->getMessage()
+            );
         }
     }
 
@@ -355,8 +1110,6 @@ class AdminController extends Controller
             $validator = Validator::make($request->all(), [
                 'title' => 'nullable',
                 'description' => 'nullable',
-                // 'time' => 'nullable',
-                // 'time_unit' => 'nullable|in:minutes,hours,days',
                 'files' => 'array',
                 'files.*' => 'file|max:10240|mimes:pdf,docx,doc,txt,rtf',
                 'file_ids_remove' => 'array',
@@ -365,159 +1118,171 @@ class AdminController extends Controller
                 'end_date' => 'required',
                 'end_time' => 'required',
             ]);
+
             if ($validator->fails()) {
                 return $this->validateResponse($validator->errors());
             }
-            $time = $request->time;
+
+            $time     = $request->time;
             $timeUnit = $request->time_unit;
-            $ballot = Ballot::where('id', $id)->first();
+            $ballot   = Ballot::where('id', $id)->first();
+
             if (!$ballot) {
                 return $this->errorResponse('Not found ballot', Response::HTTP_BAD_REQUEST);
             }
-            if ($request->title) $ballot->title = $request->title;
-            if ($request->description) $ballot->description = $request->description;
 
-            $now = Carbon::now('UTC');
+            if ($request->title) {
+                $ballot->title = $request->title;
+            }
+
+            if ($request->description) {
+                $ballot->description = $request->description;
+            }
+
+            $now                = Carbon::now('UTC');
             $ballot->created_at = $now;
-            $ballot->time_end = $request->end_date . ' ' . $request->end_time;
+            $ballot->time_end   = $request->end_date . ' ' . $request->end_time;
             $ballot->start_date = $request->start_date;
             $ballot->start_time = $request->start_time;
-            $ballot->end_date = $request->end_date;
-            $ballot->end_time = $request->end_time;
-            
-            /*
-            if($time && $timeUnit && ($time != $ballot->time || $timeUnit != $ballot->time_unit)) {
-                $mins = 0;
-                if ($timeUnit == 'minutes') {
-                    $mins = $time;
-                } else if ($timeUnit == 'hours') {
-                    $mins = $time * 60;
-                } else if ($timeUnit == 'days') {
-                    $mins = $time * 60 * 24;
-                }
-                $start = Carbon::createFromFormat("Y-m-d H:i:s", Carbon::now('UTC'), "UTC");
-                $now = Carbon::now('UTC');
-                $timeEnd = $start->addMinutes($mins);
-                $ballot->time = $time;     
-                $ballot->time_unit = $timeUnit;
-                $ballot->created_at = $now;
-                $ballot->time_end = $timeEnd;
-            }
-            */
-
+            $ballot->end_date   = $request->end_date;
+            $ballot->end_time   = $request->end_time;
             $ballot->save();
+
             if ($request->hasFile('files')) {
                 $files = $request->file('files');
+
                 foreach ($files as $file) {
-                    $name = $file->getClientOriginalName();
-                    $extension = $file->getClientOriginalExtension();
-                    $filenamehash = md5(Str::random(10) . '_' . (string)time());
+                    $name            = $file->getClientOriginalName();
+                    $extension       = $file->getClientOriginalExtension();
+                    $filenamehash    = md5(Str::random(10) . '_' . (string)time());
                     $fileNameToStore = $filenamehash . '.' . $extension;
 
                     // S3 file upload
                     $S3 = new S3Client([
-                        'version' => 'latest',
-                        'region' => getenv('AWS_DEFAULT_REGION'),
+                        'version'     => 'latest',
+                        'region'      => getenv('AWS_DEFAULT_REGION'),
                         'credentials' => [
-                            'key' => getenv('AWS_ACCESS_KEY_ID'),
-                            'secret' => getenv('AWS_SECRET_ACCESS_KEY'),
+                            'key'     => getenv('AWS_ACCESS_KEY_ID'),
+                            'secret'  => getenv('AWS_SECRET_ACCESS_KEY'),
                         ],
                     ]);
 
                     $s3result = $S3->putObject([
-                        'Bucket' => getenv('AWS_BUCKET'),
-                        'Key' => 'perks/'.$fileNameToStore,
+                        'Bucket'     => getenv('AWS_BUCKET'),
+                        'Key'        => 'perks/'.$fileNameToStore,
                         'SourceFile' => $file
                     ]);
 
-                    // $ObjectURL = 'https://'.getenv('AWS_BUCKET').'.s3.amazonaws.com/perks/'.$fileNameToStore;
-                    $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL').'/not-found';
-                    $ballotFile = new BallotFile();
+                    $ObjectURL             = (
+                        $s3result['ObjectURL'] ?? 
+                        getenv('SITE_URL').'/not-found'
+                    );
+
+                    $ballotFile            = new BallotFile();
                     $ballotFile->ballot_id = $ballot->id;
-                    $ballotFile->name = $name;
-                    $ballotFile->path = $ObjectURL;
-                    $ballotFile->url = $ObjectURL;
+                    $ballotFile->name      = $name;
+                    $ballotFile->path      = $ObjectURL;
+                    $ballotFile->url       = $ObjectURL;
                     $ballotFile->save();
                 }
             }
+
             if ($request->file_ids_remove) {
                 foreach($request->file_ids_remove as $file_id) {
-                    BallotFile::where('id', $file_id)->where('ballot_id', $id)->delete();
+                    BallotFile::where('id', $file_id)
+                        ->where('ballot_id', $id)
+                        ->delete();
                 }
             }
             DB::commit();
             return $this->metaSuccess();
         } catch (\Exception $ex) {
             DB::rollBack();
-            return $this->errorResponse('Submit ballot fail', Response::HTTP_BAD_REQUEST, $ex->getMessage());
+
+            return $this->errorResponse(
+                'Submit ballot fail', 
+                Response::HTTP_BAD_REQUEST, 
+                $ex->getMessage()
+            );
         }
     }
 
     public function getBallots(Request $request)
     {
-        $limit = $request->limit ?? 50;
-        $status = $request->status;
-        $sort_key = $request->sort_key ?? '';
-        $sort_direction = $request->sort_direction ?? '';
-        if (!$sort_key) $sort_key = 'ballot.id';
-        if (!$sort_direction) $sort_direction = 'desc';
+        $limit          = $request->limit ?? 50;
+        $status         = $request->status;
+        $sort_key       = $request->sort_key ?? 'ballot.id';
+        $sort_direction = $request->sort_direction ?? 'desc';
+        $now            = Carbon::now('EST');
+        $startDate      = $now->format('Y-m-d');
+        $startTime      = $now->format('H:i:s');
 
-        $now = Carbon::now('EST');
-        $startDate = $now->format('Y-m-d');
-        $startTime = $now->format('H:i:s');
-        
         if ($status == 'active') {    
             $ballots = Ballot::with(['user', 'vote'])
-                            ->where('ballot.status', 'active')
-                            ->where(function ($query) use ($startDate, $startTime) {
-                                $query->where('start_date', '<', $startDate)
-                                        ->orWhere(function ($query) use ($startDate, $startTime) {
-                                            $query->where('start_date', $startDate)
-                                                    ->where('start_time', '<=', $startTime);
-                                        });
-                            })
-                            ->orderBy($sort_key, $sort_direction)
-                            ->paginate($limit);
+                ->where('ballot.status', 'active')
+                ->where(function ($query) use ($startDate, $startTime) {
+                    $query->where('start_date', '<', $startDate)
+                            ->orWhere(function ($query) use ($startDate, $startTime) {
+                                $query->where('start_date', $startDate)
+                                        ->where('start_time', '<=', $startTime);
+                            });
+                })
+                ->orderBy($sort_key, $sort_direction)
+                ->paginate($limit);
         } else if ($status && $status == 'scheduled') {
             $ballots = Ballot::with(['user', 'vote'])
-                            ->where('ballot.status', 'active')
-                            ->where(function ($query) use ($startDate, $startTime) {
-                                $query->where('start_date', '>', $startDate)
-                                        ->orWhere(function ($query) use ($startDate, $startTime) {
-                                            $query->where('start_date', $startDate)
-                                                    ->where('start_time', '>', $startTime);
-                                        });
-                            })
-                            ->orderBy($sort_key, $sort_direction)
-                            ->paginate($limit);
+                ->where('ballot.status', 'active')
+                ->where(function ($query) use ($startDate, $startTime) {
+                    $query->where('start_date', '>', $startDate)
+                            ->orWhere(function ($query) use ($startDate, $startTime) {
+                                $query->where('start_date', $startDate)
+                                        ->where('start_time', '>', $startTime);
+                            });
+                })
+                ->orderBy($sort_key, $sort_direction)
+                ->paginate($limit);
         } else if ($status && $status != 'active' && $status != 'scheduled') {
             $ballots = Ballot::with(['user', 'vote'])
-                            ->where('ballot.status', '!=', 'active')
-                            ->orderBy($sort_key, $sort_direction)
-                            ->paginate($limit);
+                ->where('ballot.status', '!=', 'active')
+                ->orderBy($sort_key, $sort_direction)
+                ->paginate($limit);
         } else {
-            $ballots = Ballot::with(['user', 'vote'])->orderBy($sort_key, $sort_direction)->paginate($limit);
+            $ballots = Ballot::with(['user', 'vote'])
+                ->orderBy($sort_key, $sort_direction)
+                ->paginate($limit);
         }
         return $this->successResponse($ballots);
     }
 
     public function getDetailBallot($id)
     {
-        $ballot = Ballot::with(['user', 'vote', 'files'])->where('id', $id)->first();
+        $ballot = Ballot::with(['user', 'vote', 'files'])
+            ->where('id', $id)
+            ->first();
+
         if (!$ballot) {
-            return $this->errorResponse('Not found ballot', Response::HTTP_BAD_REQUEST);
+            return $this->errorResponse(
+                'Not found ballot', 
+                Response::HTTP_BAD_REQUEST
+            );
         }
+
         return $this->successResponse($ballot);
     }
 
     public function cancelBallot($id)
     {
         $ballot = Ballot::where('id', $id)->first();
+
         if (!$ballot || $ballot->status != 'active') {
-            return $this->errorResponse('Cannot cancle ballot', Response::HTTP_BAD_REQUEST);
+            return $this->errorResponse(
+                'Cannot cancle ballot', 
+                Response::HTTP_BAD_REQUEST
+            );
         }
+
         $ballot->time_end = now();
-        $ballot->status = 'cancelled';
+        $ballot->status   = 'cancelled';
         $ballot->save();
         return $this->metaSuccess();
     }
@@ -525,7 +1290,10 @@ class AdminController extends Controller
     public function getBallotVotes($id, Request $request)
     {
         $limit = $request->limit ?? 50;
-        $data = VoteResult::where('ballot_id', '=', $id)->with(['user', 'user.profile'])->orderBy('created_at', 'ASC')->paginate($limit);
+        $data  = VoteResult::where('ballot_id', '=', $id)
+            ->with(['user', 'user.profile'])
+            ->orderBy('created_at', 'ASC')
+            ->paginate($limit);
 
         return $this->successResponse($data);
     }
@@ -533,14 +1301,18 @@ class AdminController extends Controller
     public function getViewFileBallot(Request $request, $fileId)
     {
         $limit = $request->limit ?? 50;
-        $data = BallotFileView::where('ballot_file_id', '=',  $fileId)->with(['user', 'user.profile'])->orderBy('created_at', 'ASC')->paginate($limit);
+        $data  = BallotFileView::where('ballot_file_id', '=',  $fileId)
+            ->with(['user', 'user.profile'])
+            ->orderBy('created_at', 'ASC')
+            ->paginate($limit);
+
         return $this->successResponse($data);
     }
 
     // Get Global Settings
     public function getGlobalSettings()
     {
-        $items = Setting::get();
+        $items    = Setting::get();
         $settings = [];
         if ($items) {
             foreach ($items as $item) {
@@ -548,30 +1320,63 @@ class AdminController extends Controller
             }
         }
 
-        return $this->successResponse($settings);
+        $ruleKycNotVerify = LockRules::where('type', 'kyc_not_verify')
+            ->orderBy('id', 'ASC')
+            ->select(['id', 'screen', 'is_lock'])
+            ->get();
+        $ruleStatusIsPoor = LockRules::where('type', 'status_is_poor')
+            ->orderBy('id', 'ASC')
+            ->select(['id', 'screen', 'is_lock'])
+            ->get();
+        
+        $membershipAgreementFile = MembershipAgreementFile::first();
+
+        $contactRecipients = ContactRecipient::orderBy('created_at', 'desc')->get();
+
+        $data = [
+            'globalSettings' => $settings,
+            'lockRules' => [
+                'kyc_not_verify' => $ruleKycNotVerify,
+                'status_is_poor' => $ruleStatusIsPoor
+            ],
+            'membershipAgreementFile' => $membershipAgreementFile,
+            'contactRecipients' => $contactRecipients
+        ];
+
+        return $this->successResponse($data);
     }
 
     // Update Global Settings
     public function updateGlobalSettings(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'quorum_rate_ballot' => 'required',
-        ]);
-        if ($validator->fails()) {
-            return $this->validateResponse($validator->errors());
-        }
         $items = [
-            'quorum_rate_ballot' => $request->quorum_rate_ballot,
+            'quorum_rate_ballot'        => ($request->quorum_rate_ballot ?? null),
+            'uptime_warning'            => ($request->uptime_warning ?? null),
+            'uptime_probation'          => ($request->uptime_probation ?? null),
+            'uptime_correction_unit'    => ($request->uptime_correction_unit ?? null),
+            'uptime_correction_value'    => ($request->uptime_correction_value ?? null),
+            'uptime_calc_size'          => ($request->uptime_calc_size ?? null),
+            'voting_eras_to_vote'       => ($request->voting_eras_to_vote ?? null),
+            'voting_eras_since_redmark' => ($request->voting_eras_since_redmark ?? null),
+            'redmarks_revoke'           => ($request->redmarks_revoke ?? null),
+            'redmarks_revoke_calc_size'  => ($request->redmarks_revoke_calc_size ?? null),
+            'responsiveness_warning'    => ($request->responsiveness_warning ?? null),
+            'responsiveness_probation'  => ($request->responsiveness_probation ?? null)
         ];
+
         foreach ($items as $name => $value) {
-            $setting = Setting::where('name', $name)->first();
-            if ($setting) {
-                $setting->value = $value;
-                $setting->save();
-            } else {
-                $setting = new Setting();
-                $setting->value = $value;
-                $setting->save();
+            if ($value !== null) {
+                $setting = Setting::where('name', $name)->first();
+
+                if ($setting) {
+                    $setting->value = $value;
+                    $setting->save();
+                } else {
+                    $setting = new Setting();
+                    $setting->name = $name;
+                    $setting->value = $value;
+                    $setting->save();
+                }
             }
         }
 
@@ -580,57 +1385,72 @@ class AdminController extends Controller
 
     public function getSubAdmins(Request $request)
     {
-        $limit = $request->limit ?? 50;
-        $admins = User::with(['permissions'])->where(['role' => 'sub-admin'])
+        $limit  = $request->limit ?? 50;
+        $admins = User::with(['permissions'])
+            ->where(['role' => 'sub-admin'])
             ->orderBy('created_at', 'DESC')
             ->paginate($limit);
 
         return $this->successResponse($admins);
     }
-    
+
     public function inviteSubAdmin(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
         ]);
+
         if ($validator->fails()) {
             return $this->validateResponse($validator->errors());
         }
 
         $isExist = User::where(['email' => $request->email])->count() > 0;
+
         if ($isExist) {
-            return $this->errorResponse('This email has already been used to invite another admin.', Response::HTTP_BAD_REQUEST);
+            return $this->errorResponse(
+                'This email has already been used to invite another admin.', 
+                Response::HTTP_BAD_REQUEST
+            );
         }
 
-        $code = Str::random(6);
-        // $url = $request->header('origin') ?? $request->root();
-        $url = getenv('SITE_URL');
-        $inviteUrl = $url . '/register-sub-admin?code=' . $code . '&email=' . urlencode($request->email);
-        
-        VerifyUser::where('email', $request->email)->where('type', VerifyUser::TYPE_INVITE_ADMIN)->delete();
-        
-        $verify = new VerifyUser();
-        $verify->email = $request->email;
-        $verify->type = VerifyUser::TYPE_INVITE_ADMIN;
-        $verify->code = $code;
+        $code      = Str::random(6);
+        $url       = getenv('SITE_URL');
+
+        $inviteUrl = (
+            $url . 
+            '/register-sub-admin?code=' . 
+            $code . 
+            '&email=' . 
+            urlencode($request->email)
+        );
+
+        VerifyUser::where('email', $request->email)
+            ->where('type', VerifyUser::TYPE_INVITE_ADMIN)
+            ->delete();
+
+        $verify             = new VerifyUser();
+        $verify->email      = $request->email;
+        $verify->type       = VerifyUser::TYPE_INVITE_ADMIN;
+        $verify->code       = $code;
         $verify->created_at = now();
         $verify->save();
+
         $admin = User::create([
-            'first_name' => 'faker',
-            'last_name' => 'faker',
-            'email' => $request->email,
-            'password' => '',
-            'type' => '',
+            'first_name'    => 'faker',
+            'last_name'     => 'faker',
+            'email'         => $request->email,
+            'password'      => '',
+            'type'          => '',
             'member_status' => 'invited',
-            'role' => 'sub-admin'
+            'role'          => 'sub-admin'
         ]);
 
         $data = [
-            ['name' => 'intake', 'is_permission' => 0, 'user_id' => $admin->id],
-            ['name' => 'users', 'is_permission' => 0, 'user_id' => $admin->id],
+            ['name' => 'intake',  'is_permission' => 0, 'user_id' => $admin->id],
+            ['name' => 'users',   'is_permission' => 0, 'user_id' => $admin->id],
             ['name' => 'ballots', 'is_permission' => 0, 'user_id' => $admin->id],
-            ['name' => 'perks', 'is_permission' => 0, 'user_id' => $admin->id],
-            ['name' => 'teams', 'is_permission' => 0, 'user_id' => $admin->id],
+            ['name' => 'perks',   'is_permission' => 0, 'user_id' => $admin->id],
+            ['name' => 'teams',   'is_permission' => 0, 'user_id' => $admin->id],
         ];
 
         Permission::insert($data);
@@ -641,30 +1461,46 @@ class AdminController extends Controller
 
     public function changeSubAdminPermissions(Request $request, $id)
     {
-        $validator = Validator::make($request->all(), [
-            'intake' => 'nullable|in:0,1',
-            'users' => 'nullable|in:0,1',
+        $validator    = Validator::make($request->all(), [
+            'intake'  => 'nullable|in:0,1',
+            'users'   => 'nullable|in:0,1',
             'ballots' => 'nullable|in:0,1',
-            'perks' => 'nullable|in:0,1',
-            'teams' => 'nullable|in:0,1',
+            'perks'   => 'nullable|in:0,1',
+            'teams'   => 'nullable|in:0,1',
         ]);
 
         if ($validator->fails()) {
             return $this->validateResponse($validator->errors());
         }
+
         $admin = User::find($id);
-        if ($admin == null || $admin->role != 'sub-admin') {
-            return $this->errorResponse('There is no admin user with this email', Response::HTTP_BAD_REQUEST);
+
+        if (
+            $admin == null || 
+            $admin->role != 'sub-admin'
+        ) {
+            return $this->errorResponse(
+                'There is no admin user with this email', 
+                Response::HTTP_BAD_REQUEST
+            );
         }
+
         if (isset($request->intake)) {
-            $permisstion = Permission::where('user_id', $id)->where('name', 'intake')->first();
+            $permisstion = Permission::where('user_id', $id)
+                ->where('name', 'intake')
+                ->first();
+
             if ($permisstion) {
                 $permisstion->is_permission = $request->intake;
                 $permisstion->save();
             }
         }
+
         if (isset($request->users)) {
-            $permisstion = Permission::where('user_id', $id)->where('name', 'users')->first();
+            $permisstion = Permission::where('user_id', $id)
+                ->where('name', 'users')
+                ->first();
+
             if ($permisstion) {
                 $permisstion->is_permission = $request->users;
                 $permisstion->save();
@@ -672,7 +1508,10 @@ class AdminController extends Controller
         }
 
         if (isset($request->ballots)) {
-            $permisstion = Permission::where('user_id', $id)->where('name', 'ballots')->first();
+            $permisstion = Permission::where('user_id', $id)
+                ->where('name', 'ballots')
+                ->first();
+
             if ($permisstion) {
                 $permisstion->is_permission = $request->ballots;
                 $permisstion->save();
@@ -680,7 +1519,10 @@ class AdminController extends Controller
         }
 
         if (isset($request->perks)) {
-            $permisstion = Permission::where('user_id', $id)->where('name', 'perks')->first();
+            $permisstion = Permission::where('user_id', $id)
+                ->where('name', 'perks')
+                ->first();
+
             if ($permisstion) {
                 $permisstion->is_permission = $request->perks;
                 $permisstion->save();
@@ -688,15 +1530,18 @@ class AdminController extends Controller
         }
 
         if (isset($request->teams)) {
-            $permisstion = Permission::where('user_id', $id)->where('name', 'teams')->first();
+            $permisstion = Permission::where('user_id', $id)
+                ->where('name', 'teams')
+                ->first();
+
             if ($permisstion) {
                 $permisstion->is_permission = $request->teams;
                 $permisstion->save();
             } else {
-                $permisstion = new Permission();
+                $permisstion                = new Permission();
                 $permisstion->is_permission = $request->teams;
-                $permisstion->user_id = $id;
-                $permisstion->name = 'teams';
+                $permisstion->user_id       = $id;
+                $permisstion->name          = 'teams';
                 $permisstion->save();
             }
         }
@@ -707,20 +1552,36 @@ class AdminController extends Controller
     public function resendLink(Request $request, $id)
     {
         $admin = User::find($id);
-        if ($admin == null || $admin->role != 'sub-admin')
-            return $this->errorResponse('No admin to be send invite link', Response::HTTP_BAD_REQUEST);
 
-        $code = Str::random(6);
-        // $url = $request->header('origin') ?? $request->root();
-        $url = getenv('SITE_URL');
-        $inviteUrl = $url . '/register-sub-admin?code=' . $code . '&email=' . urlencode($admin->email);
-        
-        VerifyUser::where('email', $admin->email)->where('type', VerifyUser::TYPE_INVITE_ADMIN)->delete();
-        
-        $verify = new VerifyUser();
-        $verify->email = $admin->email;
-        $verify->type = VerifyUser::TYPE_INVITE_ADMIN;
-        $verify->code = $code;
+        if (
+            $admin == null || 
+            $admin->role != 'sub-admin'
+        ) {
+            return $this->errorResponse(
+                'No admin to be send invite link', 
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        $code      = Str::random(6);
+        $url       = getenv('SITE_URL');
+
+        $inviteUrl = (
+            $url . 
+            '/register-sub-admin?code=' . 
+            $code . 
+            '&email=' . 
+            urlencode($admin->email)
+        );
+
+        VerifyUser::where('email', $admin->email)
+            ->where('type', VerifyUser::TYPE_INVITE_ADMIN)
+            ->delete();
+
+        $verify             = new VerifyUser();
+        $verify->email      = $admin->email;
+        $verify->type       = VerifyUser::TYPE_INVITE_ADMIN;
+        $verify->code       = $code;
         $verify->created_at = now();
         $verify->save();
 
@@ -732,20 +1593,35 @@ class AdminController extends Controller
     public function resetSubAdminResetPassword(Request $request, $id)
     {
         $admin = User::find($id);
-        if ($admin == null || $admin->role != 'sub-admin')
-            return $this->errorResponse('No admin to be revoked', Response::HTTP_BAD_REQUEST);
 
-        $code = Str::random(6);
-        // $url = $request->header('origin') ?? $request->root();
-        $url = getenv('SITE_URL');
-        $resetUrl = $url . '/update-password?code=' . $code . '&email=' . urlencode($admin->email);
-        
-        VerifyUser::where('email', $admin->email)->where('type', VerifyUser::TYPE_RESET_PASSWORD)->delete();
-        
-        $verify = new VerifyUser();
-        $verify->email = $admin->email;
-        $verify->type = VerifyUser::TYPE_RESET_PASSWORD;
-        $verify->code = $code;
+        if (
+            $admin == null || 
+            $admin->role != 'sub-admin'
+        ) {
+            return $this->errorResponse(
+                'No admin to be revoked', 
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        $code     = Str::random(6);
+        $url      = getenv('SITE_URL');
+        $resetUrl = (
+            $url . 
+            '/update-password?code=' . 
+            $code . 
+            '&email=' . 
+            urlencode($admin->email)
+        );
+
+        VerifyUser::where('email', $admin->email)
+            ->where('type', VerifyUser::TYPE_RESET_PASSWORD)
+            ->delete();
+
+        $verify             = new VerifyUser();
+        $verify->email      = $admin->email;
+        $verify->type       = VerifyUser::TYPE_RESET_PASSWORD;
+        $verify->code       = $code;
         $verify->created_at = now();
         $verify->save();
 
@@ -757,11 +1633,19 @@ class AdminController extends Controller
     public function revokeSubAdmin(Request $request, $id)
     {
         $admin = User::find($id);
-        if ($admin == null || $admin->role != 'sub-admin')
-            return $this->errorResponse('No admin to be revoked', Response::HTTP_BAD_REQUEST);
+
+        if (
+            $admin == null || 
+            $admin->role != 'sub-admin'
+        ) {
+            return $this->errorResponse(
+                'No admin to be revoked', 
+                Response::HTTP_BAD_REQUEST
+            );
+        }
 
         $admin->member_status = 'revoked';
-        $admin->banned = 1;
+        $admin->banned        = 1;
         $admin->save();
 
         return $this->metaSuccess();
@@ -770,13 +1654,23 @@ class AdminController extends Controller
     public function undoRevokeSubAdmin(Request $request, $id)
     {
         $admin = User::find($id);
-        if ($admin == null || $admin->role != 'sub-admin')
-            return $this->errorResponse('No admin to be revoked', Response::HTTP_BAD_REQUEST);
+
+        if (
+            $admin == null || 
+            $admin->role != 'sub-admin'
+        ) {
+            return $this->errorResponse(
+                'No admin to be revoked', 
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
         if ($admin->password) {
             $admin->member_status = 'active';
         } else {
             $admin->member_status = 'invited';
         }
+
         $admin->banned = 0;
         $admin->save();
 
@@ -786,72 +1680,126 @@ class AdminController extends Controller
     public function getIpHistories(Request $request, $id)
     {
         $admin = User::find($id);
-        if ($admin == null || $admin->role != 'sub-admin') {
-            return $this->errorResponse('Not found admin', Response::HTTP_BAD_REQUEST);
+
+        if (
+            $admin == null || 
+            $admin->role != 'sub-admin'
+        ) {
+            return $this->errorResponse(
+                'Not found admin', 
+                Response::HTTP_BAD_REQUEST
+            );
         }
-        $limit = $request->limit ?? 50;
+
+        $limit     = $request->limit ?? 50;
         $ipAddress = IpHistory::where(['user_id' => $admin->id])
             ->orderBy('created_at', 'DESC')
             ->paginate($limit);
 
         return $this->successResponse($ipAddress);
     }
-    
+
     public function approveIntakeUser($id)
     {
         $admin = auth()->user();
+        $user  = User::where('id', $id)
+            ->where('banned', 0)
+            ->where('role', 'member')
+            ->first();
 
-        $user = User::where('id', $id)->where('banned', 0)->where('role', 'member')->first();
         if ($user && $user->letter_file) {
             $user->letter_verified_at = now();
             $user->save();
 
             $emailerData = EmailerHelper::getEmailerData();
-            EmailerHelper::triggerUserEmail($user->email, 'Your letter of motivation is APPROVED', $emailerData, $user);
-            if ($user->letter_verified_at && $user->node_verified_at) {
-                EmailerHelper::triggerUserEmail($user->email, 'Congratulations', $emailerData, $user);
+
+            EmailerHelper::triggerUserEmail(
+                $user->email, 
+                'Your letter of motivation is APPROVED', 
+                $emailerData, 
+                $user
+            );
+
+            if (
+                $user->letter_verified_at && 
+                $user->node_verified_at
+            ) {
+                EmailerHelper::triggerUserEmail(
+                    $user->email, 
+                    'Congratulations', 
+                    $emailerData, 
+                    $user
+                );
             }
             return $this->metaSuccess();
         }
-        return $this->errorResponse('Fail approved User', Response::HTTP_BAD_REQUEST);
+
+        return $this->errorResponse(
+            'Fail approved User', 
+            Response::HTTP_BAD_REQUEST
+        );
     }
 
     public function resetIntakeUser($id, Request $request)
     {
         $admin = auth()->user();
+        $user  = User::where('id', $id)
+            ->where('banned', 0)
+            ->where('role', 'member')
+            ->first();
 
-        $user = User::where('id', $id)->where('banned', 0)->where('role', 'member')->first();
         if ($user) {
             $user->letter_verified_at = null;
-            $user->letter_file = null;
+            $user->letter_file        = null;
             $user->letter_rejected_at = now();
             $user->save();
             $message = trim($request->get('message'));
+
             if (!$message) {
-                return $this->errorResponse('please input message', Response::HTTP_BAD_REQUEST);
+                return $this->errorResponse(
+                    'please input message', 
+                    Response::HTTP_BAD_REQUEST
+                );
             }
-            Mail::to($user->email)->send(new AdminAlert('You need to submit letter again', $message));
+
+            Mail::to($user->email)->send(new AdminAlert(
+                'You need to submit letter again', 
+                $message
+            ));
+
             return $this->metaSuccess();
         }
-        return $this->errorResponse('Fail reset User', Response::HTTP_BAD_REQUEST);
+
+        return $this->errorResponse(
+            'Fail reset User', 
+            Response::HTTP_BAD_REQUEST
+        );
     }
 
     public function banUser($id)
     {
         $admin = auth()->user();
+        $user  = User::where('id', $id)
+            ->where('banned', 0)
+            ->first();
 
-        $user = User::where('id', $id)->where('banned', 0)->first();
         if ($user) {
             $user->banned = 1;
             $user->save();
             return $this->metaSuccess();
         }
-        return $this->errorResponse('Fail Ban User', Response::HTTP_BAD_REQUEST);
+        return $this->errorResponse(
+            'Fail Ban User', 
+            Response::HTTP_BAD_REQUEST
+        );
     }
 
     public function removeUser($id, Request $request)
     {
-        $user = User::where('id', $id)->where('role', 'member')->first();
+        $user = User::where('id', $id)
+            ->where('role', 'member')
+            ->first();
+
         if ($user) {
             Shuftipro::where('user_id', $user->id)->delete();
             ShuftiproTemp::where('user_id', $user->id)->delete();
@@ -859,80 +1807,107 @@ class AdminController extends Controller
             $user->delete();
             return $this->metaSuccess();
         }
-        return $this->errorResponse('Fail remove User', Response::HTTP_BAD_REQUEST);
+        return $this->errorResponse(
+            'Fail remove User', 
+            Response::HTTP_BAD_REQUEST
+        );
     }
 
     public function getVerificationUsers(Request $request)
     {
         $limit = $request->limit ?? 50;
-        $users = User::where('users.role', 'member')->where('banned', 0)
-                        ->join('profile', function ($query) {
-                            $query->on('profile.user_id', '=', 'users.id')
-                                ->where('profile.status', 'pending');
-                        })
-                        ->join('shuftipro', 'shuftipro.user_id', '=', 'users.id')
-                        ->select([
-                            'users.id as user_id',
-                            'users.created_at',
-                            'users.email',
-                            'profile.*',
-                            'shuftipro.status as kyc_status',
-                            'shuftipro.background_checks_result',
-                            'shuftipro.manual_approved_at'
-                        ])->paginate($limit);
+        $users = User::where('users.role', 'member')
+            ->where('banned', 0)
+            ->join('profile', function ($query) {
+                $query->on('profile.user_id', '=', 'users.id')
+                    ->where('profile.status', 'pending');
+            })
+            ->join('shuftipro', 'shuftipro.user_id', '=', 'users.id')
+            ->select([
+                'users.id as user_id',
+                'users.created_at',
+                'users.email',
+                'profile.*',
+                'shuftipro.status as kyc_status',
+                'shuftipro.background_checks_result',
+                'shuftipro.manual_approved_at'
+            ])->paginate($limit);
+
         return $this->successResponse($users);
     }
 
     // Reset KYC
     public function resetKYC($id, Request $request)
     {
-        $admin = auth()->user();
-
+        $admin   = auth()->user();
         $message = trim($request->get('message'));
+
         if (!$message) {
-            return $this->errorResponse('please input message', Response::HTTP_BAD_REQUEST);
+            return $this->errorResponse(
+                'please input message', 
+                Response::HTTP_BAD_REQUEST
+            );
         }
 
-        $user = User::with(['profile'])->where('id', $id)->first();
+        $user = User::with(['profile'])
+            ->where('id', $id)
+            ->first();
+
         if ($user && $user->profile) {
             $user->profile->status = null;
             $user->profile->save();
-            
+
             Profile::where('user_id', $user->id)->delete();
             Shuftipro::where('user_id', $user->id)->delete();
             ShuftiproTemp::where('user_id', $user->id)->delete();
             DocumentFile::where('user_id', $user->id)->delete();
 
             $user->kyc_verified_at = null;
-            $user->approve_at = null;
-            $user->reset_kyc = 1;
+            $user->approve_at      = null;
+            $user->reset_kyc       = 1;
             $user->save();
-            
-            Mail::to($user->email)->send(new AdminAlert('You need to submit KYC again', $message));
+
+            Mail::to($user->email)->send(new AdminAlert(
+                'You need to submit KYC again', 
+                $message
+            ));
+
             return $this->metaSuccess();
         }
 
-        return $this->errorResponse('Fail Reset KYC', Response::HTTP_BAD_REQUEST);
+        return $this->errorResponse(
+            'Fail Reset KYC', 
+            Response::HTTP_BAD_REQUEST
+        );
     }
 
     public function refreshLinks($id)
     {
-        $url = 'https://api.shuftipro.com/status';
-        $user = User::with('shuftipro')->find($id);
-
+        $url       = 'https://api.shuftipro.com/status';
+        $user      = User::with('shuftipro')->find($id);
         $shuftipro = $user->shuftipro;
+
         if ($shuftipro) {
-            $client_id = config('services.shufti.client_id');
+            $client_id  = config('services.shufti.client_id');
             $secret_key = config('services.shufti.client_secret');
 
-            $response = Http::withBasicAuth($client_id, $secret_key)->post($url, [
+            $response   = Http::withBasicAuth(
+                $client_id, 
+                $secret_key
+            )->post($url, [
                 'reference' => $shuftipro->reference_id
             ]);
 
             $data = $response->json();
-            if (!$data || !is_array($data)) return;
 
-            if (!isset($data['reference']) || !isset($data['event'])) {
+            if (!$data || !is_array($data)) {
+                return;
+            }
+
+            if (
+                !isset($data['reference']) || 
+                !isset($data['event'])
+            ) {
                 return $this->successResponse([
                     'success' => false,
                 ]);
@@ -952,12 +1927,20 @@ class AdminController extends Controller
 
             $proofs = isset($data['proofs']) ? $data['proofs'] : null;
 
-            if ($proofs && isset($proofs['document']) && isset($proofs['document']['proof'])) {
+            if (
+                $proofs && 
+                isset($proofs['document']) && 
+                isset($proofs['document']['proof'])
+            ) {
                 $shuftipro->document_proof = $proofs['document']['proof'];
             }
-      
+
             // Address Proof
-            if ($proofs && isset($proofs['address']) && isset($proofs['address']['proof'])) {
+            if (
+                $proofs && 
+                isset($proofs['address']) && 
+                isset($proofs['address']['proof'])
+            ) {
                 $shuftipro->address_proof = $proofs['address']['proof'];
             }
 
@@ -976,10 +1959,10 @@ class AdminController extends Controller
     public function banAndDenyUser($id)
     {
         $user = User::with(['shuftipro', 'profile'])
-                    ->where('id', $id)
-                    ->where('users.role', 'member')
-                    ->where('banned', 0)
-                    ->first();
+            ->where('id', $id)
+            ->where('users.role', 'member')
+            ->where('banned', 0)
+            ->first();
 
         if ($user && $user->profileT) {
             $user->profile->status = 'denied';
@@ -989,41 +1972,51 @@ class AdminController extends Controller
             return $this->metaSuccess();
         }
 
-        return $this->errorResponse('Fail deny and ban user', Response::HTTP_BAD_REQUEST);
+        return $this->errorResponse(
+            'Fail deny and ban user', 
+            Response::HTTP_BAD_REQUEST
+        );
     }
 
     public function getVerificationDetail($id)
     {
         $user = User::with(['shuftipro', 'profile', 'documentFiles'])
-                    ->leftJoin('shuftipro', 'shuftipro.user_id', '=', 'users.id')
-                    ->where('users.id', $id)
-                    ->select([
-                        'users.*',
-                        'shuftipro.status as kyc_status',
-                        'shuftipro.background_checks_result',
-                    ])
-                    ->where('users.role', 'member')
-                    ->where('banned', 0)
-                    ->first();
+            ->leftJoin('shuftipro', 'shuftipro.user_id', '=', 'users.id')
+            ->where('users.id', $id)
+            ->select([
+                'users.*',
+                'shuftipro.status as kyc_status',
+                'shuftipro.background_checks_result',
+            ])
+            ->where('users.role', 'member')
+            ->where('banned', 0)
+            ->first();
 
         if ($user) {
-            if (isset($user->shuftipro) && isset($user->shuftipro->address_proof) && $user->shuftipro->address_proof) {
+            if (
+                isset($user->shuftipro) && 
+                isset($user->shuftipro->address_proof) && 
+                $user->shuftipro->address_proof
+            ) {
                 $url = Storage::disk('local')->url($user->shuftipro->address_proof);
                 $user->shuftipro->address_proof_link = asset($url);
             }
             return $this->successResponse($user);
         }
 
-        return $this->errorResponse('Fail get verification user', Response::HTTP_BAD_REQUEST);
+        return $this->errorResponse(
+            'Fail get verification user', 
+            Response::HTTP_BAD_REQUEST
+        );
     }
 
     public function approveDocument($id)
     {
         $user = User::with(['profile'])
-                    ->where('id', $id)
-                    ->where('users.role', 'member')
-                    ->where('banned', 0)
-                    ->first();
+            ->where('id', $id)
+            ->where('users.role', 'member')
+            ->where('banned', 0)
+            ->first();
 
         if ($user && $user->profile) {
             $user->profile->document_verified_at = now();
@@ -1031,17 +2024,20 @@ class AdminController extends Controller
             return $this->metaSuccess();
         }
 
-        return $this->errorResponse('Fail approve document', Response::HTTP_BAD_REQUEST);
+        return $this->errorResponse(
+            'Fail approve document', 
+            Response::HTTP_BAD_REQUEST
+        );
     }
 
     public function activeUser($id)
     {
         $user = User::with(['profile'])
-                    ->where('id', $id)
-                    ->where('users.role', 'member')
-                    ->where('banned', 0)
-                    ->first();
-        
+            ->where('id', $id)
+            ->where('users.role', 'member')
+            ->where('banned', 0)
+            ->first();
+
         if ($user && $user->profile) {
             $user->profile->status = 'approved';
             $user->profile->save();
@@ -1050,15 +2046,18 @@ class AdminController extends Controller
             return $this->metaSuccess();
         }
 
-        return $this->errorResponse('Fail active document', Response::HTTP_BAD_REQUEST);
+        return $this->errorResponse(
+            'Fail active document', 
+            Response::HTTP_BAD_REQUEST
+        );
     }
 
     // Add Emailer Admin
     public function addEmailerAdmin(Request $request)
     {
-        $user = Auth::user();
-
+        $user  = Auth::user();
         $email = $request->get('email');
+
         if (!$email) {
             return [
                 'success' => false,
@@ -1067,6 +2066,7 @@ class AdminController extends Controller
         }
 
         $record = EmailerAdmin::where('email', $email)->first();
+
         if ($record) {
             return [
                 'success' => false,
@@ -1074,7 +2074,7 @@ class AdminController extends Controller
             ];
         }
 
-        $record = new EmailerAdmin;
+        $record        = new EmailerAdmin;
         $record->email = $email;
         $record->save();
 
@@ -1092,33 +2092,40 @@ class AdminController extends Controller
     // Get Emailer Data
     public function getEmailerData(Request $request)
     {
-        $user = Auth::user();
-        $data = [];
+        $user         = Auth::user();
+        $data         = [];
+        $admins       = EmailerAdmin::where('id', '>', 0)
+            ->orderBy('email', 'asc')
+            ->get();
 
-        $admins = EmailerAdmin::where('id', '>', 0)->orderBy('email', 'asc')->get();
-        $triggerAdmin = EmailerTriggerAdmin::where('id', '>', 0)->orderBy('id', 'asc')->get();
-        $triggerUser = EmailerTriggerUser::where('id', '>', 0)->orderBy('id', 'asc')->get();
+        $triggerAdmin = EmailerTriggerAdmin::where('id', '>', 0)
+            ->orderBy('id', 'asc')
+            ->get();
+
+        $triggerUser  = EmailerTriggerUser::where('id', '>', 0)
+            ->orderBy('id', 'asc')
+            ->get();
 
         $data = [
-            'admins' => $admins,
+            'admins'       => $admins,
             'triggerAdmin' => $triggerAdmin,
-            'triggerUser' => $triggerUser,
+            'triggerUser'  => $triggerUser,
         ];
 
         return [
             'success' => true,
-            'data' => $data
+            'data'    => $data
         ];
     }
 
     // Update Emailer Trigger Admin
     public function updateEmailerTriggerAdmin($recordId, Request $request)
     {
-        $user = Auth::user();
+        $user   = Auth::user();
         $record = EmailerTriggerAdmin::find($recordId);
 
         if ($record) {
-            $enabled = (int) $request->get('enabled');
+            $enabled         = (int)$request->get('enabled');
             $record->enabled = $enabled;
             $record->save();
             return ['success' => true];
@@ -1130,15 +2137,17 @@ class AdminController extends Controller
     // Update Emailer Trigger User
     public function updateEmailerTriggerUser($recordId, Request $request)
     {
-        $user = Auth::user();
+        $user   = Auth::user();
         $record = EmailerTriggerUser::find($recordId);
 
         if ($record) {
-            $enabled = (int) $request->get('enabled');
-            $content = $request->get('content');
-
+            $enabled         = (int)$request->get('enabled');
+            $content         = $request->get('content');
             $record->enabled = $enabled;
-            if ($content) $record->content = $content;
+
+            if ($content) {
+                $record->content = $content;
+            }
 
             $record->save();
 
@@ -1162,25 +2171,18 @@ class AdminController extends Controller
             $validator = Validator::make($request->all(), [
                 'warning_level' => 'required|integer',
                 'probation_start' => 'required',
-                // 'frame_calculate_unit' => 'required|in:Weeks,Days,Hours',
-                // 'frame_calculate_value' => 'required|integer',
                 'given_to_correct_unit' => 'required|in:Weeks,Days,Hours',
                 'given_to_correct_value' => 'required|integer',
-                // 'system_check_unit' => 'required|in:Weeks,Days,Hours',
-                // 'system_check_value' => 'required|integer',
             ]);
 
-            if ($validator->fails())
+            if ($validator->fails()) {
                 return $this->validateResponse($validator->errors());
+            }
 
-            $record->warning_level = $request->warning_level;
-            $record->probation_start = $request->probation_start;
-            // $record->frame_calculate_unit = $request->frame_calculate_unit;
-            // $record->frame_calculate_value = $request->frame_calculate_value;
-            $record->given_to_correct_unit = $request->given_to_correct_unit;
+            $record->warning_level          = $request->warning_level;
+            $record->probation_start        = $request->probation_start;
+            $record->given_to_correct_unit  = $request->given_to_correct_unit;
             $record->given_to_correct_value = $request->given_to_correct_value;
-            // $record->system_check_unit = $request->system_check_unit;
-            // $record->system_check_value = $request->system_check_value;
             $record->save();
 
             return ['success' => true];
@@ -1195,10 +2197,11 @@ class AdminController extends Controller
             'is_lock' => 'required|boolean'
         ]);
 
-        if ($validator->fails()) return $this->validateResponse($validator->errors());
+        if ($validator->fails()) {
+            return $this->validateResponse($validator->errors());
+        }
 
-        $rule = LockRules::where('id', $id)->first();
-
+        $rule          = LockRules::where('id', $id)->first();
         $rule->is_lock = $request->is_lock;
         $rule->save();
 
@@ -1208,51 +2211,156 @@ class AdminController extends Controller
     public function getLockRules()
     {
         $ruleKycNotVerify = LockRules::where('type', 'kyc_not_verify')
-            ->orderBy('id', 'ASC')->select(['id', 'screen', 'is_lock'])->get();
+            ->orderBy('id', 'ASC')
+            ->select(['id', 'screen', 'is_lock'])
+            ->get();
+
         $ruleStatusIsPoor = LockRules::where('type', 'status_is_poor')
-            ->orderBy('id', 'ASC')->select(['id', 'screen', 'is_lock'])->get();
+            ->orderBy('id', 'ASC')
+            ->select(['id', 'screen', 'is_lock'])
+            ->get();
+
         $data = [
             'kyc_not_verify' => $ruleKycNotVerify,
             'status_is_poor' => $ruleStatusIsPoor,
         ];
+
         return $this->successResponse($data);
     }
 
     public function getListNodes(Request $request)
     {
-        $limit = $request->limit ?? 50;
-        $node_failing  = $request->node_failing  ?? '';
+        $current_era_id = DB::select("
+            SELECT era_id
+            FROM all_node_data2
+            ORDER BY era_id DESC
+            LIMIT 1
+        ");
+        $current_era_id = (int)($current_era_id[0]->era_id ?? 0);
 
-        $nodes = UserAddress::select([
-            'user_addresses.user_id as user_id',
-            'user_addresses.public_address_node as public_address_node',
-            'user_addresses.is_fail_node as is_fail_node',
-            'user_addresses.rank as rank',
-        ])
-            ->join('users', 'users.id', '=', 'user_addresses.user_id')
-            ->where('users.banned', 0)
-            ->whereNotNull('user_addresses.public_address_node')
-            ->where(function ($query) use ($node_failing) {
-                if ($node_failing == 1) $query->where('user_addresses.is_fail_node', 1);
-            })
-            ->orderBy('user_addresses.rank', 'asc')
-            ->paginate($limit);
+        // define return object
+        $return = array(
+            "nodes"           => array(),
+            "ranking"         => array(),
+            "node_rank_total" => 100
+        );
 
-        return $this->successResponse($nodes);
+        // find rank
+        $ranking = DB::select("
+            SELECT
+            public_key, uptime,
+            bid_delegators_count,
+            bid_delegation_rate,
+            bid_total_staked_amount
+            FROM all_node_data2
+            WHERE era_id       = $current_era_id
+            AND in_current_era = 1
+            AND in_next_era    = 1
+            AND in_auction     = 1
+        ");
+        $max_delegators       = 0;
+        $max_stake_amount     = 0;
+
+        foreach ($ranking as $r) {
+            if ((int)$r->bid_delegators_count > $max_delegators) {
+                $max_delegators   = (int)$r->bid_delegators_count;
+            }
+
+            if ((int)$r->bid_total_staked_amount > $max_stake_amount) {
+                $max_stake_amount = (int)$r->bid_total_staked_amount;
+            }
+        }
+
+        foreach ($ranking as $r) {
+            $uptime_score     = (
+                25 * (float)$r->uptime
+            ) / 100;
+            $uptime_score     = $uptime_score < 0 ? 0 : $uptime_score;
+
+            $fee_score        = (
+                25 * 
+                (1 - ((float)$r->bid_delegation_rate / 100))
+            );
+            $fee_score        = $fee_score < 0 ? 0 : $fee_score;
+
+            $count_score      = (
+                (float)$r->bid_delegators_count / 
+                $max_delegators
+            ) * 25;
+            $count_score      = $count_score < 0 ? 0 : $count_score;
+
+            $stake_score      = (
+                (float)$r->bid_total_staked_amount / 
+                $max_stake_amount
+            ) * 25;
+            $stake_score      = $stake_score < 0 ? 0 : $stake_score;
+
+            $return["ranking"][$r->public_key] = (
+                $uptime_score +
+                $fee_score    +
+                $count_score  + 
+                $stake_score
+            );
+        }
+
+        uasort(
+            $return["ranking"],
+            function($x, $y) {
+                if ($x == $y) {
+                    return 0;
+                }
+
+                return ($x > $y) ? -1 : 1;
+            }
+        );
+
+        $sorted_ranking = array();
+        $i = 1;
+
+        foreach ($return["ranking"] as $public_key => $score) {
+            $sorted_ranking[$public_key] = $i;
+            $i += 1;
+        }
+
+        $return["ranking"]         = $sorted_ranking;
+        $return["node_rank_total"] = count($sorted_ranking);
+
+        $return["nodes"]           = DB::select("
+            SELECT
+            a.public_address_node, 
+            b.id, 
+            b.pseudonym, 
+            c.blockchain_name, 
+            c.blockchain_desc 
+            FROM user_addresses AS a 
+            JOIN users AS b 
+            ON a.user_id = b.id 
+            JOIN profile AS c 
+            ON b.id = c.user_id 
+            WHERE b.banned = 0
+        ");
+        // info($nodes);
+        return $this->successResponse($return);
     }
 
     // Get GraphInfo
     public function getGraphInfo(Request $request)
     {
-        $user = Auth::user();
-        $graphDataDay = $graphDataWeek = $graphDataMonth = $graphDataYear = [];
+        $user           = Auth::user();
+        $graphDataDay   = 
+        $graphDataWeek  = 
+        $graphDataMonth = 
+        $graphDataYear  = [];
 
-        $timeDay = Carbon::now('UTC')->subHours(24);
-        $timeWeek = Carbon::now('UTC')->subDays(7);
+        $timeDay   = Carbon::now('UTC')->subHours(24);
+        $timeWeek  = Carbon::now('UTC')->subDays(7);
         $timeMonth = Carbon::now('UTC')->subDays(30);
-        $timeYear = Carbon::now('UTC')->subYear();
+        $timeYear  = Carbon::now('UTC')->subYear();
 
-        $items = TokenPrice::orderBy('created_at', 'desc')->where('created_at', '>=', $timeDay)->get();
+        $items = TokenPrice::orderBy('created_at', 'desc')
+            ->where('created_at', '>=', $timeDay)
+            ->get();
+
         if ($items && count($items)) {
             foreach ($items as $item) {
                 $name = strtotime($item->created_at);
@@ -1260,7 +2368,10 @@ class AdminController extends Controller
             }
         }
 
-        $items = TokenPrice::orderBy('created_at', 'desc')->where('created_at', '>=', $timeWeek)->get();
+        $items = TokenPrice::orderBy('created_at', 'desc')
+            ->where('created_at', '>=', $timeWeek)
+            ->get();
+
         if ($items && count($items)) {
             foreach ($items as $item) {
                 $name = strtotime($item->created_at);
@@ -1268,7 +2379,10 @@ class AdminController extends Controller
             }
         }
 
-        $items = TokenPrice::orderBy('created_at', 'desc')->where('created_at', '>=', $timeMonth)->get();
+        $items = TokenPrice::orderBy('created_at', 'desc')
+            ->where('created_at', '>=', $timeMonth)
+            ->get();
+
         if ($items && count($items)) {
             foreach ($items as $item) {
                 $name = strtotime($item->created_at);
@@ -1276,7 +2390,10 @@ class AdminController extends Controller
             }
         }
 
-        $items = TokenPrice::orderBy('created_at', 'desc')->where('created_at', '>=', $timeYear)->get();
+        $items = TokenPrice::orderBy('created_at', 'desc')
+            ->where('created_at', '>=', $timeYear)
+            ->get();
+
         if ($items && count($items)) {
             foreach ($items as $item) {
                 $name = strtotime($item->created_at);
@@ -1285,10 +2402,10 @@ class AdminController extends Controller
         }
 
         return $this->successResponse([
-            'day' => $graphDataDay,
-            'week' => $graphDataWeek,
+            'day'   => $graphDataDay,
+            'week'  => $graphDataWeek,
             'month' => $graphDataMonth,
-            'year' => $graphDataYear,
+            'year'  => $graphDataYear,
         ]);
     }
 
@@ -1300,46 +2417,48 @@ class AdminController extends Controller
                 'file' => 'required|mimes:pdf,docx,doc,txt,rtf|max:5000',
             ]);
 
-            if ($validator->fails())
+            if ($validator->fails()) {
                 return $this->validateResponse($validator->errors());
+            }
 
             $filenameWithExt = $request->file('file')->getClientOriginalName();
-            //Get just filename
-            $filename = pathinfo($filenameWithExt, PATHINFO_FILENAME);
-            // Get just ext
-            $extension = $request->file('file')->getClientOriginalExtension();
-            // new filename hash
-            $filenamehash = md5(Str::random(10) . '_' . (string)time());
-            // Filename to store
+            $filename        = pathinfo($filenameWithExt, PATHINFO_FILENAME);
+            $extension       = $request->file('file')->getClientOriginalExtension();
+            $filenamehash    = md5(Str::random(10) . '_' . (string)time());
             $fileNameToStore = $filenamehash . '.' . $extension;
 
             // S3 File Upload
             $S3 = new S3Client([
-                'version' => 'latest',
-                'region' => getenv('AWS_DEFAULT_REGION'),
+                'version'     => 'latest',
+                'region'      => getenv('AWS_DEFAULT_REGION'),
                 'credentials' => [
-                    'key' => getenv('AWS_ACCESS_KEY_ID'),
-                    'secret' => getenv('AWS_SECRET_ACCESS_KEY'),
+                    'key'     => getenv('AWS_ACCESS_KEY_ID'),
+                    'secret'  => getenv('AWS_SECRET_ACCESS_KEY'),
                 ],
             ]);
 
             $s3result = $S3->putObject([
-                'Bucket' => getenv('AWS_BUCKET'),
-                'Key' => 'client_uploads/' . $fileNameToStore,
+                'Bucket'     => getenv('AWS_BUCKET'),
+                'Key'        => 'client_uploads/' . $fileNameToStore,
                 'SourceFile' => $request->file('file')
             ]);
 
             $ObjectURL = $s3result['ObjectURL'] ?? getenv('SITE_URL') . '/not-found';
             MembershipAgreementFile::where('id', '>', 0)->delete();
-            $membershipAgreementFile = new MembershipAgreementFile();
+            $membershipAgreementFile       = new MembershipAgreementFile();
             $membershipAgreementFile->name = $filenameWithExt;
             $membershipAgreementFile->path = $ObjectURL;
-            $membershipAgreementFile->url = $ObjectURL;
+            $membershipAgreementFile->url  = $ObjectURL;
             $membershipAgreementFile->save();
             DB::table('users')->update(['membership_agreement' => 0]);
+
             return $this->successResponse($membershipAgreementFile);
         } catch (\Exception $ex) {
-            return $this->errorResponse(__('Failed upload file'), Response::HTTP_BAD_REQUEST, $ex->getMessage());
+            return $this->errorResponse(
+                __('Failed upload file'), 
+                Response::HTTP_BAD_REQUEST, 
+                $ex->getMessage()
+            );
         }
     }
 
