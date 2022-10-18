@@ -95,7 +95,7 @@ class AuthController extends Controller
                     'node_verified_at'     => '2022-03-18 19:26:51',
                     'signed_file'          => 'https://casper-assoc-portal-dev.s3.us-east-2.amazonaws.com/signatures/db49744f7535b218c20a48cb833da6a1',
                     'node_status'          => 'Online',
-                    'has_verified_address' => 1,
+                    'has_verified_address' => 1
                 )
             );
         }
