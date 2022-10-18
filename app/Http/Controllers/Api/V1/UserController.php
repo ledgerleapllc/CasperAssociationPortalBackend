@@ -2597,8 +2597,11 @@ class UserController extends Controller
             JOIN profile AS d
             ON b.id = d.user_id
             WHERE (
-                b.id = $id AND
-                c.era_id = $current_era_id
+                b.id         = $id AND
+                c.era_id     = $current_era_id
+            ) OR (
+                c.public_key = '$public_address_node' AND
+                c.era_id     = $current_era_id
             )
         ");
         info($response);
