@@ -2314,6 +2314,7 @@ class UserController extends Controller
 
         $members = DB::table('users')
             ->select(
+                'users.id',
                 'users.pseudonym',
                 'users.created_at',
                 'user_addresses.node_verified_at',
@@ -2357,7 +2358,7 @@ class UserController extends Controller
         foreach ($members as &$member) {
             $uptime_score     = (
                 ($request->uptime ?? 0) * 
-                (float)$member->historical_performance
+                (float) ($member->historical_performance ?? 0)
             ) / 100;
             $uptime_score     = $uptime_score < 0 ? 0 : $uptime_score;
 
@@ -2603,9 +2604,6 @@ class UserController extends Controller
         info($response);
         return $this->successResponse($response);
         //// done
-
-
-
 
         $user = User::where('id', $id)->first();
 
