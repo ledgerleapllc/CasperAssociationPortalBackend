@@ -52,17 +52,17 @@ class HelloSignController extends Controller
 
             $client = new \HelloSign\Client($api_key);
 
-            $sig_link = $client->getFiles(
-                $signature_request_id, 
-                null, 
-                \HelloSign\SignatureRequest::FILE_TYPE_PDF
-            );
-            info($sig_link);
+            // $sig_link = $client->getFiles(
+            //     $signature_request_id, 
+            //     null, 
+            //     \HelloSign\SignatureRequest::FILE_TYPE_PDF
+            // );
+            // info($sig_link);
 
             $user = User::where('signature_request_id', $signature_request_id)->first();
 
             if ($user) {
-                $user->hellosign_form = $filepath;
+                $user->hellosign_form = '';
                 $user->save();
             }
 
