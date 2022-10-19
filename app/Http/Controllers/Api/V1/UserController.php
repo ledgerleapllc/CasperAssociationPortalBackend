@@ -390,7 +390,7 @@ class UserController extends Controller
         // remove ranking object. not needed
         unset($return["ranking"]);
 
-        info($return);
+        // info($return);
         return $this->successResponse($return);
     }
 
