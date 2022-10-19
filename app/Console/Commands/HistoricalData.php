@@ -71,11 +71,13 @@ class HistoricalData extends Command
         $historic_block = $blocks_per_era * $historic_era;
         info('historic_block: '.$historic_block);
         $test_era       = 0;
+        $timestamp      = '';
 
         while ($test_era < $historic_era) {
             $json       = shell_exec($get_block.$node_arg.'-b '.$historic_block);
             $json       = json_decode($json);
             $test_era   = (int)($json->result->block->header->era_id ?? 0);
+            $timestamp  = $json->result->block->header->timestamp ?? '';
 
             if ($test_era < $historic_era) {
                 $era_diff = $historic_era - $test_era;
@@ -85,7 +87,7 @@ class HistoricalData extends Command
                 }
 
                 $historic_block += ($blocks_per_era * $era_diff);
-                info('Using historic_block: '.$historic_block);
+                info('Using historic_block: '.$historic_block.' - '.$timestamp);
             }
         }
 
@@ -110,6 +112,8 @@ class HistoricalData extends Command
                 $json         = json_decode($switch_block);
                 $era_id       = $json->result->block->header->era_id ?? 0;
                 $block_hash   = $json->result->block->hash ?? '';
+                $timestamp    = $json->result->block->header->timestamp ?? '';
+                $timestamp    = Carbon::parse($timestamp)->format('Y-m-d H:i:s');
 
                 if ($era_id == $historic_era) {
                     // start timer
@@ -310,7 +314,6 @@ class HistoricalData extends Command
 
                     // Primary DB insertion (time consuming)
                     info('Saving validator objects to DB...');
-                    $created_at = Carbon::now('UTC');
 
                     foreach ($data["validators"] as $v) {
                         DB::table('all_node_data2')->insert(
@@ -332,7 +335,7 @@ class HistoricalData extends Command
                                 'port8888_peers'               => $v["port8888_peers"],
                                 'port8888_build_version'       => $v["port8888_build_version"],
                                 'port8888_next_upgrade'        => $v["port8888_next_upgrade"],
-                                'created_at'                   => $created_at
+                                'created_at'                   => $timestamp
                             )
                         );
 
@@ -340,7 +343,7 @@ class HistoricalData extends Command
                         $earning = new DailyEarning();
                         $earning->node_address       = $public_key;
                         $earning->self_staked_amount = (int)$self_staked_amount;
-                        $earning->created_at         = Carbon::now('UTC');
+                        $earning->created_at         = $timestamp;
                         $earning->save();
 
                         // get difference between current self stake and yesterdays self stake
@@ -377,7 +380,7 @@ class HistoricalData extends Command
                             array(
                                 'era_id'     => $current_era_id,
                                 'mbs'        => $MBS,
-                                'created_at' => $created_at
+                                'created_at' => $timestamp
                             )
                         );
                     } else {
@@ -386,7 +389,7 @@ class HistoricalData extends Command
                             ->update(
                             array(
                                 'mbs'        => $MBS,
-                                'updated_at' => $created_at
+                                'updated_at' => $timestamp
                             )
                         );
                     }
