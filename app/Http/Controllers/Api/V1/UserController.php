@@ -1175,7 +1175,7 @@ class UserController extends Controller
         try {
             // Validator
             $validator = Validator::make($request->all(), [
-                'file' => 'required|mimes:pdf,docx,doc,txt,rtf|max:20000',
+                'file' => 'required|mimes:pdf,jpeg,jpg,png,txt,rtf|max:200000'
             ]);
 
             if ($validator->fails()) {
