@@ -36,7 +36,7 @@ class MetricController extends Controller
 
         $current_era_id = DB::select("
             SELECT era_id
-            FROM all_node_data
+            FROM all_node_data2
             ORDER BY era_id DESC
             LIMIT 1
         ");
@@ -44,39 +44,48 @@ class MetricController extends Controller
 
         $addresses = DB::select("
             SELECT 
-            a.public_key,
-            a.historical_performance AS uptime,
-            a.bid_delegators_count AS delegators,
-            a.port8888_peers AS peers,
-            a.bid_self_staked_amount, a.bid_total_staked_amount,
-            a.bad_mark, a.stable, a.in_auction
-            FROM all_node_data AS a
+            a.public_key, a.bid_delegators_count AS delegators,
+            a.bid_total_staked_amount, a.bid_self_staked_amount,
+            a.uptime, a.bid_inactive, a.in_current_era, a.in_auction
+            a.port8888_peers AS peers
+            FROM all_node_data2 AS a
             JOIN user_addresses AS b
             ON a.public_key = b.public_address_node
-            WHERE a.era_id = $current_era_id
+            JOIN users AS c
+            ON b.user_id    = c.id
+            WHERE a.era_id  = $current_era_id
             AND (
                 b.user_id    = $user_id OR
                 a.public_key = '$public_address_node'
             )
         ");
+
+        if (!$addresses) {
+            $addresses = array();
+        }
+
         $return_object['addresses'] = $addresses;
 
         foreach ($addresses as &$address) {
             $a = $address->public_key;
 
-            $eras_since_bad_mark = DB::select("
-                SELECT a.era_id
-                FROM all_node_data AS a
-                JOIN user_addresses AS b
-                ON a.public_key = b.public_address_node
-                WHERE a.public_key = '$a'
-                AND a.bad_mark = 1
+            $total_bad_marks = DB::select("
+                SELECT era_id
+                FROM all_node_data2
+                WHERE public_key = '$p'
+                AND (
+                    in_current_era = 0 OR
+                    bid_inactive   = 1
+                )
                 ORDER BY era_id DESC
-                LIMIT 1
             ");
-            $eras_since_bad_mark          = $eras_since_bad_mark[0]->era_id ?? 0;
-            $eras_since_bad_mark          = $current_era_id - $eras_since_bad_mark;
+
+            $eras_since_bad_mark = $total_bad_marks[0] ?? array();
+            $eras_since_bad_mark = $current_era_id - (int)($eras_since_bad_mark->era_id ?? 0);
+            $total_bad_marks     = count((array)$total_bad_marks);
+
             $address->eras_since_bad_mark = $eras_since_bad_mark;
+            $address->total_bad_marks     = $total_bad_marks;
         }
 
         $monitoring_criteria = DB::select("
