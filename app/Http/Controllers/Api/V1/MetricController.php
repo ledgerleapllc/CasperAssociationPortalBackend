@@ -28,12 +28,7 @@ class MetricController extends Controller
         $return_object       = array();
         $user = auth()->user()->load(['pagePermissions']);
         $user_id             = $user->id;
-        $public_address_node = $request->get('public_address_node');
-
-        if (!$public_address_node) {
-            $public_address_node = $user->public_address_node;
-        }
-
+        
         $current_era_id = DB::select("
             SELECT era_id
             FROM all_node_data2
@@ -54,10 +49,7 @@ class MetricController extends Controller
             JOIN users AS c
             ON c.id = b.user_id
             WHERE a.era_id  = $current_era_id
-            AND (
-                b.user_id    = $user_id OR
-                a.public_key = '$public_address_node'
-            )
+            AND b.user_id    = $user_id
         ");
         
         if (!$addresses) {
@@ -93,7 +85,16 @@ class MetricController extends Controller
             FROM monitoring_criteria
         ");
         $return_object['monitoring_criteria'] = $monitoring_criteria;
-        // info($return_object);
+        
+        $items = Setting::get();
+        $settings = [];
+        if ($items) {
+            foreach ($items as $item) {
+                $settings[$item->name] = $item->value;
+            }
+        }
+        $return_object['globalSettings'] = $settings;
+
         return $this->successResponse($return_object);
     }
 
