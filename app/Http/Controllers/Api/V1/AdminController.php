@@ -201,7 +201,7 @@ class AdminController extends Controller
 
         $return["column_count"] = $column_count + 1;
 
-        info($return);
+        // info($return);
         return $this->successResponse($return);
     }
 
@@ -350,7 +350,7 @@ class AdminController extends Controller
             $users = array();
         }
 
-        info($return);
+        // info($return);
         return $this->successResponse($return);
     }
 
@@ -588,7 +588,7 @@ class AdminController extends Controller
         ");
         $return["mbs"] = (int)($mbs[0]->mbs ?? 0);
 
-        info($return);
+        // info($return);
         return $this->successResponse($return);
     }
 
@@ -650,7 +650,7 @@ class AdminController extends Controller
                 $user->membership_status = $status;
             }
         }
-        info($users);
+        // info($users);
         return $this->successResponse($users);
         //// done
 
