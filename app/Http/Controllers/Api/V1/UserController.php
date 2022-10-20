@@ -914,7 +914,7 @@ class UserController extends Controller
             $historical_performance = ($uptime * ($window - $missed)) / $window;
 
             $return["addresses"][$p]   = array(
-                "uptime"              => $historical_performance,
+                "uptime"              => round($historical_performance, 2),
                 "eras_active"         => $current_era_id - $eras_active,
                 "eras_since_bad_mark" => $eras_since_bad_mark,
                 "total_bad_marks"     => $total_bad_marks
