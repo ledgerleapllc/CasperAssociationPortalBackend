@@ -40,6 +40,7 @@ use App\Models\UserAddress;
 use App\Models\VerifyUser;
 use App\Models\Vote;
 use App\Models\VoteResult;
+use App\Models\Setting;
 
 use App\Repositories\OwnerNodeRepository;
 use App\Repositories\ProfileRepository;
@@ -535,7 +536,7 @@ class UserController extends Controller
         $addresses_count      = count($addresses);
         $addresses_count      = $addresses_count ? $addresses_count : 1;
         $return["avg_uptime"] = round((float) ($return["avg_uptime"] / $addresses_count), 2);
-        
+
         // info($return);
         return $this->successResponse($return);
     }
@@ -1177,6 +1178,16 @@ class UserController extends Controller
         $user = auth()->user()->load(['profile', 'pagePermissions', 'permissions', 'shuftipro', 'shuftiproTemp']);
         Helper::getAccountInfoStandard($user);
         $user->metric = Helper::getNodeInfo($user);
+        
+        $items = Setting::get();
+        $settings = [];
+        if ($items) {
+            foreach ($items as $item) {
+                $settings[$item->name] = $item->value;
+            }
+        }
+        $user->globalSettings = $settings;
+        
         return $this->successResponse($user);
     }
 
