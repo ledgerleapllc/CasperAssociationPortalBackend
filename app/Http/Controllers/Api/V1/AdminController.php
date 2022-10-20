@@ -133,7 +133,8 @@ class AdminController extends Controller
             FROM all_node_data2 AS a
             JOIN user_addresses AS b
             ON a.public_key = b.public_address_node
-            WHERE a.era_id  > $era_minus_360 and a.era_id  = $current_era_id and b.user_id = $user_id
+            WHERE a.era_id  = $current_era_id
+            AND b.user_id   = $user_id
             ORDER BY a.era_id DESC
         ");
 
@@ -408,10 +409,10 @@ class AdminController extends Controller
             bid_delegators_count,
             bid_delegation_rate,
             bid_total_staked_amount
-            FROM all_node_data2
+            FROM  all_node_data2
             WHERE in_current_era = 1
-            AND in_next_era      = 1
-            AND in_auction       = 1
+            AND   in_next_era    = 1
+            AND   in_auction     = 1
         ");
         $max_delegators   = 0;
         $max_stake_amount = 0;
@@ -524,8 +525,6 @@ class AdminController extends Controller
                 ORDER BY era_id ASC
                 LIMIT 1
             ");
-
-            $total_eras = (int)($total_eras[0]->era_id ?? 0);
 
             $total_eras = (int)($total_eras[0]->era_id ?? 0);
             $total_eras = $current_era_id - $total_eras;
@@ -955,6 +954,32 @@ class AdminController extends Controller
 
         $response = $user->load(['profile', 'shuftipro']);
         return $this->successResponse($response);
+    }
+
+    public function bypassApproveKYC($user_id)
+    {
+        $user_id = (int)$user_id;
+        $now     = Carbon::now('UTC');
+
+        DB::table('users')
+            ->where('id', $user_id)
+            ->update(
+            array(
+                'kyc_verified_at'     => $now,
+                'approve_at'          => $now,
+                'kyc_bypass_approval' => 1
+            )
+        );
+
+        DB::table('profile')
+            ->where('user_id', $user_id)
+            ->update(
+            array(
+                'status' => 'approved'
+            )
+        );
+
+        return $this->metaSuccess();
     }
 
     // get intake

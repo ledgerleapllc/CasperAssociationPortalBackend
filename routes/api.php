@@ -133,6 +133,9 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             // New Eras page endpoint for specific selected user
             Route::get('/users/all-eras-user/{id}', [AdminController::class, 'allErasUser'])->where('id', '[0-9]+');
 
+            // New admin endpoint for manual kyc bypass approval
+            Route::post('/users/bypass-approve-kyc/{user_id}', [AdminController::class, 'bypassApproveKYC'])->where('user_id', '[0-9]+');
+
             Route::get('/users', [AdminController::class, 'getUsers']);
             Route::get('/users/{id}', [AdminController::class, 'getUserDetail'])->where('id', '[0-9]+');
             Route::get('/dashboard', [AdminController::class, 'infoDashboard']);
