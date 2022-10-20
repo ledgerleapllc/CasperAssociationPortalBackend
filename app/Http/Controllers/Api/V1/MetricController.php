@@ -93,7 +93,16 @@ class MetricController extends Controller
             FROM monitoring_criteria
         ");
         $return_object['monitoring_criteria'] = $monitoring_criteria;
-        // info($return_object);
+        
+        $items = Setting::get();
+        $settings = [];
+        if ($items) {
+            foreach ($items as $item) {
+                $settings[$item->name] = $item->value;
+            }
+        }
+        $return_object['globalSettings'] = $settings;
+        
         return $this->successResponse($return_object);
     }
 

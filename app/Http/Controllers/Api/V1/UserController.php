@@ -534,8 +534,8 @@ class UserController extends Controller
 
         $addresses_count      = count($addresses);
         $addresses_count      = $addresses_count ? $addresses_count : 1;
-        $return["avg_uptime"] = $return["avg_uptime"] / $addresses_count;
-
+        $return["avg_uptime"] = round((float) ($return["avg_uptime"] / $addresses_count), 2);
+        
         // info($return);
         return $this->successResponse($return);
     }
