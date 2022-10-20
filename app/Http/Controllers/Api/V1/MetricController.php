@@ -42,6 +42,7 @@ class MetricController extends Controller
         ");
         $current_era_id = (int)($current_era_id[0]->era_id ?? 0);
 
+        /*
         $addresses = DB::select("
             SELECT 
             a.public_key, a.bid_delegators_count AS delegators,
@@ -59,7 +60,26 @@ class MetricController extends Controller
                 a.public_key = '$public_address_node'
             )
         ");
+        */
 
+        $addresses = DB::select("
+            SELECT 
+            a.public_key, a.bid_delegators_count AS delegators,
+            a.bid_total_staked_amount, a.bid_self_staked_amount,
+            a.uptime, a.bid_inactive, a.in_current_era, a.in_auction,
+            a.port8888_peers AS peers
+            FROM all_node_data2 AS a
+            JOIN user_addresses AS b
+            ON b.public_address_node = a.public_key
+            JOIN users AS c
+            ON c.id = b.user_id
+            WHERE a.era_id  = $current_era_id
+            AND (
+                b.user_id    = $user_id OR
+                a.public_key = '$public_address_node'
+            )
+        ");
+        
         if (!$addresses) {
             $addresses = array();
         }
@@ -72,7 +92,7 @@ class MetricController extends Controller
             $total_bad_marks = DB::select("
                 SELECT era_id
                 FROM all_node_data2
-                WHERE public_key = '$p'
+                WHERE public_key = '$a'
                 AND (
                     in_current_era = 0 OR
                     bid_inactive   = 1
