@@ -201,7 +201,7 @@ class AdminController extends Controller
 
         $return["column_count"] = $column_count + 1;
 
-        info($return);
+        // info($return);
         return $this->successResponse($return);
     }
 
@@ -319,7 +319,11 @@ class AdminController extends Controller
             }
 
             $uptime                 = (float)($address->uptime ?? 0);
-            $historical_performance = ($uptime * ($window - $missed)) / $window;
+            $historical_performance = round(
+                ($uptime * ($window - $missed)) / $window,
+                2,
+                PHP_ROUND_HALF_UP
+            );
 
             $return["addresses"][$p]   = array(
                 "uptime"              => $historical_performance,
@@ -350,7 +354,7 @@ class AdminController extends Controller
             $users = array();
         }
 
-        info($return);
+        // info($return);
         return $this->successResponse($return);
     }
 
@@ -358,7 +362,7 @@ class AdminController extends Controller
         // Get current era
         $current_era_id = DB::select("
             SELECT era_id
-            FROM all_node_data
+            FROM all_node_data2
             ORDER BY era_id DESC
             LIMIT 1
         ");
@@ -404,11 +408,10 @@ class AdminController extends Controller
             bid_delegators_count,
             bid_delegation_rate,
             bid_total_staked_amount
-            FROM all_node_data
-            WHERE in_curent_era = 1
-            AND in_next_era     = 1
-            AND in_auction      = 1
-            AND bad_mark        = 0
+            FROM all_node_data2
+            WHERE in_current_era = 1
+            AND in_next_era      = 1
+            AND in_auction       = 1
         ");
         $max_delegators   = 0;
         $max_stake_amount = 0;
@@ -481,10 +484,9 @@ class AdminController extends Controller
             SELECT 
             a.public_key, a.bid_delegators_count,
             a.bid_total_staked_amount, a.bid_self_staked_amount,
-            a.historical_performance AS uptime,
-            a.port8888_peers AS peers,
-            a.bid_inactive, a.bad_mark, a.stable
-            FROM all_node_data AS a
+            a.uptime, a.bid_inactive, a.in_current_era,
+            a.port8888_peers AS peers
+            FROM all_node_data2 AS a
             JOIN user_addresses AS b
             ON a.public_key = b.public_address_node
             JOIN users AS c
@@ -500,33 +502,30 @@ class AdminController extends Controller
         foreach ($addresses as $address) {
             $a = $address->public_key ?? '';
 
-            $eras_since_bad_mark = DB::select("
-                SELECT a.era_id
-                FROM all_node_data AS a
-                JOIN user_addresses AS b
-                ON a.public_key = b.public_address_node
-                WHERE a.public_key = '$a'
-                AND a.bad_mark = 1
-                ORDER BY era_id DESC
-                LIMIT 1
-            ");
-            $eras_since_bad_mark = $eras_since_bad_mark[0]->era_id ?? 0;
-            $eras_since_bad_mark = $current_era_id - $eras_since_bad_mark;
-
             $total_bad_marks = DB::select("
-                SELECT bad_mark
-                FROM all_node_data
-                WHERE bad_mark = 1
-                AND public_key = '$a'
+                SELECT era_id
+                FROM all_node_data2
+                WHERE public_key = '$p'
+                AND (
+                    in_current_era = 0 OR
+                    bid_inactive   = 1
+                )
+                ORDER BY era_id DESC
             ");
+
+            $eras_since_bad_mark = $total_bad_marks[0] ?? array();
+            $eras_since_bad_mark = $current_era_id - (int)($eras_since_bad_mark->era_id ?? 0);
+            $total_bad_marks     = count((array)$total_bad_marks);
 
             $total_eras = DB::select("
                 SELECT era_id
-                FROM all_node_data
-                WHERE public_key = '$a'
+                FROM all_node_data2
+                WHERE public_key = '$p'
                 ORDER BY era_id ASC
                 LIMIT 1
             ");
+
+            $total_eras = (int)($total_eras[0]->era_id ?? 0);
 
             $total_eras = (int)($total_eras[0]->era_id ?? 0);
             $total_eras = $current_era_id - $total_eras;
@@ -535,7 +534,7 @@ class AdminController extends Controller
             $one_day_ago   = Carbon::now('UTC')->subHours(24);
             $daily_earning = DB::select("
                 SELECT bid_self_staked_amount
-                FROM all_node_data
+                FROM all_node_data2
                 WHERE public_key = '$a'
                 AND created_at < '$one_day_ago'
                 ORDER BY era_id DESC
@@ -551,8 +550,8 @@ class AdminController extends Controller
             $earning_year  = $nodeHelper->getValidatorRewards($a, 'year');
 
             if (
-                $address->bad_mark     == 1 ||
-                $address->bid_inactive == 1
+                $address->in_current_era == 0 ||
+                $address->bid_inactive   == 1
             ) {
                 $failing = 1;
             } else {
@@ -588,7 +587,7 @@ class AdminController extends Controller
         ");
         $return["mbs"] = (int)($mbs[0]->mbs ?? 0);
 
-        info($return);
+        // info($return);
         return $this->successResponse($return);
     }
 
@@ -650,7 +649,7 @@ class AdminController extends Controller
                 $user->membership_status = $status;
             }
         }
-        info($users);
+        // info($users);
         return $this->successResponse($users);
         //// done
 
@@ -743,7 +742,7 @@ class AdminController extends Controller
     {
         $current_era_id = DB::select("
             SELECT era_id
-            FROM all_node_data
+            FROM all_node_data2
             ORDER BY era_id DESC
             LIMIT 1
         ");
@@ -778,7 +777,7 @@ class AdminController extends Controller
         $total_stake        = DB::select("
             SELECT 
             SUM(a.bid_total_staked_amount)
-            FROM all_node_data AS a
+            FROM all_node_data2 AS a
             LEFT JOIN user_addresses AS b
             ON a.public_key = b.public_address_node
             WHERE a.era_id  = $current_era_id
@@ -791,7 +790,7 @@ class AdminController extends Controller
         $total_delegators   = DB::select("
             SELECT 
             SUM(a.bid_delegators_count)
-            FROM all_node_data AS a
+            FROM all_node_data2 AS a
             LEFT JOIN user_addresses AS b
             ON a.public_key = b.public_address_node
             WHERE a.era_id  = $current_era_id
@@ -803,9 +802,9 @@ class AdminController extends Controller
         // get avg uptime of all user nodes
         $uptime_nodes = DB::select("
             SELECT 
-            SUM(a.historical_performance) AS numerator,
-            COUNT(a.historical_performance) AS denominator
-            FROM all_node_data AS a
+            SUM(a.uptime) AS numerator,
+            COUNT(a.uptime) AS denominator
+            FROM all_node_data2 AS a
             LEFT JOIN user_addresses AS b
             ON a.public_key = b.public_address_node
             WHERE era_id    = $current_era_id
@@ -823,7 +822,7 @@ class AdminController extends Controller
         // get max peers
         $max_peers          = DB::select("
             SELECT MAX(a.port8888_peers) AS max_peers
-            FROM all_node_data AS a
+            FROM all_node_data2 AS a
             LEFT JOIN user_addresses AS b
             ON a.public_key = b.public_address_node
             WHERE era_id    = $current_era_id
@@ -854,15 +853,15 @@ class AdminController extends Controller
         // get failing member nodes
         $failing_nodes      = DB::select("
             SELECT 
-            a.bid_inactive, a.bad_mark
-            FROM all_node_data AS a
+            a.bid_inactive, a.in_current_era
+            FROM all_node_data2 AS a
             JOIN user_addresses AS b
             ON a.public_key = b.public_address_node
             WHERE a.era_id  = $current_era_id
             AND b.user_id IS NOT NULL
             AND (
-                a.bid_inactive = 1 OR
-                a.bad_mark     = 1
+                a.bid_inactive   = 1 OR
+                a.in_current_era = 0
             )
         ");
 
