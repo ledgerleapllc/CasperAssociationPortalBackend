@@ -958,26 +958,37 @@ class AdminController extends Controller
 
     public function bypassApproveKYC($user_id)
     {
-        $user_id = (int)$user_id;
+        $user_id = (int) $user_id;
         $now     = Carbon::now('UTC');
 
-        DB::table('users')
-            ->where('id', $user_id)
-            ->update(
-            array(
-                'kyc_verified_at'     => $now,
-                'approve_at'          => $now,
-                'kyc_bypass_approval' => 1
-            )
-        );
+        $user = User::find($user_id);
+        if ($user && $user->role == 'member') {
+            $user->kyc_verified_at = $now;
+            $user->approve_at = $now;
+            $user->kyc_bypass_approval = 1;
+            $user->save();
 
-        DB::table('profile')
-            ->where('user_id', $user_id)
-            ->update(
-            array(
-                'status' => 'approved'
-            )
-        );
+            $profile = Profile::where('user_id', $user_id)->first();
+            if (!$profile) {
+                $profile = new Profile;
+                $profile->user_id = $user_id;
+                $profile->first_name = $user->first_name;
+                $profile->last_name = $user->last_name;
+                $profile->type = $user->type;
+            }
+            $profile->status = 'approved';
+            $profile->save();
+        
+            $shuftipro = Shuftipro::where('user_id', $user_id)->first();
+            if (!$shuftipro) {
+                $shuftipro = new Shuftipro;
+                $shuftipro->user_id = $user_id;
+                $shuftipro->reference_id = 'ByPass#' . time();
+            }
+            $shuftipro->is_successful = 1;
+            $shuftipro->status = 'approved';
+            $shuftipro->save();
+        }
 
         return $this->metaSuccess();
     }
