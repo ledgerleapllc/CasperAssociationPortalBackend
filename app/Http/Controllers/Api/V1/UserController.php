@@ -364,7 +364,11 @@ class UserController extends Controller
             }
 
             $uptime                 = (float)($address->uptime ?? 0);
-            $historical_performance = ($uptime * ($window - $missed)) / $window;
+            $historical_performance = round(
+                ($uptime * ($window - $missed)) / $window,
+                2,
+                PHP_ROUND_HALF_UP
+            );
 
             if (
                 array_key_exists($p, $return["ranking"]) && (
@@ -512,7 +516,11 @@ class UserController extends Controller
             }
 
             $uptime                      = (float)($address->uptime ?? 0);
-            $historical_performance      = ($uptime * ($window - $missed)) / $window;
+            $historical_performance      = round(
+                ($uptime * ($window - $missed)) / $window,
+                2,
+                PHP_ROUND_HALF_UP
+            );
 
             $return["total_bad_marks"]  += $total_bad_marks;
             $return["peers"]            += (int)($address->peers ?? 0);
@@ -733,7 +741,11 @@ class UserController extends Controller
             }
 
             $uptime                 = (float)($address->uptime ?? 0);
-            $historical_performance = round(($uptime * ($window - $missed)) / $window, 2);
+            $historical_performance = round(
+                ($uptime * ($window - $missed)) / $window,
+                2,
+                PHP_ROUND_HALF_UP
+            );
 
             // Calc earning
             $one_day_ago   = Carbon::now('UTC')->subHours(24);
@@ -911,7 +923,11 @@ class UserController extends Controller
             }
 
             $uptime                 = (float)($address->uptime ?? 0);
-            $historical_performance = ($uptime * ($window - $missed)) / $window;
+            $historical_performance = round(
+                ($uptime * ($window - $missed)) / $window,
+                2,
+                PHP_ROUND_HALF_UP
+            );
 
             $return["addresses"][$p]   = array(
                 "uptime"              => $historical_performance,
