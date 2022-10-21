@@ -3027,7 +3027,32 @@ class UserController extends Controller
     public function getListNodesBy(Request $request)
     {
         $user = auth()->user();
-        $addresses = UserAddress::where('user_id', $user->id)->orderBy('id', 'asc')->get();
+        $addresses = $user->addresses ?? [];
+
+        $current_era_id = Helper::getCurrentERAId();
+        
+        foreach ($addresses as &$addressItem) {
+            $temp = AllNodeData2::select([
+                        'uptime',
+                        'bid_delegators_count',
+                        'bid_delegation_rate',
+                        'bid_self_staked_amount',
+                        'bid_total_staked_amount'
+                    ])
+                    ->where('public_key', $addressItem->public_address_node)
+                    ->where('era_id', $current_era_id)
+                    ->orderBy('id', 'desc')
+                    ->first()
+                    ->toArray();
+            if ($temp) {
+                foreach ($temp as $key => $value) {
+                    if ($key == 'uptime') $value = round((float) $value, 2);
+                    $addressItem->$key = $value;
+                }
+                $addressItem->update_responsiveness = 100;
+            }
+        }
+
         return $this->successResponse([
             'addresses' => $addresses,
         ]);
