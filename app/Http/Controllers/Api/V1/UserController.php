@@ -41,6 +41,7 @@ use App\Models\VerifyUser;
 use App\Models\Vote;
 use App\Models\VoteResult;
 use App\Models\Setting;
+use App\Models\AllNodeData2;
 
 use App\Repositories\OwnerNodeRepository;
 use App\Repositories\ProfileRepository;
@@ -2596,47 +2597,8 @@ class UserController extends Controller
         return $this->successResponse($users);
     }
 
-    public function getMemberDetail($id, Request $request)
-    {
-        $public_address_node = $request->get('public_address_node') ?? null;
-
-        $current_era_id = DB::select("
-            SELECT era_id
-            FROM all_node_data2
-            ORDER BY era_id DESC
-            LIMIT 1
-        ");
-        $current_era_id = (int)($current_era_id[0]->era_id ?? 0);
-
-        $response = DB::select("
-            SELECT 
-            a.public_address_node, a.node_verified_at,
-            b.email, b.first_name, b.last_name, b.created_at, 
-            b.kyc_verified_at, b.entity_name,
-            c.uptime, c.bid_delegators_count,
-            c.bid_delegation_rate, c.bid_self_staked_amount, c.bid_total_staked_amount,
-            d.casper_association_kyc_hash, d.blockchain_name, d.blockchain_desc
-            FROM user_addresses AS a 
-            JOIN users AS b 
-            ON a.user_id = b.id
-            JOIN all_node_data2 AS c
-            ON a.public_address_node = c.public_key
-            JOIN profile AS d
-            ON b.id = d.user_id
-            WHERE (
-                b.id         = $id AND
-                c.era_id     = $current_era_id
-            ) OR (
-                c.public_key = '$public_address_node' AND
-                c.era_id     = $current_era_id
-            )
-        ");
-        // info($response);
-        // return $this->successResponse($response);
-        //// done
-
+    public function getMemberDetail($id, Request $request) {
         $user = User::where('id', $id)->first();
-
         if (!$user || $user->role == 'admin') {
             return $this->errorResponse(
                 __('api.error.not_found'), 
@@ -2646,18 +2608,70 @@ class UserController extends Controller
 
         Helper::getAccountInfoStandard($user);
 
-        $user->metric = Helper::getNodeInfo($user, $public_address_node);
-        $response     = $user->load(['profile', 'addresses']);
+        $current_era_id = Helper::getCurrentERAId();
 
-        unset($response->last_login_at);
-        unset($response->last_login_ip_address);
-        unset($response->email_verified_at);
+        $response = [
+            'id' => $user->id,
+            'full_name' => $user->full_name,
+            'avatar_url' => $user->avatar_url,
+            'first_name' => $user->first_name,
+            'last_name' => $user->last_name,
+            'email' => $user->email,
+            'pseudonym' => $user->pseudonym,
+            'telegram' => $user->telegram,
+            'type' => $user->type,
+            'entity_name' => $user->entity_name,
+            'entity_type' => $user->entity_type,
+            'entity_register_number' => $user->entity_register_number,
+            'entity_register_country' => $user->entity_register_country,
+            'entity_tax' => $user->entity_tax,
+            'public_address_node' => $user->public_address_node,
+            'node_verified_at' => $user->node_verified_at,
+            'member_status' => $user->member_status,
+            'message_content' => $user->message_content,
+            'email_verified_at' => $user->email_verified_at,
+            'kyc_verified_at' => $user->kyc_verified_at,
+            'letter_verified_at' => $user->letter_verified_at,
+            'letter_rejected_at' => $user->letter_rejected_at,
+            'approve_at' => $user->approve_at,
+            'role' => $user->role,
+            'node_status' => $user->node_status
+        ];
 
-        if (isset($response->profile)) {
-            unset($response->profile->dob);
-            unset($response->profile->address);
-            unset($response->profile->city);
-            unset($response->profile->zip);
+        if ($user->profile) {
+            $response['profile'] = [
+                'id' => $user->profile->id,
+                'status' => $user->profile->status,
+                'extra_status' => $user->profile->extra_status,
+                'casper_association_kyc_hash' => $user->profile->casper_association_kyc_hash,
+                'blockchain_name' => $user->profile->blockchain_name,
+                'blockchain_desc' => $user->profile->blockchain_desc,
+                'type' => $user->profile->type
+            ];
+        }
+
+        $response['addresses'] = $user->addresses ?? [];
+
+        foreach ($response['addresses'] as &$addressItem) {
+            $temp = AllNodeData2::select([
+                        'uptime',
+                        'bid_delegators_count',
+                        'bid_delegation_rate',
+                        'bid_self_staked_amount',
+                        'bid_total_staked_amount'
+                    ])
+                    ->where('public_key', $addressItem->public_address_node)
+                    ->where('era_id', $current_era_id)
+                    ->orderBy('id', 'desc')
+                    ->first()
+                    ->toArray();
+            if ($temp) {
+                foreach ($temp as $key => $value) {
+                    if ($key == 'uptime') $value = round((float) $value, 2);
+                    $addressItem->$key = $value;
+                }
+                $addressItem->update_responsiveness = 100;
+            }
         }
 
         return $this->successResponse($response);

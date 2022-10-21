@@ -58,7 +58,6 @@ class NodeHelper
         $total_data      = array();
         $event_store_url = 'https://event-store-api-clarity-mainnet.make.services/relative-average-validator-performances?limit=100&page=1&era_id='.(string)($this_era_id - 1);
 
-
         // make initial request, get response
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $event_store_url);
