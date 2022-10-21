@@ -2648,6 +2648,10 @@ class UserController extends Controller
                 'blockchain_desc' => $user->profile->blockchain_desc,
                 'type' => $user->profile->type
             ];
+        } else {
+            $response['profile'] = [
+                'type' => $user->type
+            ];
         }
 
         $response['addresses'] = $user->addresses ?? [];
