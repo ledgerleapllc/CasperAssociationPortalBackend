@@ -2332,13 +2332,7 @@ class UserController extends Controller
 
     public function getMembers(Request $request)
     {
-        $current_era_id = DB::select("
-            SELECT era_id
-            FROM all_node_data2
-            ORDER BY era_id DESC
-            LIMIT 1
-        ");
-        $current_era_id = (int)($current_era_id[0]->era_id ?? 0);
+        $current_era_id = Helper::getCurrentERAId();
 
         $members = DB::table('users')
             ->select(
@@ -2416,12 +2410,8 @@ class UserController extends Controller
             );
         }
 
-        // info($members);
         return $this->successResponse($members);
-        //// done
-
-
-
+        
         $search = $request->search;
         $limit  = $request->limit ?? 50;
 
@@ -2430,7 +2420,7 @@ class UserController extends Controller
         $slide_value_delegotors            = $request->delegators ?? 0;
         $slide_value_stake_amount          = $request->stake_amount ?? 0;
         $slide_delegation_rate             = $request->delegation_rate ?? 0;
-
+        
         $max_uptime     = Node::max('uptime');
         $max_uptime     = $max_uptime * 100;
         $max_delegators = NodeInfo::max('delegators_count');
