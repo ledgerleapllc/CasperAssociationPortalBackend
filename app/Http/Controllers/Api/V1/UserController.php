@@ -2333,6 +2333,7 @@ class UserController extends Controller
     public function getMembers(Request $request)
     {
         $current_era_id = Helper::getCurrentERAId();
+        $search = $request->search;
 
         $members = DB::table('users')
             ->select(
@@ -2362,6 +2363,13 @@ class UserController extends Controller
                 'users.banned' => 0,
                 'all_node_data2.era_id' => $current_era_id
             ])
+            ->where(function ($query) use ($search) {
+                if ($search) {
+                    $query->where('users.first_name', 'like', '%' . $search . '%')
+                        ->orWhere('users.last_name', 'like', '%' . $search . '%')
+                        ->orWhere('users.pseudonym', 'like', '%' . $search . '%');
+                }
+            })
             ->get();
 
         $max_delegators   = 0;
@@ -2412,7 +2420,6 @@ class UserController extends Controller
 
         return $this->successResponse($members);
         
-        $search = $request->search;
         $limit  = $request->limit ?? 50;
 
         $slide_value_uptime                = $request->uptime ?? 0;
