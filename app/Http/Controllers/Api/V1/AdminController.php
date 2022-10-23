@@ -784,13 +784,7 @@ class AdminController extends Controller
 
     public function infoDashboard(Request $request)
     {
-        $current_era_id = DB::select("
-            SELECT era_id
-            FROM all_node_data2
-            ORDER BY era_id DESC
-            LIMIT 1
-        ");
-        $current_era_id = (int)($current_era_id[0]->era_id ?? 0);
+        $current_era_id = Helper::getCurrentERAId();
 
         // define return object
         $return = array(
@@ -862,7 +856,7 @@ class AdminController extends Controller
 
         // get avg responsiveness
         $avg_responsiveness = 100;
-
+        
         // get max peers
         $max_peers          = DB::select("
             SELECT MAX(a.port8888_peers) AS max_peers
