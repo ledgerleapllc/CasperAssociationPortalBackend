@@ -568,7 +568,7 @@ class AdminController extends Controller
                 "daily_earning"         => $daily_earning,
                 "total_eras"            => $total_eras,
                 "eras_since_bad_mark"   => $eras_since_bad_mark,
-                "total_bad_marks"       => count($total_bad_marks ?? array()),
+                "total_bad_marks"       => $total_bad_marks,
                 "failing"               => $failing,
                 "validator_rewards"     => array(
                     "day"               => $earning_day,
