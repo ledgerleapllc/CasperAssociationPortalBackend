@@ -22,6 +22,20 @@ use App\Services\Blake2b;
 
 class Helper
 {
+	public static function getCurrentERAId() {
+		$record = DB::select("
+            SELECT era_id
+            FROM all_node_data2
+            ORDER BY era_id DESC
+            LIMIT 1
+        ");
+        if ($record && count($record) > 0) {
+        	$current_era_id = (int) ($record[0]->era_id ?? 0);
+        	return $current_era_id;
+        }
+        return 0;
+	}
+
 	public static function isAccessBlocked($user, $page) {
 		if ($user->role == 'admin') return false;
 		$flag = false;

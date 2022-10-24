@@ -42,6 +42,7 @@ use App\Models\VerifyUser;
 use App\Models\Vote;
 use App\Models\VoteResult;
 use App\Models\ContactRecipient;
+use App\Models\AllNodeData2;
 
 use App\Services\NodeHelper;
 
@@ -709,24 +710,8 @@ class AdminController extends Controller
         $user = $user->load(['pagePermissions', 'profile', 'shuftipro', 'shuftiproTemp']);
         
         $status = 'Not Verified';
-
         if ($user->profile && $user->profile->status == 'approved') {
             $status = 'Verified';
-
-            if ($user->profile->extra_status) {
-                $status = $user->profile->extra_status;
-            }
-        }
-
-        $user   = $user->load(['profile', 'shuftipro', 'shuftiproTemp']);
-        $status = 'Not Verified';
-
-        if (
-            $user->profile && 
-            $user->profile->status == 'approved'
-        ) {
-            $status = 'Verified';
-
             if ($user->profile->extra_status) {
                 $status = $user->profile->extra_status;
             }
@@ -734,18 +719,72 @@ class AdminController extends Controller
 
         $user->membership_status = $status;
         $user->metric            = Helper::getNodeInfo($user);
+
+        $addresses = $user->addresses ?? [];
+        $current_era_id = Helper::getCurrentERAId();
+
+        foreach ($addresses as &$addressItem) {
+            $temp = AllNodeData2::select([
+                        'uptime',
+                        'bid_delegators_count',
+                        'bid_delegation_rate',
+                        'bid_self_staked_amount',
+                        'bid_total_staked_amount'
+                    ])
+                    ->where('public_key', $addressItem->public_address_node)
+                    ->where('era_id', $current_era_id)
+                    ->orderBy('id', 'desc')
+                    ->first()
+                    ->toArray();
+            if ($temp) {
+                foreach ($temp as $key => $value) {
+                    if ($key == 'uptime') $value = round((float) $value, 2);
+                    $addressItem->$key = $value;
+                }
+                $addressItem->update_responsiveness = 100;
+                $p = $addressItem->public_address_node;
+
+                $total_bad_marks = DB::select("
+                    SELECT era_id
+                    FROM all_node_data2
+                    WHERE public_key = '$p'
+                    AND (
+                        in_current_era = 0 OR
+                        bid_inactive   = 1
+                    )
+                    ORDER BY era_id DESC
+                ");
+
+                $eras_active = DB::select("
+                    SELECT era_id
+                    FROM all_node_data2
+                    WHERE public_key = '$p'
+                    ORDER BY era_id ASC
+                    LIMIT 1
+                ");
+                $eras_active = (int)($eras_active[0]->era_id ?? 0);
+
+                $eras_since_bad_mark = $total_bad_marks[0] ?? array();
+                $eras_since_bad_mark = $current_era_id - (int) ($eras_since_bad_mark->era_id ?? 0);
+                $total_bad_marks     = count((array)$total_bad_marks);
+                
+                $addressItem->eras_since_bad_mark = $eras_since_bad_mark;
+                $addressItem->total_bad_marks     = $total_bad_marks;
+                $addressItem->eras_active = 0;
+                if ($current_era_id > $eras_active) {
+                    $addressItem->eras_active = $current_era_id - $eras_active;
+                }
+            }
+        }
+
+        $user->addresses = $addresses;
+
         return $this->successResponse($user);
     }
 
     public function infoDashboard(Request $request)
     {
-        $current_era_id = DB::select("
-            SELECT era_id
-            FROM all_node_data2
-            ORDER BY era_id DESC
-            LIMIT 1
-        ");
-        $current_era_id = (int)($current_era_id[0]->era_id ?? 0);
+        $current_era_id = Helper::getCurrentERAId();
 
         // define return object
         $return = array(
@@ -817,7 +856,7 @@ class AdminController extends Controller
 
         // get avg responsiveness
         $avg_responsiveness = 100;
-
+        
         // get max peers
         $max_peers          = DB::select("
             SELECT MAX(a.port8888_peers) AS max_peers
