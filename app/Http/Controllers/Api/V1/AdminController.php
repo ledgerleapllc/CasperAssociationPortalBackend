@@ -508,7 +508,7 @@ class AdminController extends Controller
             $total_bad_marks = DB::select("
                 SELECT era_id
                 FROM all_node_data2
-                WHERE public_key = '$p'
+                WHERE public_key = '$a'
                 AND (
                     in_current_era = 0 OR
                     bid_inactive   = 1
@@ -523,7 +523,7 @@ class AdminController extends Controller
             $total_eras = DB::select("
                 SELECT era_id
                 FROM all_node_data2
-                WHERE public_key = '$p'
+                WHERE public_key = '$a'
                 ORDER BY era_id ASC
                 LIMIT 1
             ");
