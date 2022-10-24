@@ -411,7 +411,8 @@ class AdminController extends Controller
             bid_delegation_rate,
             bid_total_staked_amount
             FROM  all_node_data2
-            WHERE in_current_era = 1
+            WHERE era_id         = $current_era_id
+            AND   in_current_era = 1
             AND   in_next_era    = 1
             AND   in_auction     = 1
         ");
