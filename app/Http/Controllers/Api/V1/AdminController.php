@@ -406,7 +406,7 @@ class AdminController extends Controller
         $ranking = DB::select("
             SELECT
             public_key, 
-            historical_performance AS uptime,
+            uptime,
             bid_delegators_count,
             bid_delegation_rate,
             bid_total_staked_amount
@@ -650,49 +650,6 @@ class AdminController extends Controller
             }
         }
         // info($users);
-        return $this->successResponse($users);
-        //// done
-
-        $limit          = $request->limit ?? 50;
-        $sort_key       = $request->sort_key ?? 'created_at';
-        $sort_direction = $request->sort_direction ?? 'desc';
-
-        $users = User::where('role', 'member')
-            ->with(['profile'])
-            ->leftJoin('node_info', 'users.public_address_node', '=', 'node_info.node_address')
-            ->select([
-                'users.*',
-                'node_info.delegation_rate',
-                'node_info.delegators_count',
-                'node_info.self_staked_amount',
-                'node_info.total_staked_amount',
-            ])
-            ->get();
-
-        foreach ($users as $user) {
-            $status = 'Not Verified';
-
-            if ($user->profile && $user->profile->status == 'approved') {
-                $status = 'Verified';
-
-                if ($user->profile->extra_status) {
-                    $status = $user->profile->extra_status;
-                }
-            }
-
-            $user->membership_status = $status;
-        }
-
-        if ($sort_direction == 'desc') {
-            $users = $users->sortByDesc($sort_key)->values();
-        } else {
-            $users = $users->sortBy($sort_key)->values();
-        }
-
-        $users         = Helper::paginate($users, $limit, $request->page);
-        $users         = $users->toArray();
-        $users['data'] = (collect($users['data'])->values());
-
         return $this->successResponse($users);
     }
 
