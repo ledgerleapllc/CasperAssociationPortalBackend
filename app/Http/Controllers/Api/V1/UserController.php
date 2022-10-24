@@ -1050,26 +1050,6 @@ class UserController extends Controller
         ");
         // info($members);
         return $this->successResponse($members);
-        //// done
-
-
-
-
-        $data  = [];
-        $limit = $request->limit ?? 50;
-        $data  = User::select([
-            'users.id',
-            'users.pseudonym',
-            'users.public_address_node',
-            'users.node_status',
-            'profile.extra_status',
-        ])
-        ->join('profile', 'profile.user_id', '=', 'users.id')
-        ->where('profile.status', 'approved')
-        ->whereNotNull('users.public_address_node')
-        ->paginate($limit);
-        // info($data);
-        return $this->successResponse($data);
     }
 
     // Shuftipro Webhook
