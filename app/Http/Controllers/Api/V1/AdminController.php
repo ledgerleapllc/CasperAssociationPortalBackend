@@ -618,12 +618,14 @@ class AdminController extends Controller
             ON c.public_key = user_addresses.public_address_node
         */
 
+        $current_era_id = Helper::getCurrentERAId();
+
         $query = "
             SELECT 
             a.id, a.first_name, a.last_name, a.email,
             a.pseudonym, a.telegram, a.email_verified_at,
             a.entity_name, a.last_login_at, a.created_at,
-            a.signature_request_id, a.node_verified_at,
+            a.signature_request_id, a.node_status, a.node_verified_at,
             a.member_status, a.kyc_verified_at,
             b.dob, b.country_citizenship, b.country_residence,
             b.status AS profile_status, b.extra_status,
@@ -645,6 +647,9 @@ class AdminController extends Controller
                 break;
                 case 'membership_status':
                     $sort_key = 'b.status';
+                break;
+                case 'node_status':
+                    $sort_key = 'a.node_status';
                 break;
                 case 'email':
                     $sort_key = 'a.email';
@@ -682,6 +687,18 @@ class AdminController extends Controller
                 }
 
                 $user->membership_status = $status;
+                $userId = (int) $user->id;
+
+                $temp = DB::select("
+                    SELECT sum(a.bid_self_staked_amount) as self_staked_amount
+                    FROM all_node_data2 as a
+                    JOIN user_addresses as b ON b.public_address_node = a.public_key
+                    WHERE b.user_id = $userId and a.era_id = $current_era_id
+                ");
+
+                $self_staked_amount = 0;
+                if ($temp && count($temp) > 0) $self_staked_amount = (float) $temp[0]->self_staked_amount;
+                $user->self_staked_amount = round($self_staked_amount, 2);
             }
         }
 
