@@ -617,7 +617,8 @@ class AdminController extends Controller
             JOIN all_node_data AS c
             ON c.public_key = user_addresses.public_address_node
         */
-        $users = DB::select("
+
+        $query = "
             SELECT 
             a.id, a.first_name, a.last_name, a.email,
             a.pseudonym, a.telegram, a.email_verified_at,
@@ -632,8 +633,41 @@ class AdminController extends Controller
             LEFT JOIN profile AS b
             ON a.id = b.user_id
             WHERE a.role = 'member'
-            ORDER BY a.id asc
-        ");
+        ";
+
+        $sort_key = $request->get('sort_key');
+        $sort_direction = $request->get('sort_direction');
+
+        if ($sort_key && $sort_direction) {
+            switch ($sort_key) {
+                case 'id':
+                    $sort_key = 'a.id';
+                break;
+                case 'membership_status':
+                    $sort_key = 'b.status';
+                break;
+                case 'email':
+                    $sort_key = 'a.email';
+                break;
+                case 'entity_name':
+                    $sort_key = 'a.entity_name';
+                break;
+                case 'full_name':
+                    $sort_key = 'a.first_name';
+                break;
+                case 'created_at':
+                    $sort_key = 'a.created_at';
+                break;
+                default:
+                    $sort_key = 'a.id';
+                break;
+            }
+            $query .= " ORDER BY " . $sort_key . " " . $sort_direction;
+        } else {
+            $query .= " ORDER BY a.id asc";
+        }
+
+        $users = DB::select($query);
 
         if ($users) {
             foreach ($users as &$user) {
@@ -650,7 +684,7 @@ class AdminController extends Controller
                 $user->membership_status = $status;
             }
         }
-        // info($users);
+
         return $this->successResponse($users);
     }
 
