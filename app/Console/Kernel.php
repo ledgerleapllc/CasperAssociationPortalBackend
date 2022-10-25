@@ -25,15 +25,16 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // $schedule->command('inspire')->hourly();
-        $schedule->command('ballot:check')
-            ->everyMinute()
-            ->runInBackground();
         /*
         $schedule->command('shuftipro:check')
             ->everyFiveMinutes()
             ->runInBackground();
         // ->withoutOverlapping();
         */
+
+        $schedule->command('ballot:check')
+            ->everyMinute()
+            ->runInBackground();
         $schedule->command('perk:check')
             ->everyThirtyMinutes()
             ->runInBackground();
@@ -46,16 +47,14 @@ class Kernel extends ConsoleKernel
         $schedule->command('token-price:check')
             ->everyThirtyMinutes()
             ->runInBackground();
+        /*
         $schedule->command('node-info')
             ->everyFifteenMinutes()
             ->runInBackground();
+        */
         $schedule->command('refresh:address')
             ->everyFiveMinutes()
             ->runInBackground();
-
-        /**
-         * Added by blockchainthomas. Cron for alerting admins of members stuck at KYC on a daily basis
-         */
         $schedule->command('kyc:report')
             ->dailyAt('10:02')
             ->runInBackground();

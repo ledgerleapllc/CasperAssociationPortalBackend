@@ -340,7 +340,7 @@ class NodeHelper
         // get node ips from peers
         // $port8888_responses = $this->discoverPeers();
         $port8888_responses = array();
-
+        
         // get auction state from trusted node RPC
         $curl = curl_init();
 

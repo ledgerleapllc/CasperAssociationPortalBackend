@@ -19,7 +19,7 @@ class CheckNodeStatus extends Command
      * @var string
      */
     protected $signature = 'node-status:check';
-
+    
     /**
      * The console command description.
      *
@@ -79,7 +79,7 @@ class CheckNodeStatus extends Command
                         ->where('role', 'member')
                         ->where('banned', 0)
                         ->get();
-
+                        
         foreach ($users as $user) {
             $user->node_status = 'Online';
             $user->save();

@@ -746,7 +746,6 @@ class AdminController extends Controller
                     )
                     ORDER BY era_id DESC
                 ");
-
                 $eras_active = DB::select("
                     SELECT era_id
                     FROM all_node_data2
