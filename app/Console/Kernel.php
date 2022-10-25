@@ -31,7 +31,7 @@ class Kernel extends ConsoleKernel
             ->runInBackground();
         // ->withoutOverlapping();
         */
-
+        
         $schedule->command('ballot:check')
             ->everyMinute()
             ->runInBackground();
