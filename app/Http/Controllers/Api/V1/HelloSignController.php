@@ -29,7 +29,6 @@ class HelloSignController extends Controller
 
         // hellosign test check
         $callback_test = $data['event']['event_type'] ?? '';
-
         if ($callback_test == 'callback_test') {
             return "Hello API Event Received";
         }
@@ -57,16 +56,15 @@ class HelloSignController extends Controller
             //     null, 
             //     \HelloSign\SignatureRequest::FILE_TYPE_PDF
             // );
-            // info($sig_link);
-
+            
             $user = User::where('signature_request_id', $signature_request_id)->first();
 
             if ($user) {
                 $user->hellosign_form = '';
                 $user->save();
             }
-
-            return "Hello API Event Received";
         }
+
+        return "Hello API Event Received";
     }
 }
