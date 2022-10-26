@@ -990,10 +990,11 @@ class AdminController extends Controller
 
     public function bypassApproveKYC($user_id)
     {
-        $user_id = (int) $user_id;
-        $now     = Carbon::now('UTC');
+        $user_id    = (int) $user_id;
+        $user       = User::find($user_id);
+        $now        = Carbon::now('UTC');
+        $admin_user = auth()->user();
 
-        $user = User::find($user_id);
         if ($user && $user->role == 'member') {
             $user->kyc_verified_at = $now;
             $user->approve_at = $now;
@@ -1001,6 +1002,7 @@ class AdminController extends Controller
             $user->save();
 
             $profile = Profile::where('user_id', $user_id)->first();
+
             if (!$profile) {
                 $profile = new Profile;
                 $profile->user_id = $user_id;
@@ -1008,17 +1010,21 @@ class AdminController extends Controller
                 $profile->last_name = $user->last_name;
                 $profile->type = $user->type;
             }
+
             $profile->status = 'approved';
             $profile->save();
-        
             $shuftipro = Shuftipro::where('user_id', $user_id)->first();
+
             if (!$shuftipro) {
                 $shuftipro = new Shuftipro;
                 $shuftipro->user_id = $user_id;
                 $shuftipro->reference_id = 'ByPass#' . time();
             }
+
             $shuftipro->is_successful = 1;
             $shuftipro->status = 'approved';
+            $shuftipro->manual_approved_at = $now;
+            $shuftipro->manual_reviewer = $admin_user->pseudonym;
             $shuftipro->save();
         }
 
