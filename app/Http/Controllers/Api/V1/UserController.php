@@ -1015,7 +1015,7 @@ class UserController extends Controller
                 } else {
                     $events = [
                         'verification.accepted',
-                        'verification.declined',
+                        'verification.declined'
                     ];
 
                     if (isset($data['event']) && in_array($data['event'], $events)) {
