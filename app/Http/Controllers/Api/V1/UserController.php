@@ -93,38 +93,14 @@ class UserController extends Controller
         $this->failed_verification_response = 'Failed verification';
     }
 
-    /**
-     *
-     * Get all data required to populate user dashboard
-     * 
-     * 1. Rank out of Total
-     * 2. Total stake across all user's nodes
-     * 3. Total self stake across all user's nodes
-     * 4. Total delegators across all user's nodes
-     * 5. New avg uptime for all user's node
-     * 6. ERAs active for oldest user's node
-     * 7. ERAs sinse bad mark across all user's nodes
-     * 8. Total bad marks across all user's nodes
-     * 9. Update Responsiveness for main node
-     * 10. Total peers across all nodes
-     * 11. Association members, verified/total counts
-     * 
-     */
     public function getUserDashboard() {
         $user    = auth()->user();
         $user_id = $user->id ?? 0;
 
-        // Get current era
-        $current_era_id = DB::select("
-            SELECT era_id
-            FROM all_node_data2
-            ORDER BY era_id DESC
-            LIMIT 1
-        ");
-        $current_era_id = (int)($current_era_id[0]->era_id ?? 0);
+        $current_era_id = Helper::getCurrentERAId();
 
         // Define complete return object
-        $return = array(
+        $return = [
             "node_rank"               => 0,
             "node_rank_total"         => 100,
             "total_stake"             => 0,
@@ -138,9 +114,9 @@ class UserController extends Controller
             "peers"                   => 0,
             "total_members"           => 0,
             "verified_members"        => 0,
-            "association_members"     => array(),
-            "ranking"                 => array()
-        );
+            "association_members"     => [],
+            "ranking"                 => []
+        ];
 
         // get all active members
         $association_members = DB::select("
@@ -155,17 +131,15 @@ class UserController extends Controller
             ON b.user_id = c.id
             JOIN profile AS d
             ON c.id = d.user_id
-            WHERE a.era_id = $current_era_id
+            WHERE a.era_id = $current_era_id and d.status = 'approved'
         ");
 
         if (!$association_members) {
-            $association_members = array();
+            $association_members = [];
         }
 
         foreach ($association_members as $member) {
-            if ($member->status == 'approved') {
-                $return["association_members"][] = $member;
-            }
+            $return["association_members"][] = $member;
         }
 
         // get verified members count
@@ -176,8 +150,7 @@ class UserController extends Controller
             ON a.id = b.user_id
             WHERE b.status = 'approved'
         ");
-        $verified_members           = $verified_members ? count($verified_members) : 0;
-        $return["verified_members"] = $verified_members;
+        $return["verified_members"] = $verified_members ? count($verified_members) : 0;
 
         // get total members count
         $total_members = DB::select("
@@ -185,8 +158,7 @@ class UserController extends Controller
             FROM users
             WHERE role = 'member'
         ");
-        $total_members           = $total_members ? count($total_members) : 0;
-        $return["total_members"] = $total_members;
+        $return["total_members"] = $total_members ? count($total_members) : 0;
 
         // find rank
         $ranking = DB::select("
@@ -395,7 +367,6 @@ class UserController extends Controller
         // remove ranking object. not needed
         unset($return["ranking"]);
 
-        // info($return);
         return $this->successResponse($return);
     }
 
@@ -537,7 +508,6 @@ class UserController extends Controller
         $addresses_count      = $addresses_count ? $addresses_count : 1;
         $return["avg_uptime"] = round((float) ($return["avg_uptime"] / $addresses_count), 2);
 
-        // info($return);
         return $this->successResponse($return);
     }
 
@@ -2277,6 +2247,7 @@ class UserController extends Controller
 
         return $this->successResponse($members);
         
+        /*
         $limit  = $request->limit ?? 50;
 
         $slide_value_uptime                = $request->uptime ?? 0;
@@ -2449,6 +2420,7 @@ class UserController extends Controller
         $users = $users->sortByDesc($sort_key)->values();
         $users = Helper::paginate($users, $limit, $request->page);
         return $this->successResponse($users);
+        */
     }
 
     public function getMemberDetail($id, Request $request) {
