@@ -32,54 +32,6 @@ class BlockAccessFunctionsTest extends TestCase
                 ]);
     }
 
-    public function testGetMetric() {
-        $tokenData = $this->getUserTokenData();
-        $user = $tokenData['user'];
-        $token = $tokenData['token'];
-
-        $this->unBlockAccess($user->id, 'nodes');
-
-        $response = $this->withHeaders([
-            'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $token,
-        ])->json('get', '/api/v1/users/metrics');
-        
-        $apiResponse = $response->baseResponse->getData();
-        $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'message',
-                    'data',
-                ]);
-
-        $data = $apiResponse->data;
-        $this->assertTrue(is_object($data) && property_exists($data, 'avg_uptime'));
-    }
-
-    /*
-    public function testBlockedGetMetric() {
-        $tokenData = $this->getUserTokenData();
-        $user = $tokenData['user'];
-        $token = $tokenData['token'];
-
-        $this->blockAccess($user->id, 'nodes');
-
-        $response = $this->withHeaders([
-            'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $token,
-        ])->json('get', '/api/v1/users/metrics');
-
-        $apiResponse = $response->baseResponse->getData();
-        $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'message',
-                    'data',
-                ]);
-
-        $data = $apiResponse->data;
-        $this->assertTrue(!(is_object($data) && property_exists($data, 'avg_uptime')));
-    }
-    */
-
     public function testGetPerks() {
         $tokenData = $this->getUserTokenData();
         $user = $tokenData['user'];

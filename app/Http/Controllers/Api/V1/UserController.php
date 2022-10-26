@@ -9,7 +9,6 @@ use App\Http\EmailerHelper;
 
 use App\Http\Requests\Api\AddOwnerNodeRequest;
 use App\Http\Requests\Api\ChangeEmailRequest;
-use App\Http\Requests\Api\ChangePasswordRequest;
 use App\Http\Requests\Api\ResendEmailRequest;
 use App\Http\Requests\Api\SubmitKYCRequest;
 use App\Http\Requests\Api\SubmitPublicAddressRequest;
@@ -1098,16 +1097,6 @@ class UserController extends Controller
         }
     }
 
-    public function changePassword(ChangePasswordRequest $request)
-    {
-        $user = auth()->user();
-        if (Hash::check($request->new_password, $user->password))
-            return $this->errorResponse(__('api.error.not_same_current_password'), Response::HTTP_BAD_REQUEST);
-        $newPassword = bcrypt($request->new_password);
-        $user->update(['password' => $newPassword]);
-        return $this->metaSuccess();
-    }
-
     public function getProfile()
     {
         $user = auth()->user()->load(['profile', 'pagePermissions', 'permissions', 'shuftipro', 'shuftiproTemp']);
@@ -1124,12 +1113,6 @@ class UserController extends Controller
         $user->globalSettings = $settings;
         
         return $this->successResponse($user);
-    }
-
-    public function logout()
-    {
-        auth()->user()->token()->revoke();
-        return $this->metaSuccess();
     }
 
     public function uploadLetter(Request $request)
@@ -1676,56 +1659,6 @@ class UserController extends Controller
         $user->reset_kyc = 0;
         $user->save();
         return $this->metaSuccess();
-    }
-
-    public function getOwnerNodes()
-    {
-        $user   = auth()->user();
-        $owners = OwnerNode::where('user_id', $user->id)->get();
-
-        foreach ($owners as $owner) {
-            $email     = $owner->email;
-            $userOwner = User::where('email', $email)->first();
-
-            if ($userOwner) {
-                $owner->kyc_verified_at = $userOwner->kyc_verified_at;
-            } else {
-                $owner->kyc_verified_at = null;
-            }
-        }
-
-        $data                    = [];
-        $data['kyc_verified_at'] = $user->kyc_verified_at;
-        $data['owner_node']      = $owners;
-
-        return $this->successResponse($data);
-    }
-
-    public function resendEmailOwnerNodes(ResendEmailRequest $request)
-    {
-        $user   = auth()->user();
-        $email  = $request->email;
-        $owners = OwnerNode::where('user_id', $user->id)
-            ->where('email', $email)
-            ->first();
-
-        if ($owners) {
-            $userOwner = User::where('email', $email)->first();
-
-            if (!$userOwner) {
-                $url      = $request->header('origin') ?? $request->root();
-                $resetUrl = $url . '/register-type';
-
-                Mail::to($email)->send(new AddNodeMail($resetUrl));
-            }
-        } else {
-            return $this->errorResponse(
-                'Email does not exist', 
-                Response::HTTP_BAD_REQUEST
-            );
-        }
-
-        return $this->successResponse(null);
     }
 
     // Save Shuftipro Temp

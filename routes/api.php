@@ -69,24 +69,19 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             
             // New endpoint for User voting eligibility check
             Route::get('/users/can-vote', [UserController::class, 'canVote']);
-            
+
             Route::post('/users/verify-email', [AuthController::class, 'verifyEmail']);
             Route::post('/users/resend-verify-email', [AuthController::class, 'resendVerifyEmail']);
             Route::post('/users/change-email', [UserController::class, 'changeEmail']);
-            Route::post('/users/change-password', [UserController::class, 'changePassword']);
             Route::get('/users/profile', [UserController::class, 'getProfile']);
-            Route::post('/users/logout', [UserController::class, 'logout']);
             Route::post('users/hellosign-request', [UserController::class, 'sendHellosignRequest']);
             Route::post('users/submit-public-address', [UserController::class, 'submitPublicAddress']);
             Route::post('users/check-public-address', [UserController::class, 'checkPublicAddress']);
             Route::post('users/verify-file-casper-signer', [UserController::class, 'verifyFileCasperSigner']);
             Route::post('users/verify-file-casper-signer-2', [UserController::class, 'verifyFileCasperSigner2']);
             Route::post('users/submit-kyc', [UserController::class, 'functionSubmitKYC']);
-            Route::get('users/owner-node', [UserController::class, 'getOwnerNodes']);
-            Route::post('users/resend-invite-owner', [UserController::class, 'resendEmailOwnerNodes']);
             Route::get('users/message-content', [UserController::class, 'getMessageContent']);
             Route::post('users/shuftipro-temp',  [UserController::class, 'saveShuftiproTemp']);
-            // Route::put('users/shuftipro-temp', [UserController::class, 'updateShuftiproTemp']);
             Route::put('users/shuftipro-temp/delete', [UserController::class, 'deleteShuftiproTemp']);
             Route::post('/users/upload-letter',  [UserController::class, 'uploadLetter']);
             Route::get('users/votes', [UserController::class, 'getVotes']);
@@ -107,7 +102,6 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             
             // rules lock
             Route::get('/users/lock-rules',  [UserController::class, 'getLockRules']);
-            // Route::get('users/list-node', [UserController::class, 'getListNodes']);
             Route::get('users/list-node-by', [UserController::class, 'getListNodesBy']);
             Route::get('users/dashboard', [UserController::class, 'infoDashboard']);
 
