@@ -78,11 +78,6 @@ class BlockAccessFunctionsTest extends TestCase
         $this->assertTrue(!(is_object($data) && property_exists($data, 'current_page')));
     }
 
-    /*
-    public function testCreatePerk() {
-    }
-    */
-
     public function testBlockedGetPerksDetail() {
         $tokenData = $this->getUserTokenData();
         $user = $tokenData['user'];
