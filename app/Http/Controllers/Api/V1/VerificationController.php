@@ -42,8 +42,7 @@ class VerificationController extends Controller
                 'entity_name' => 'required',
                 'entity_type' => 'required',
                 'entity_registration_number' => 'required',
-                'entity_registration_country' => 'required',
-                'vat_number' => 'required'
+                'entity_registration_country' => 'required'
             ]);
             if ($validator2->fails()) {
                 return $this->validateResponse($validator2->errors());
@@ -53,7 +52,7 @@ class VerificationController extends Controller
             $profile->entity_type = $request->entity_type;
             $profile->entity_registration_number = $request->entity_registration_number;
             $profile->entity_registration_country = $request->entity_registration_country;
-            $profile->vat_number = $request->vat_number;
+            $profile->vat_number = $request->vat_number ?? null;
         } else {
             $profile->entity_name = null;
             $profile->entity_type = null;
