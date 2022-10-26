@@ -175,15 +175,4 @@ class VerificationController extends Controller
             return $this->errorResponse(__('Failed upload file'), Response::HTTP_BAD_REQUEST, $ex->getMessage());
         }
     }
-
-    public function removeDocument($id) {  
-        $user = auth()->user();
-        $documentFile = DocumentFile::where('user_id', $user->id)->where('id', $id)->first();
-        if ($documentFile) {
-            Storage::delete($documentFile->path);
-            $documentFile->delete();
-        }
-        $response = DocumentFile::where('user_id', $user->id)->get();
-        return $this->successResponse($response);
-    }
 }

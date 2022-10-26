@@ -988,21 +988,6 @@ class AdminController extends Controller
         return $this->successResponse($return);
     }
 
-    public function getKYC($id)
-    {
-        $user = User::with(['shuftipro', 'profile'])->where('id', $id)->first();
-
-        if (!$user || $user->role == 'admin') {
-            return $this->errorResponse(
-                __('api.error.not_found'), 
-                Response::HTTP_NOT_FOUND
-            );
-        }
-
-        $response = $user->load(['profile', 'shuftipro']);
-        return $this->successResponse($response);
-    }
-
     public function bypassApproveKYC($user_id)
     {
         $user_id = (int) $user_id;
@@ -1963,6 +1948,7 @@ class AdminController extends Controller
         );
     }
 
+    /*
     public function refreshLinks($id)
     {
         $url       = 'https://api.shuftipro.com/status';
@@ -2037,28 +2023,7 @@ class AdminController extends Controller
             'success' => false,
         ]);
     }
-
-    public function banAndDenyUser($id)
-    {
-        $user = User::with(['shuftipro', 'profile'])
-            ->where('id', $id)
-            ->where('users.role', 'member')
-            ->where('banned', 0)
-            ->first();
-
-        if ($user && $user->profileT) {
-            $user->profile->status = 'denied';
-            $user->profile->save();
-            $user->banned = 1;
-            $user->save();
-            return $this->metaSuccess();
-        }
-
-        return $this->errorResponse(
-            'Fail deny and ban user', 
-            Response::HTTP_BAD_REQUEST
-        );
-    }
+    */
 
     public function getVerificationDetail($id)
     {
@@ -2108,28 +2073,6 @@ class AdminController extends Controller
 
         return $this->errorResponse(
             'Fail approve document', 
-            Response::HTTP_BAD_REQUEST
-        );
-    }
-
-    public function activeUser($id)
-    {
-        $user = User::with(['profile'])
-            ->where('id', $id)
-            ->where('users.role', 'member')
-            ->where('banned', 0)
-            ->first();
-
-        if ($user && $user->profile) {
-            $user->profile->status = 'approved';
-            $user->profile->save();
-            $user->approve_at = now();
-            $user->save();
-            return $this->metaSuccess();
-        }
-
-        return $this->errorResponse(
-            'Fail active document', 
             Response::HTTP_BAD_REQUEST
         );
     }
@@ -2239,40 +2182,6 @@ class AdminController extends Controller
         return ['success' => false];
     }
 
-    public function getMonitoringCriteria(Request $request)
-    {
-        $data = MonitoringCriteria::get();
-        return $this->successResponse($data);
-    }
-
-    public function updateMonitoringCriteria($type, Request $request)
-    {
-        $record = MonitoringCriteria::where('type', $type)->first();
-
-        if ($record) {
-            $validator = Validator::make($request->all(), [
-                'warning_level' => 'required|integer',
-                'probation_start' => 'required',
-                'given_to_correct_unit' => 'required|in:Weeks,Days,Hours',
-                'given_to_correct_value' => 'required|integer',
-            ]);
-
-            if ($validator->fails()) {
-                return $this->validateResponse($validator->errors());
-            }
-
-            $record->warning_level          = $request->warning_level;
-            $record->probation_start        = $request->probation_start;
-            $record->given_to_correct_unit  = $request->given_to_correct_unit;
-            $record->given_to_correct_value = $request->given_to_correct_value;
-            $record->save();
-
-            return ['success' => true];
-        }
-
-        return ['success' => false];
-    }
-
     public function updateLockRules(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
@@ -2288,141 +2197,6 @@ class AdminController extends Controller
         $rule->save();
 
         return ['success' => true];
-    }
-
-    public function getLockRules()
-    {
-        $ruleKycNotVerify = LockRules::where('type', 'kyc_not_verify')
-            ->orderBy('id', 'ASC')
-            ->select(['id', 'screen', 'is_lock'])
-            ->get();
-
-        $ruleStatusIsPoor = LockRules::where('type', 'status_is_poor')
-            ->orderBy('id', 'ASC')
-            ->select(['id', 'screen', 'is_lock'])
-            ->get();
-
-        $data = [
-            'kyc_not_verify' => $ruleKycNotVerify,
-            'status_is_poor' => $ruleStatusIsPoor,
-        ];
-
-        return $this->successResponse($data);
-    }
-
-    public function getListNodes(Request $request)
-    {
-        $current_era_id = DB::select("
-            SELECT era_id
-            FROM all_node_data2
-            ORDER BY era_id DESC
-            LIMIT 1
-        ");
-        $current_era_id = (int)($current_era_id[0]->era_id ?? 0);
-
-        // define return object
-        $return = array(
-            "nodes"           => array(),
-            "ranking"         => array(),
-            "node_rank_total" => 100
-        );
-
-        // find rank
-        $ranking = DB::select("
-            SELECT
-            public_key, uptime,
-            bid_delegators_count,
-            bid_delegation_rate,
-            bid_total_staked_amount
-            FROM all_node_data2
-            WHERE era_id       = $current_era_id
-            AND in_current_era = 1
-            AND in_next_era    = 1
-            AND in_auction     = 1
-        ");
-        $max_delegators       = 0;
-        $max_stake_amount     = 0;
-
-        foreach ($ranking as $r) {
-            if ((int)$r->bid_delegators_count > $max_delegators) {
-                $max_delegators   = (int)$r->bid_delegators_count;
-            }
-
-            if ((int)$r->bid_total_staked_amount > $max_stake_amount) {
-                $max_stake_amount = (int)$r->bid_total_staked_amount;
-            }
-        }
-
-        foreach ($ranking as $r) {
-            $uptime_score     = (
-                25 * (float)$r->uptime
-            ) / 100;
-            $uptime_score     = $uptime_score < 0 ? 0 : $uptime_score;
-
-            $fee_score        = (
-                25 * 
-                (1 - ((float)$r->bid_delegation_rate / 100))
-            );
-            $fee_score        = $fee_score < 0 ? 0 : $fee_score;
-
-            $count_score      = (
-                (float)$r->bid_delegators_count / 
-                $max_delegators
-            ) * 25;
-            $count_score      = $count_score < 0 ? 0 : $count_score;
-
-            $stake_score      = (
-                (float)$r->bid_total_staked_amount / 
-                $max_stake_amount
-            ) * 25;
-            $stake_score      = $stake_score < 0 ? 0 : $stake_score;
-
-            $return["ranking"][$r->public_key] = (
-                $uptime_score +
-                $fee_score    +
-                $count_score  + 
-                $stake_score
-            );
-        }
-
-        uasort(
-            $return["ranking"],
-            function($x, $y) {
-                if ($x == $y) {
-                    return 0;
-                }
-
-                return ($x > $y) ? -1 : 1;
-            }
-        );
-
-        $sorted_ranking = array();
-        $i = 1;
-
-        foreach ($return["ranking"] as $public_key => $score) {
-            $sorted_ranking[$public_key] = $i;
-            $i += 1;
-        }
-
-        $return["ranking"]         = $sorted_ranking;
-        $return["node_rank_total"] = count($sorted_ranking);
-
-        $return["nodes"]           = DB::select("
-            SELECT
-            a.public_address_node, 
-            b.id, 
-            b.pseudonym, 
-            c.blockchain_name, 
-            c.blockchain_desc 
-            FROM user_addresses AS a 
-            JOIN users AS b 
-            ON a.user_id = b.id 
-            JOIN profile AS c 
-            ON b.id = c.user_id 
-            WHERE b.banned = 0
-        ");
-        // info($nodes);
-        return $this->successResponse($return);
     }
 
     // Get GraphInfo
@@ -2542,11 +2316,5 @@ class AdminController extends Controller
                 $ex->getMessage()
             );
         }
-    }
-
-    public function getMembershipFile()
-    {
-        $membershipAgreementFile = MembershipAgreementFile::first();
-        return $this->successResponse($membershipAgreementFile);
     }
 }

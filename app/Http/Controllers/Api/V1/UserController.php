@@ -1006,52 +1006,6 @@ class UserController extends Controller
         return $this->successResponse($return);
     }
 
-    public function getMemberCountInfo() {
-        $data = [
-            'total' => 0,
-            'verified' => 0,
-        ];
-
-        $data['total'] = User::count();
-        $data['verified'] = User::join('profile', 'profile.user_id', '=', 'users.id')
-                                ->where('profile.status', 'approved')
-                                ->whereNotNull('users.public_address_node')
-                                ->get()
-                                ->count();
-        return $this->successResponse($data);
-    }
-
-    // Get Verified Members
-    public function getVerifiedMembers(Request $request) {
-        $user = auth()->user();
-
-        $current_era_id = DB::select("
-            SELECT era_id
-            FROM all_node_data2
-            ORDER BY era_id DESC
-            LIMIT 1
-        ");
-        $current_era_id = (int)($current_era_id[0]->era_id ?? 0);
-
-        $members = DB::select("
-            SELECT
-            a.public_key,
-            c.id, c.pseudonym, c.node_status,
-            d.extra_status
-            FROM all_node_data2 AS a
-            JOIN user_addresses AS b
-            ON a.public_key = b.public_address_node
-            JOIN users AS c
-            ON b.user_id = c.id
-            JOIN profile AS d
-            ON c.id = d.user_id
-            WHERE d.status = 'approved'
-            AND a.era_id = $current_era_id
-        ");
-        // info($members);
-        return $this->successResponse($members);
-    }
-
     // Shuftipro Webhook
     public function updateShuftiproStatus() {
         $json = file_get_contents('php://input');
@@ -1724,18 +1678,6 @@ class UserController extends Controller
         return $this->metaSuccess();
     }
 
-    public function verifyOwnerNode(Request $request)
-    {
-        $user = auth()->user();
-
-        $this->profileRepo->updateConditions(
-            ['type_owner_node' => $request->type],
-            ['user_id' => $user->id]
-        );
-
-        return $this->metaSuccess();
-    }
-
     public function getOwnerNodes()
     {
         $user   = auth()->user();
@@ -1843,6 +1785,7 @@ class UserController extends Controller
     }
 
     // Update Shuftipro Temp Status
+    /*
     public function updateShuftiProTemp(Request $request)
     {
         $user = auth()->user();
@@ -1887,6 +1830,7 @@ class UserController extends Controller
             Response::HTTP_BAD_REQUEST
         );
     }
+    */
 
     // get vote list
     public function getVotes(Request $request)
@@ -3035,6 +2979,7 @@ class UserController extends Controller
         ]);
     }
 
+    /*
     public function getListNodes(Request $request)
     {
         $user    = auth()->user();
@@ -3173,6 +3118,7 @@ class UserController extends Controller
 
         return $this->successResponse($nodes);
     }
+    */
 
     public function infoDashboard()
     {
@@ -3205,6 +3151,7 @@ class UserController extends Controller
         return $this->successResponse($response);
     }
 
+    /*
     public function getEarningByNode($node)
     {
         $node     = strtolower($node);
@@ -3263,7 +3210,9 @@ class UserController extends Controller
             ]);
         }
     }
+    */
 
+    /*
     public function getChartEarningByNode($node)
     {
         $node = strtolower($node);
@@ -3286,6 +3235,7 @@ class UserController extends Controller
             return $this->successResponse(null);
         }
     }
+    */
 
     public function getMembershipFile()
     {
@@ -3297,14 +3247,6 @@ class UserController extends Controller
     {
         $user = auth()->user();
         $user->membership_agreement = 1;
-        $user->save();
-        return $this->metaSuccess();
-    }
-
-    public function checkResetKyc()
-    {
-        $user = auth()->user();
-        $user->reset_kyc = 0;
         $user->save();
         return $this->metaSuccess();
     }

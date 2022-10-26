@@ -42,14 +42,6 @@ class ContactController extends Controller
         return $this->metaSuccess();
     }
 
-    public function getContactRecipients(Request $request)
-    {
-        $sort_key = $request->sort_key ?? 'created_at';
-        $sort_direction = $request->sort_direction ?? 'desc';
-        $contactRecipients = ContactRecipient::orderBy($sort_key, $sort_direction)->get();
-        return $this->successResponse($contactRecipients);
-    }
-
     public function addContactRecipients(Request $request)
     {
         $validator = Validator::make($request->all(), [
