@@ -153,27 +153,6 @@ class UserFunctionsTest extends TestCase
                     'data',
                 ]);
     }
-
-    public function testChangePassword() {
-        $token = $this->getUserToken();
-
-        $params = [
-            'new_password' => 'TestIndividual111New@',
-        ];
-
-        $response = $this->withHeaders([
-            'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $token,
-        ])->json('post', '/api/v1/users/change-password', $params);
-
-        // $apiResponse = $response->baseResponse->getData();
-
-        $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'message',
-                    'data',
-                ]);
-    }
     
     public function testGetProfile() {
         $token = $this->getUserToken();
@@ -182,23 +161,6 @@ class UserFunctionsTest extends TestCase
             'Accept' => 'application/json',
             'Authorization' => 'Bearer ' . $token,
         ])->json('get', '/api/v1/users/profile');
-
-        // $apiResponse = $response->baseResponse->getData();
-
-        $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'message',
-                    'data',
-                ]);
-    }
-
-    public function testLogout() {
-        $token = $this->getUserToken();
-
-        $response = $this->withHeaders([
-            'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $token,
-        ])->json('post', '/api/v1/users/logout');
 
         // $apiResponse = $response->baseResponse->getData();
 
@@ -467,23 +429,6 @@ class UserFunctionsTest extends TestCase
                 ]);
     }
 
-    public function testListNodes() {
-        $token = $this->getUserToken();
-
-        $response = $this->withHeaders([
-            'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $token,
-        ])->json('get', '/api/v1/users/list-node');
-        
-        // $apiResponse = $response->baseResponse->getData();
-        
-        $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'message',
-                    'data',
-                ]);
-    }
-
     public function testListNodesBy() {
         $token = $this->getUserToken();
 
@@ -535,6 +480,7 @@ class UserFunctionsTest extends TestCase
                 ]);
     }
 
+    /*
     public function testGetEarningByNode() {
         $node = '011117189c666f81c5160cd610ee383dc9b2d0361f004934754d39752eedc64957';
         $token = $this->getUserToken($node);
@@ -552,7 +498,9 @@ class UserFunctionsTest extends TestCase
                     'data',
                 ]);
     }
+    */
 
+    /*
     public function testGetChartEarningByNode() {
         $node = '011117189c666f81c5160cd610ee383dc9b2d0361f004934754d39752eedc64957';
         $token = $this->getUserToken($node);
@@ -570,57 +518,7 @@ class UserFunctionsTest extends TestCase
                     'data',
                 ]);
     }
-
-    public function testGetMemberCountInfo() {
-        $token = $this->getUserToken();
-
-        $response = $this->withHeaders([
-            'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $token,
-        ])->json('get', '/api/v1/member-count-info');
-
-        // $apiResponse = $response->baseResponse->getData();
-
-        $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'message',
-                    'data',
-                ]);
-    }
-
-    public function testGetVerifiedMembers() {
-        $token = $this->getUserToken();
-
-        $response = $this->withHeaders([
-            'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $token,
-        ])->json('get', '/api/v1/verified-members/all');
-
-        // $apiResponse = $response->baseResponse->getData();
-
-        $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'message',
-                    'data',
-                ]);
-    }
-
-    public function testCheckResetKYC() {
-        $token = $this->getUserToken();
-
-        $response = $this->withHeaders([
-            'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $token,
-        ])->json('post', '/api/v1/users/check-reset-kyc');
-
-        // $apiResponse = $response->baseResponse->getData();
-
-        $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'message',
-                    'data',
-                ]);
-    }
+    */
 
     public function testMembershipAgreement() {
         $token = $this->getUserToken();

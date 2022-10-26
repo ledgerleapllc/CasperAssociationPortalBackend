@@ -8,6 +8,7 @@ use Tests\TestCase;
 
 class AdminFunctionsTest extends TestCase
 {
+    /*
     public function testConsoleCommand() {
         $node = '011117189c666f81c5160cd610ee383dc9b2d0361f004934754d39752eedc64957';
         $token = $this->getUserToken();
@@ -23,6 +24,7 @@ class AdminFunctionsTest extends TestCase
 
         $this->artisan('node-info')->assertSuccessful();
     }
+    */
 
     public function testGetGraphInfo() {
         $response = $this->withHeaders([
@@ -83,41 +85,6 @@ class AdminFunctionsTest extends TestCase
 
         // $apiResponse = $response->baseResponse->getData();
 
-        $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'message',
-                    'data',
-                ]);
-    }
-    
-    public function testGetKYC() {
-        $token = $this->getAdminToken();
-        $user = $this->addUser();
-
-        $response = $this->withHeaders([
-            'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $token,
-        ])->json('get', '/api/v1/admin/users/' . $user->id . '/kyc');
-
-        // $apiResponse = $response->baseResponse->getData();
-        
-        $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'message',
-                    'data',
-                ]);
-    }
-
-    public function testListNode() {
-        $token = $this->getAdminToken();
-
-        $response = $this->withHeaders([
-            'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $token,
-        ])->json('get', '/api/v1/admin/list-node');
-        
-        // $apiResponse = $response->baseResponse->getData();
-        
         $response->assertStatus(200)
                 ->assertJsonStructure([
                     'message',

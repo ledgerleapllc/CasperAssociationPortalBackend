@@ -9,6 +9,7 @@ use App\Models\NodeInfo;
 use App\Models\Profile;
 use App\Models\Shuftipro;
 use App\Models\User;
+use App\Models\Setting;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -22,6 +23,17 @@ use App\Services\Blake2b;
 
 class Helper
 {
+	public static function getSettings() {
+		$items = Setting::get();
+        $settings = [];
+        if ($items) {
+            foreach ($items as $item) {
+                $settings[$item->name] = $item->value;
+            }
+        }
+        return $settings;
+	}
+
 	public static function getCurrentERAId() {
 		$record = DB::select("
             SELECT era_id

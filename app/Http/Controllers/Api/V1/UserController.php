@@ -9,7 +9,6 @@ use App\Http\EmailerHelper;
 
 use App\Http\Requests\Api\AddOwnerNodeRequest;
 use App\Http\Requests\Api\ChangeEmailRequest;
-use App\Http\Requests\Api\ChangePasswordRequest;
 use App\Http\Requests\Api\ResendEmailRequest;
 use App\Http\Requests\Api\SubmitKYCRequest;
 use App\Http\Requests\Api\SubmitPublicAddressRequest;
@@ -94,38 +93,14 @@ class UserController extends Controller
         $this->failed_verification_response = 'Failed verification';
     }
 
-    /**
-     *
-     * Get all data required to populate user dashboard
-     * 
-     * 1. Rank out of Total
-     * 2. Total stake across all user's nodes
-     * 3. Total self stake across all user's nodes
-     * 4. Total delegators across all user's nodes
-     * 5. New avg uptime for all user's node
-     * 6. ERAs active for oldest user's node
-     * 7. ERAs sinse bad mark across all user's nodes
-     * 8. Total bad marks across all user's nodes
-     * 9. Update Responsiveness for main node
-     * 10. Total peers across all nodes
-     * 11. Association members, verified/total counts
-     * 
-     */
     public function getUserDashboard() {
         $user    = auth()->user();
         $user_id = $user->id ?? 0;
 
-        // Get current era
-        $current_era_id = DB::select("
-            SELECT era_id
-            FROM all_node_data2
-            ORDER BY era_id DESC
-            LIMIT 1
-        ");
-        $current_era_id = (int)($current_era_id[0]->era_id ?? 0);
+        $current_era_id = Helper::getCurrentERAId();
 
         // Define complete return object
-        $return = array(
+        $return = [
             "node_rank"               => 0,
             "node_rank_total"         => 100,
             "total_stake"             => 0,
@@ -139,9 +114,9 @@ class UserController extends Controller
             "peers"                   => 0,
             "total_members"           => 0,
             "verified_members"        => 0,
-            "association_members"     => array(),
-            "ranking"                 => array()
-        );
+            "association_members"     => [],
+            "ranking"                 => []
+        ];
 
         // get all active members
         $association_members = DB::select("
@@ -156,17 +131,15 @@ class UserController extends Controller
             ON b.user_id = c.id
             JOIN profile AS d
             ON c.id = d.user_id
-            WHERE a.era_id = $current_era_id
+            WHERE a.era_id = $current_era_id and d.status = 'approved'
         ");
 
         if (!$association_members) {
-            $association_members = array();
+            $association_members = [];
         }
 
         foreach ($association_members as $member) {
-            if ($member->status == 'approved') {
-                $return["association_members"][] = $member;
-            }
+            $return["association_members"][] = $member;
         }
 
         // get verified members count
@@ -177,8 +150,7 @@ class UserController extends Controller
             ON a.id = b.user_id
             WHERE b.status = 'approved'
         ");
-        $verified_members           = $verified_members ? count($verified_members) : 0;
-        $return["verified_members"] = $verified_members;
+        $return["verified_members"] = $verified_members ? count($verified_members) : 0;
 
         // get total members count
         $total_members = DB::select("
@@ -186,8 +158,7 @@ class UserController extends Controller
             FROM users
             WHERE role = 'member'
         ");
-        $total_members           = $total_members ? count($total_members) : 0;
-        $return["total_members"] = $total_members;
+        $return["total_members"] = $total_members ? count($total_members) : 0;
 
         // find rank
         $ranking = DB::select("
@@ -396,7 +367,6 @@ class UserController extends Controller
         // remove ranking object. not needed
         unset($return["ranking"]);
 
-        // info($return);
         return $this->successResponse($return);
     }
 
@@ -538,7 +508,6 @@ class UserController extends Controller
         $addresses_count      = $addresses_count ? $addresses_count : 1;
         $return["avg_uptime"] = round((float) ($return["avg_uptime"] / $addresses_count), 2);
 
-        // info($return);
         return $this->successResponse($return);
     }
 
@@ -1006,52 +975,6 @@ class UserController extends Controller
         return $this->successResponse($return);
     }
 
-    public function getMemberCountInfo() {
-        $data = [
-            'total' => 0,
-            'verified' => 0,
-        ];
-
-        $data['total'] = User::count();
-        $data['verified'] = User::join('profile', 'profile.user_id', '=', 'users.id')
-                                ->where('profile.status', 'approved')
-                                ->whereNotNull('users.public_address_node')
-                                ->get()
-                                ->count();
-        return $this->successResponse($data);
-    }
-
-    // Get Verified Members
-    public function getVerifiedMembers(Request $request) {
-        $user = auth()->user();
-
-        $current_era_id = DB::select("
-            SELECT era_id
-            FROM all_node_data2
-            ORDER BY era_id DESC
-            LIMIT 1
-        ");
-        $current_era_id = (int)($current_era_id[0]->era_id ?? 0);
-
-        $members = DB::select("
-            SELECT
-            a.public_key,
-            c.id, c.pseudonym, c.node_status,
-            d.extra_status
-            FROM all_node_data2 AS a
-            JOIN user_addresses AS b
-            ON a.public_key = b.public_address_node
-            JOIN users AS c
-            ON b.user_id = c.id
-            JOIN profile AS d
-            ON c.id = d.user_id
-            WHERE d.status = 'approved'
-            AND a.era_id = $current_era_id
-        ");
-        // info($members);
-        return $this->successResponse($members);
-    }
-
     // Shuftipro Webhook
     public function updateShuftiproStatus() {
         $json = file_get_contents('php://input');
@@ -1144,16 +1067,6 @@ class UserController extends Controller
         }
     }
 
-    public function changePassword(ChangePasswordRequest $request)
-    {
-        $user = auth()->user();
-        if (Hash::check($request->new_password, $user->password))
-            return $this->errorResponse(__('api.error.not_same_current_password'), Response::HTTP_BAD_REQUEST);
-        $newPassword = bcrypt($request->new_password);
-        $user->update(['password' => $newPassword]);
-        return $this->metaSuccess();
-    }
-
     public function getProfile()
     {
         $user = auth()->user()->load(['profile', 'pagePermissions', 'permissions', 'shuftipro', 'shuftiproTemp']);
@@ -1170,12 +1083,6 @@ class UserController extends Controller
         $user->globalSettings = $settings;
         
         return $this->successResponse($user);
-    }
-
-    public function logout()
-    {
-        auth()->user()->token()->revoke();
-        return $this->metaSuccess();
     }
 
     public function uploadLetter(Request $request)
@@ -1724,68 +1631,6 @@ class UserController extends Controller
         return $this->metaSuccess();
     }
 
-    public function verifyOwnerNode(Request $request)
-    {
-        $user = auth()->user();
-
-        $this->profileRepo->updateConditions(
-            ['type_owner_node' => $request->type],
-            ['user_id' => $user->id]
-        );
-
-        return $this->metaSuccess();
-    }
-
-    public function getOwnerNodes()
-    {
-        $user   = auth()->user();
-        $owners = OwnerNode::where('user_id', $user->id)->get();
-
-        foreach ($owners as $owner) {
-            $email     = $owner->email;
-            $userOwner = User::where('email', $email)->first();
-
-            if ($userOwner) {
-                $owner->kyc_verified_at = $userOwner->kyc_verified_at;
-            } else {
-                $owner->kyc_verified_at = null;
-            }
-        }
-
-        $data                    = [];
-        $data['kyc_verified_at'] = $user->kyc_verified_at;
-        $data['owner_node']      = $owners;
-
-        return $this->successResponse($data);
-    }
-
-    public function resendEmailOwnerNodes(ResendEmailRequest $request)
-    {
-        $user   = auth()->user();
-        $email  = $request->email;
-        $owners = OwnerNode::where('user_id', $user->id)
-            ->where('email', $email)
-            ->first();
-
-        if ($owners) {
-            $userOwner = User::where('email', $email)->first();
-
-            if (!$userOwner) {
-                $url      = $request->header('origin') ?? $request->root();
-                $resetUrl = $url . '/register-type';
-
-                Mail::to($email)->send(new AddNodeMail($resetUrl));
-            }
-        } else {
-            return $this->errorResponse(
-                'Email does not exist', 
-                Response::HTTP_BAD_REQUEST
-            );
-        }
-
-        return $this->successResponse(null);
-    }
-
     // Save Shuftipro Temp
     public function saveShuftiproTemp(Request $request)
     {
@@ -1843,6 +1688,7 @@ class UserController extends Controller
     }
 
     // Update Shuftipro Temp Status
+    /*
     public function updateShuftiProTemp(Request $request)
     {
         $user = auth()->user();
@@ -1887,6 +1733,7 @@ class UserController extends Controller
             Response::HTTP_BAD_REQUEST
         );
     }
+    */
 
     // get vote list
     public function getVotes(Request $request)
@@ -2400,6 +2247,7 @@ class UserController extends Controller
 
         return $this->successResponse($members);
         
+        /*
         $limit  = $request->limit ?? 50;
 
         $slide_value_uptime                = $request->uptime ?? 0;
@@ -2572,6 +2420,7 @@ class UserController extends Controller
         $users = $users->sortByDesc($sort_key)->values();
         $users = Helper::paginate($users, $limit, $request->page);
         return $this->successResponse($users);
+        */
     }
 
     public function getMemberDetail($id, Request $request) {
@@ -3035,6 +2884,7 @@ class UserController extends Controller
         ]);
     }
 
+    /*
     public function getListNodes(Request $request)
     {
         $user    = auth()->user();
@@ -3173,6 +3023,7 @@ class UserController extends Controller
 
         return $this->successResponse($nodes);
     }
+    */
 
     public function infoDashboard()
     {
@@ -3205,6 +3056,7 @@ class UserController extends Controller
         return $this->successResponse($response);
     }
 
+    /*
     public function getEarningByNode($node)
     {
         $node     = strtolower($node);
@@ -3263,7 +3115,9 @@ class UserController extends Controller
             ]);
         }
     }
+    */
 
+    /*
     public function getChartEarningByNode($node)
     {
         $node = strtolower($node);
@@ -3286,6 +3140,7 @@ class UserController extends Controller
             return $this->successResponse(null);
         }
     }
+    */
 
     public function getMembershipFile()
     {
@@ -3297,14 +3152,6 @@ class UserController extends Controller
     {
         $user = auth()->user();
         $user->membership_agreement = 1;
-        $user->save();
-        return $this->metaSuccess();
-    }
-
-    public function checkResetKyc()
-    {
-        $user = auth()->user();
-        $user->reset_kyc = 0;
         $user->save();
         return $this->metaSuccess();
     }
