@@ -1024,7 +1024,7 @@ class AdminController extends Controller
             $shuftipro->is_successful = 1;
             $shuftipro->status = 'approved';
             $shuftipro->manual_approved_at = $now;
-            $shuftipro->manual_reviewer = $admin_user->pseudonym;
+            $shuftipro->manual_reviewer = $admin_user->email;
             $shuftipro->save();
         }
 
