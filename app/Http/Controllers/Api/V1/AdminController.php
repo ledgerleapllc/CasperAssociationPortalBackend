@@ -1299,7 +1299,7 @@ class AdminController extends Controller
         $startDate      = $now->format('Y-m-d');
         $startTime      = $now->format('H:i:s');
 
-        if ($status == 'active') {    
+        if ($status == 'active') {
             $ballots = Ballot::with(['user', 'vote'])
                 ->where('ballot.status', 'active')
                 ->where(function ($query) use ($startDate, $startTime) {
