@@ -61,7 +61,7 @@ class AuthController extends Controller
         exit(Hash::make('ledgerleapllc'));
     }
 
-    /*
+    
     public function devVerifyNode($address)
     {
         $query = DB::select("
@@ -103,7 +103,7 @@ class AuthController extends Controller
 
         return $this->metaSuccess();
     }
-    */
+    
 
     /**
      * Auth user function
