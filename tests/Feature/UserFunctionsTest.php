@@ -133,6 +133,39 @@ class UserFunctionsTest extends TestCase
                 ]);
     }
 
+    public function testGetUserDashboard() {
+        $token = $this->getUserToken();
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('get', '/api/v1/users/get-dashboard');
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
+    public function testGetMembershipPage() {
+        
+    }
+
+    public function testGetNodesPage() {
+
+    }
+
+    public function testGetMyEras() {
+
+    }
+
+    public function testCanVote() {
+
+    }
+
     public function testChangeEmail() {
         $token = $this->getUserToken();
 
@@ -169,6 +202,10 @@ class UserFunctionsTest extends TestCase
                     'message',
                     'data',
                 ]);
+    }
+
+    public function testSendHellosignRequest() {
+
     }
 
     public function testSubmitPublicAddress() {
@@ -283,6 +320,7 @@ class UserFunctionsTest extends TestCase
                 ]);
     }
 
+    /*
     public function testVerifyOwnerNode() {
         $token = $this->getUserToken();
 
@@ -298,7 +336,9 @@ class UserFunctionsTest extends TestCase
                     'data',
                 ]);
     }
+    */
 
+    /*
     public function testGetOwnerNodes() {
         $token = $this->getUserToken();
 
@@ -314,7 +354,9 @@ class UserFunctionsTest extends TestCase
                     'data',
                 ]);
     }
+    */
 
+    /*
     public function testResendInviteOwner() {
         $token = $this->getUserToken();
 
@@ -334,6 +376,7 @@ class UserFunctionsTest extends TestCase
                     'data',
                 ]);
     }
+    */
 
     public function testGetMessageContent() {
         $token = $this->getUserToken();
@@ -368,6 +411,7 @@ class UserFunctionsTest extends TestCase
                 ]);
     }
 
+    /*
     public function testUpdateShuftiproTemp() {
         $token = $this->getUserToken();
 
@@ -387,6 +431,7 @@ class UserFunctionsTest extends TestCase
                     'data',
                 ]);
     }
+    */
 
     public function testDeleteShuftiproTemp() {
         $token = $this->getUserToken();

@@ -101,20 +101,20 @@ class Helper
 		$state_root_hash = $casper_client->getStateRootHash($block_hash);
 		$curl = curl_init();
 
-		$json_data = array(
+		$json_data = [
 			'id' => (int) time(),
 			'jsonrpc' => '2.0',
 			'method' => 'state_get_dictionary_item',
-			'params' => array(
+			'params' => [
 				'state_root_hash' => $state_root_hash,
-				'dictionary_identifier' => array(
-					'URef' => array(
+				'dictionary_identifier' => [
+					'URef' => [
 						'seed_uref' => $account_info_urls_uref,
 						'dictionary_item_key' => $account_hash,
-					)
-				)
-			)
-		);
+					]
+				]
+			]
+		];
 
 		curl_setopt($curl, CURLOPT_URL, $node_ip . '/rpc');
 		curl_setopt($curl, CURLOPT_POST, true);

@@ -1072,16 +1072,7 @@ class UserController extends Controller
         $user = auth()->user()->load(['profile', 'pagePermissions', 'permissions', 'shuftipro', 'shuftiproTemp']);
         Helper::getAccountInfoStandard($user);
         $user->metric = Helper::getNodeInfo($user);
-        
-        $items = Setting::get();
-        $settings = [];
-        if ($items) {
-            foreach ($items as $item) {
-                $settings[$item->name] = $item->value;
-            }
-        }
-        $user->globalSettings = $settings;
-        
+        $user->globalSettings = Helper::getSettings();
         return $this->successResponse($user);
     }
 
@@ -2528,9 +2519,8 @@ class UserController extends Controller
             ON b.user_id = c.id
             WHERE a.casper_association_kyc_hash = '$hash'
         ");
-        $selection = $selection[0] ?? array();
-
-        return $this->successResponse($selection);
+        
+        return $this->successResponse($selection[0] ?? []);
     }
 
     public function getMyVotes(Request $request)
