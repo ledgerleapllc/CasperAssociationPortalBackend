@@ -65,6 +65,7 @@ class AdminController extends Controller
 {
     public function allErasUser($id) {
         $user = User::where('id', $id)->first();
+        $user_id = $id;
 
         if (!$user || $user->role == 'admin') {
             return $this->errorResponse(
@@ -73,56 +74,19 @@ class AdminController extends Controller
             );
         }
 
-        $user_id = $id;
+        $current_era_id = Helper::getCurrentERAId();
+        $settings = Helper::getSettings();
 
-        // Get current era
-        $current_era_id = DB::select("
-            SELECT era_id
-            FROM all_node_data2
-            ORDER BY era_id DESC
-            LIMIT 1
-        ");
-        $current_era_id = (int)($current_era_id[0]->era_id ?? 0);
-
-        // define return object
-        $return  = array(
+        $return = [
             "column_count" => 2,
-            "eras"         => array(
-                array(
-                    "era_start_time"        => '',
-                    "addresses"             => array(
-                        "0123456789abcdef"  => array(
-                            "in_pool"       => false,
-                            "rewards"       => 0
-                        )
-                    )
-                )
-            ),
+            "eras" => [],
             "addresses" => []
-        );
+        ];
 
-        unset($return["eras"][0]);
+        $voting_eras_to_vote = isset($settings['voting_eras_to_vote']) ? (int) $settings['voting_eras_to_vote'] : 1;
+        $uptime_calc_size = isset($settings['uptime_calc_size']) ? (int) $settings['uptime_calc_size'] : 1;
 
-        // get settings
-        $voting_eras_to_vote = DB::select("
-            SELECT value
-            FROM settings
-            WHERE name = 'voting_eras_to_vote'
-        ");
-        $voting_eras_to_vote = $voting_eras_to_vote[0] ?? array();
-        $voting_eras_to_vote = (int)($voting_eras_to_vote->value ?? 0);
-
-        $uptime_calc_size = DB::select("
-            SELECT value
-            FROM settings
-            WHERE name = 'uptime_calc_size'
-        ");
-        $uptime_calc_size = $uptime_calc_size[0] ?? array();
-        $uptime_calc_size = (int)($uptime_calc_size->value ?? 0);
-
-        // get eras table data
         $era_minus_360 = $current_era_id - $uptime_calc_size;
-
         if ($era_minus_360 < 1) {
             $era_minus_360 = 1;
         }
@@ -138,10 +102,7 @@ class AdminController extends Controller
             AND b.user_id   = $user_id
             ORDER BY a.era_id DESC
         ");
-
-        if (!$addresses) {
-            $addresses = [];
-        }
+        if (!$addresses) $addresses = [];
 
         foreach ($addresses as $address) {
             $return['addresses'][] = $address->public_key;
@@ -161,33 +122,27 @@ class AdminController extends Controller
             AND era_id > $era_minus_360
             ORDER BY a.era_id DESC
         ");
+        if (!$eras) $eras = [];
 
-        if (!$eras) {
-            $eras = array();
-        }
-
-        $sorted_eras = array();
+        $sorted_eras = [];
 
         // for each node address's era
         foreach ($eras as $era) {
-            $era_id               = $era->era_id ?? 0;
-            $era_start_time       = $era->created_at ?? '';
-            $public_key           = $era->public_key;
+            $era_id = $era->era_id ?? 0;
+            $era_start_time = $era->created_at ?? '';
+            $public_key = $era->public_key;
 
             if (!isset($sorted_eras[$era_id])) {
-                $sorted_eras[$era_id] = array(
-                    "era_start_time"  => $era_start_time,
-                    "addresses"       => array()
-                );
+                $sorted_eras[$era_id] = [
+                    "era_start_time" => $era_start_time,
+                    "addresses" => []
+                ];
             }
 
-            $sorted_eras
-            [$era_id]
-            ["addresses"]
-            [$public_key] = array(
+            $sorted_eras[$era_id]["addresses"][$public_key] = [
                 "in_pool" => $era->in_auction,
                 "rewards" => $era->uptime,
-            );
+            ];
         }
 
         $return["eras"] = $sorted_eras;
@@ -195,7 +150,6 @@ class AdminController extends Controller
 
         foreach ($return["eras"] as $era) {
             $count = $era["addresses"] ? count($era["addresses"]) : 0;
-
             if ($count > $column_count) {
                 $column_count = $count;
             }
@@ -203,42 +157,19 @@ class AdminController extends Controller
 
         $return["column_count"] = $column_count + 1;
 
-        // info($return);
         return $this->successResponse($return);
     }
 
     public function allEras() {
-        // Get current era
-        $current_era_id = DB::select("
-            SELECT era_id
-            FROM all_node_data2
-            ORDER BY era_id DESC
-            LIMIT 1
-        ");
-        $current_era_id = (int)($current_era_id[0]->era_id ?? 0);
+        $current_era_id = Helper::getCurrentERAId();
+        $settings = Helper::getSettings();
 
         // define return object
-        $return = array(
-            "addresses" => array(
-                "0123456789abcdef"          => array(
-                    "uptime"                => 0,
-                    "eras_active"           => 0,
-                    "eras_since_bad_mark"   => $current_era_id,
-                    "total_bad_marks"       => 0
-                )
-            ),
-            "users" => array(
-                array(
-                    "user_id"       => 0,
-                    "name"          => "Jason Stone",
-                    "pseudonym"     => "jsnstone"
-                )
-            )
-        );
+        $return = [
+            "addresses" => [],
+            "users" => []
+        ];
 
-        unset($return["addresses"]["0123456789abcdef"]);
-        unset($return['users']);
-        
         // get addresses data
         $addresses = DB::select("
             SELECT 
@@ -248,33 +179,16 @@ class AdminController extends Controller
             ON a.public_key = b.public_address_node
             WHERE a.era_id  = $current_era_id
         ");
+        if (!$addresses) $addresses = [];
 
-        if (!$addresses) {
-            $addresses = array();
-        }
-
-        // get settings
-        $voting_eras_to_vote = DB::select("
-            SELECT value
-            FROM settings
-            WHERE name = 'voting_eras_to_vote'
-        ");
-        $voting_eras_to_vote = $voting_eras_to_vote[0] ?? array();
-        $voting_eras_to_vote = (int)($voting_eras_to_vote->value ?? 0);
-
-        $uptime_calc_size = DB::select("
-            SELECT value
-            FROM settings
-            WHERE name = 'uptime_calc_size'
-        ");
-        $uptime_calc_size = $uptime_calc_size[0] ?? array();
-        $uptime_calc_size = (int)($uptime_calc_size->value ?? 0);
+        $voting_eras_to_vote = isset($settings['voting_eras_to_vote']) ? (int) $settings['voting_eras_to_vote'] : 1;
+        $uptime_calc_size = isset($settings['uptime_calc_size']) ? (int) $settings['uptime_calc_size'] : 1;
 
         // for each member's node address
         foreach ($addresses as $address) {
             $p = $address->public_key ?? '';
 
-            $total_bad_marks = DB::select("
+            $temp = DB::select("
                 SELECT era_id
                 FROM all_node_data2
                 WHERE public_key = '$p'
@@ -284,55 +198,56 @@ class AdminController extends Controller
                 )
                 ORDER BY era_id DESC
             ");
+            if (!$temp) $temp = [];
 
-            $eras_since_bad_mark = $total_bad_marks[0] ?? array();
-            $eras_since_bad_mark = $current_era_id - (int)($eras_since_bad_mark->era_id ?? 0);
-            $total_bad_marks     = count((array)$total_bad_marks);
+            $eras_since_bad_mark = $current_era_id;
+            if (isset($temp[0])) $eras_since_bad_mark = $current_era_id - (int) ($temp[0]->era_id ?? 0);
+            $total_bad_marks = count($temp);
 
-            $eras_active = DB::select("
+            $temp = DB::select("
                 SELECT era_id
                 FROM all_node_data2
                 WHERE public_key = '$p'
                 ORDER BY era_id ASC
                 LIMIT 1
             ");
+            if (!$temp) $temp = [];
 
-            $eras_active = (int)($eras_active[0]->era_id ?? 0);
+            $eras_active = 0;
+            if (isset($temp[0])) $eras_active = (int) ($temp[0]->era_id ?? 0);
+            if ($eras_active < $current_era_id) $eras_active = $current_era_id - $eras_active;
 
             // Calculate historical_performance from past $uptime_calc_size eras
             $missed = 0;
-            $in_current_eras = DB::select("
+            $temp = DB::select("
                 SELECT in_current_era
                 FROM all_node_data2
                 WHERE public_key = '$p'
                 ORDER BY era_id DESC
                 LIMIT $uptime_calc_size
             ");
+            if (!$temp) $temp = [];
 
-            $in_current_eras = $in_current_eras ? $in_current_eras : array();
-            $window          = $in_current_eras ? count($in_current_eras) : 0;
+            $window = count($temp);
 
-            foreach ($in_current_eras as $c) {
-                $in = (bool)($c->in_current_era ?? 0);
-
+            foreach ($temp as $c) {
+                $in = (bool) ($c->in_current_era ?? 0);
                 if (!$in) {
                     $missed += 1;
                 }
             }
 
-            $uptime                 = (float)($address->uptime ?? 0);
-            $historical_performance = round(
-                ($uptime * ($window - $missed)) / $window,
-                2,
-                PHP_ROUND_HALF_UP
-            );
+            $uptime = (float) ($address->uptime ?? 0);
+            $value = $uptime;
+            if ($window > 0) $value = (float) ($uptime * ($window - $missed) / $window);
+            $historical_performance = round($value, 2);
 
-            $return["addresses"][$p]   = array(
-                "uptime"              => $historical_performance,
-                "eras_active"         => $current_era_id - $eras_active,
+            $return["addresses"][$p] = [
+                "uptime" => $historical_performance,
+                "eras_active" => $eras_active,
                 "eras_since_bad_mark" => $eras_since_bad_mark,
-                "total_bad_marks"     => $total_bad_marks
-            );
+                "total_bad_marks" => $total_bad_marks
+            ];
         }
 
         $users = DB::select("
@@ -343,63 +258,29 @@ class AdminController extends Controller
             AND a.has_address = 1
             AND a.banned      = 0;
         ");
+        if (!$users) $users = [];
 
         foreach ($users as $user) {
-            $return["users"][] = array(
-                "user_id"   => $user->id,
-                "name"      => $user->first_name . ' ' . $user->last_name,
+            $return["users"][] = [
+                "user_id" => $user->id,
+                "name" => $user->first_name . ' ' . $user->last_name,
                 "pseudonym" => $user->pseudonym,
-            );
+            ];
         }
 
-        if (!$users) {
-            $users = array();
-        }
-
-        // info($return);
         return $this->successResponse($return);
     }
 
     public function getNodesPage() {
-        // Get current era
-        $current_era_id = DB::select("
-            SELECT era_id
-            FROM all_node_data2
-            ORDER BY era_id DESC
-            LIMIT 1
-        ");
-        $current_era_id = (int)($current_era_id[0]->era_id ?? 0);
+        $current_era_id = Helper::getCurrentERAId();
 
         // Define complete return object
-        $return = array(
+        $return = [
             "mbs" => 0,
-            "ranking" => array(
-                "0123456789abcdef" => 0
-            ),
-            "addresses" => array(
-                "0123456789abcdef"          => array(
-                    "stake_amount"          => 0,
-                    "delegators"            => 0,
-                    "uptime"                => 0,
-                    "update_responsiveness" => 100,
-                    "peers"                 => 0,
-                    "daily_earning"         => 0,
-                    "total_eras"            => 0,
-                    "eras_since_bad_mark"   => $current_era_id,
-                    "total_bad_marks"       => 0,
-                    "faling"                => 0,
-                    "validator_rewards"     => array(
-                        "day"               => array(),
-                        "week"              => array(),
-                        "month"             => array(),
-                        "year"              => array()
-                    )
-                )
-            )
-        );
+            "ranking" => [],
+            "addresses" => []
+        ];
 
-        unset($return["ranking"]["0123456789abcdef"]);
-        unset($return["addresses"]["0123456789abcdef"]);
         $nodeHelper = new NodeHelper();
 
         // get ranking
@@ -416,65 +297,44 @@ class AdminController extends Controller
             AND   in_next_era    = 1
             AND   in_auction     = 1
         ");
+        if (!$ranking) $ranking = [];
+
         $max_delegators   = 0;
         $max_stake_amount = 0;
-
         foreach ($ranking as $r) {
-            if ((int)$r->bid_delegators_count > $max_delegators) {
-                $max_delegators   = (int)$r->bid_delegators_count;
+            if ((int) $r->bid_delegators_count > $max_delegators) {
+                $max_delegators = (int) $r->bid_delegators_count;
             }
-
-            if ((int)$r->bid_total_staked_amount > $max_stake_amount) {
-                $max_stake_amount = (int)$r->bid_total_staked_amount;
+            if ((int) $r->bid_total_staked_amount > $max_stake_amount) {
+                $max_stake_amount = (int) $r->bid_total_staked_amount;
             }
         }
 
         foreach ($ranking as $r) {
-            $uptime_score     = (
-                25 * (float)$r->uptime
-            ) / 100;
-            $uptime_score     = $uptime_score < 0 ? 0 : $uptime_score;
+            $uptime_score = (float) (25 * (float) $r->uptime / 100);
+            $uptime_score = $uptime_score < 0 ? 0 : $uptime_score;
 
-            $fee_score        = (
-                25 * 
-                (1 - ((float)$r->bid_delegation_rate / 100))
-            );
-            $fee_score        = $fee_score < 0 ? 0 : $fee_score;
+            $fee_score = 25 * (1 - (float) ($r->bid_delegation_rate / 100));
+            $fee_score = $fee_score < 0 ? 0 : $fee_score;
 
-            $count_score      = (
-                (float)$r->bid_delegators_count / 
-                $max_delegators
-            ) * 25;
-            $count_score      = $count_score < 0 ? 0 : $count_score;
+            $count_score = (float) ($r->bid_delegators_count / $max_delegators) * 25;
+            $count_score = $count_score < 0 ? 0 : $count_score;
 
-            $stake_score      = (
-                (float)$r->bid_total_staked_amount / 
-                $max_stake_amount
-            ) * 25;
-            $stake_score      = $stake_score < 0 ? 0 : $stake_score;
+            $stake_score = (float) ($r->bid_total_staked_amount / $max_stake_amount) * 25;
+            $stake_score = $stake_score < 0 ? 0 : $stake_score;
 
-            $return["ranking"][$r->public_key] = (
-                $uptime_score +
-                $fee_score    +
-                $count_score  + 
-                $stake_score
-            );
+            $return["ranking"][$r->public_key] = $uptime_score + $fee_score + $count_score + $stake_score;
         }
 
-        uasort(
-            $return["ranking"],
-            function($x, $y) {
-                if ($x == $y) {
-                    return 0;
-                }
-
-                return ($x > $y) ? -1 : 1;
+        uasort($return["ranking"], function($x, $y) {
+            if ($x == $y) {
+                return 0;
             }
-        );
+            return ($x > $y) ? -1 : 1;
+        });
 
-        $sorted_ranking = array();
+        $sorted_ranking = [];
         $i = 1;
-
         foreach ($return["ranking"] as $public_key => $score) {
             $sorted_ranking[$public_key] = $i;
             $i += 1;
@@ -496,16 +356,13 @@ class AdminController extends Controller
             ON b.user_id    = c.id
             WHERE a.era_id  = $current_era_id
         ");
-
-        if (!$addresses) {
-            $addresses = array();
-        }
+        if (!$addresses) $addresses = [];
 
         // for each member's node address
         foreach ($addresses as $address) {
             $a = $address->public_key ?? '';
 
-            $total_bad_marks = DB::select("
+            $temp = DB::select("
                 SELECT era_id
                 FROM all_node_data2
                 WHERE public_key = '$a'
@@ -515,25 +372,28 @@ class AdminController extends Controller
                 )
                 ORDER BY era_id DESC
             ");
+            if (!$temp) $temp = [];
 
-            $eras_since_bad_mark = $total_bad_marks[0] ?? array();
-            $eras_since_bad_mark = $current_era_id - (int)($eras_since_bad_mark->era_id ?? 0);
-            $total_bad_marks     = count((array)$total_bad_marks);
+            $eras_since_bad_mark = $current_era_id;
+            if (isset($temp[0])) $eras_since_bad_mark = $current_era_id - (int) ($temp[0]->era_id ?? 0);
+            $total_bad_marks = count($temp);
 
-            $total_eras = DB::select("
+            $temp = DB::select("
                 SELECT era_id
                 FROM all_node_data2
                 WHERE public_key = '$a'
                 ORDER BY era_id ASC
                 LIMIT 1
             ");
+            if (!$temp) $temp = [];
 
-            $total_eras = (int)($total_eras[0]->era_id ?? 0);
-            $total_eras = $current_era_id - $total_eras;
+            $total_eras = 0;
+            if (isset($temp[0])) $total_eras = (int) ($temp[0]->era_id ?? 0);
+            if ($current_era_id > $total_eras) $total_eras = $current_era_id - $total_eras;
 
             // Calc earning
-            $one_day_ago   = Carbon::now('UTC')->subHours(24);
-            $daily_earning = DB::select("
+            $one_day_ago = Carbon::now('UTC')->subHours(24);
+            $temp = DB::select("
                 SELECT bid_self_staked_amount
                 FROM all_node_data2
                 WHERE public_key = '$a'
@@ -541,14 +401,17 @@ class AdminController extends Controller
                 ORDER BY era_id DESC
                 LIMIT 1
             ");
-            $daily_earning = $daily_earning[0]->bid_self_staked_amount ?? 0;
-            $daily_earning = $address->bid_self_staked_amount - $daily_earning;
+            if (!$temp) $temp = [];
+
+            $daily_earning = 0;
+            if (isset($temp[0])) $daily_earning = (float) ($temp[0]->bid_self_staked_amount ?? 0);
+            $daily_earning = (float) $address->bid_self_staked_amount - $daily_earning;
             $daily_earning = $daily_earning < 0 ? 0 : $daily_earning;
 
-            $earning_day   = $nodeHelper->getValidatorRewards($a, 'day');
-            $earning_week  = $nodeHelper->getValidatorRewards($a, 'week');
+            $earning_day = $nodeHelper->getValidatorRewards($a, 'day');
+            $earning_week = $nodeHelper->getValidatorRewards($a, 'week');
             $earning_month = $nodeHelper->getValidatorRewards($a, 'month');
-            $earning_year  = $nodeHelper->getValidatorRewards($a, 'year');
+            $earning_year = $nodeHelper->getValidatorRewards($a, 'year');
 
             if (
                 $address->in_current_era == 0 ||
@@ -559,36 +422,38 @@ class AdminController extends Controller
                 $failing = 0;
             }
 
-            $return["addresses"][$a] = array(
-                "stake_amount"          => $address->bid_total_staked_amount,
-                "delegators"            => $address->bid_delegators_count,
-                "uptime"                => $address->uptime,
+            $return["addresses"][$a] = [
+                "stake_amount" => $address->bid_total_staked_amount,
+                "delegators" => $address->bid_delegators_count,
+                "uptime" => $address->uptime,
                 "update_responsiveness" => 100,
-                "peers"                 => $address->peers,
-                "daily_earning"         => $daily_earning,
-                "total_eras"            => $total_eras,
-                "eras_since_bad_mark"   => $eras_since_bad_mark,
-                "total_bad_marks"       => $total_bad_marks,
-                "failing"               => $failing,
-                "validator_rewards"     => array(
-                    "day"               => $earning_day,
-                    "week"              => $earning_week,
-                    "month"             => $earning_month,
-                    "year"              => $earning_year
-                )
-            );
+                "peers" => $address->peers,
+                "daily_earning" => $daily_earning,
+                "total_eras" => $total_eras,
+                "eras_since_bad_mark" => $eras_since_bad_mark,
+                "total_bad_marks" => $total_bad_marks,
+                "failing" => $failing,
+                "validator_rewards" => [
+                    "day" => $earning_day,
+                    "week" => $earning_week,
+                    "month" => $earning_month,
+                    "year" => $earning_year
+                ]
+            ];
         }
 
         // get mbs
-        $mbs = DB::select("
+        $temp = DB::select("
             SELECT mbs
             FROM mbs
             ORDER BY era_id DESC
             LIMIT 1
         ");
-        $return["mbs"] = (int)($mbs[0]->mbs ?? 0);
+        if (!$temp) $temp = [];
+        
+        $return['mbs'] = 0;
+        if (isset($temp[0])) $return['mbs'] = (int) ($temp[0]->mbs ?? 0);
 
-        // info($return);
         return $this->successResponse($return);
     }
 
@@ -680,7 +545,6 @@ class AdminController extends Controller
 
                 if ($user->profile_status == 'approved') {
                     $status = 'Verified';
-
                     if ($user->extra_status) {
                         $status = $user->extra_status;
                     }
@@ -727,7 +591,7 @@ class AdminController extends Controller
         }
 
         $user->membership_status = $status;
-        $user->metric            = Helper::getNodeInfo($user);
+        // $user->metric            = Helper::getNodeInfo($user);
 
         $addresses = $user->addresses ?? [];
         $current_era_id = Helper::getCurrentERAId();
@@ -990,9 +854,9 @@ class AdminController extends Controller
 
     public function bypassApproveKYC($user_id)
     {
-        $user_id    = (int) $user_id;
-        $user       = User::find($user_id);
-        $now        = Carbon::now('UTC');
+        $user_id = (int) $user_id;
+        $user = User::find($user_id);
+        $now = Carbon::now('UTC');
         $admin_user = auth()->user();
 
         if ($user && $user->role == 'member') {
@@ -1385,13 +1249,7 @@ class AdminController extends Controller
     // Get Global Settings
     public function getGlobalSettings()
     {
-        $items    = Setting::get();
-        $settings = [];
-        if ($items) {
-            foreach ($items as $item) {
-                $settings[$item->name] = $item->value;
-            }
-        }
+        $settings = Helper::getSettings();
 
         $ruleKycNotVerify = LockRules::where('type', 'kyc_not_verify')
             ->orderBy('id', 'ASC')
@@ -1909,7 +1767,7 @@ class AdminController extends Controller
     // Reset KYC
     public function resetKYC($id, Request $request)
     {
-        $admin   = auth()->user();
+        $admin = auth()->user();
         $message = trim($request->get('message'));
 
         if (!$message) {
@@ -1933,8 +1791,8 @@ class AdminController extends Controller
             DocumentFile::where('user_id', $user->id)->delete();
 
             $user->kyc_verified_at = null;
-            $user->approve_at      = null;
-            $user->reset_kyc       = 1;
+            $user->approve_at = null;
+            $user->reset_kyc = 1;
             $user->save();
 
             Mail::to($user->email)->send(new AdminAlert(
@@ -2112,7 +1970,7 @@ class AdminController extends Controller
             ];
         }
 
-        $record        = new EmailerAdmin;
+        $record = new EmailerAdmin;
         $record->email = $email;
         $record->save();
 
@@ -2130,9 +1988,9 @@ class AdminController extends Controller
     // Get Emailer Data
     public function getEmailerData(Request $request)
     {
-        $user         = Auth::user();
-        $data         = [];
-        $admins       = EmailerAdmin::where('id', '>', 0)
+        $user = Auth::user();
+        $data = [];
+        $admins = EmailerAdmin::where('id', '>', 0)
             ->orderBy('email', 'asc')
             ->get();
 
@@ -2140,12 +1998,12 @@ class AdminController extends Controller
             ->orderBy('id', 'asc')
             ->get();
 
-        $triggerUser  = EmailerTriggerUser::where('id', '>', 0)
+        $triggerUser = EmailerTriggerUser::where('id', '>', 0)
             ->orderBy('id', 'asc')
             ->get();
 
         $data = [
-            'admins'       => $admins,
+            'admins' => $admins,
             'triggerAdmin' => $triggerAdmin,
             'triggerUser'  => $triggerUser,
         ];
@@ -2163,7 +2021,7 @@ class AdminController extends Controller
         $record = EmailerTriggerAdmin::find($recordId);
 
         if ($record) {
-            $enabled         = (int)$request->get('enabled');
+            $enabled = (int) $request->get('enabled');
             $record->enabled = $enabled;
             $record->save();
             return ['success' => true];
@@ -2175,12 +2033,12 @@ class AdminController extends Controller
     // Update Emailer Trigger User
     public function updateEmailerTriggerUser($recordId, Request $request)
     {
-        $user   = Auth::user();
+        $user = Auth::user();
         $record = EmailerTriggerUser::find($recordId);
 
         if ($record) {
-            $enabled         = (int)$request->get('enabled');
-            $content         = $request->get('content');
+            $enabled = (int) $request->get('enabled');
+            $content = $request->get('content');
             $record->enabled = $enabled;
 
             if ($content) {
@@ -2205,7 +2063,7 @@ class AdminController extends Controller
             return $this->validateResponse($validator->errors());
         }
 
-        $rule          = LockRules::where('id', $id)->first();
+        $rule = LockRules::where('id', $id)->first();
         $rule->is_lock = $request->is_lock;
         $rule->save();
 
@@ -2215,16 +2073,16 @@ class AdminController extends Controller
     // Get GraphInfo
     public function getGraphInfo(Request $request)
     {
-        $user           = Auth::user();
+        $user = Auth::user();
         $graphDataDay   = 
         $graphDataWeek  = 
         $graphDataMonth = 
         $graphDataYear  = [];
 
-        $timeDay   = Carbon::now('UTC')->subHours(24);
-        $timeWeek  = Carbon::now('UTC')->subDays(7);
+        $timeDay = Carbon::now('UTC')->subHours(24);
+        $timeWeek = Carbon::now('UTC')->subDays(7);
         $timeMonth = Carbon::now('UTC')->subDays(30);
-        $timeYear  = Carbon::now('UTC')->subYear();
+        $timeYear = Carbon::now('UTC')->subYear();
 
         $items = TokenPrice::orderBy('created_at', 'desc')
             ->where('created_at', '>=', $timeDay)

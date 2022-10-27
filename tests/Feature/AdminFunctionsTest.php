@@ -21,10 +21,64 @@ class AdminFunctionsTest extends TestCase
             'Accept' => 'application/json',
             'Authorization' => 'Bearer ' . $token,
         ])->json('post', '/api/v1/users/submit-public-address', $params);
-
+        
         $this->artisan('node-info')->assertSuccessful();
     }
     */
+
+    public function testGetUserNodesPage() {
+        $this->addUser();
+        $token = $this->getAdminToken();
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('get', '/api/v1/admin/users/get-nodes-page');
+        
+        // $apiResponse = $response->baseResponse->getData();
+        
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
+    public function testAllERAs() {
+        $this->addUser();
+        $token = $this->getAdminToken();
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('get', '/api/v1/admin/users/all-eras');
+        
+        // $apiResponse = $response->baseResponse->getData();
+        
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
+    public function testAllErasUser() {
+        $user = $this->addUser();
+        $token = $this->getAdminToken();
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('get', '/api/v1/admin/users/all-eras-user/' . $user->id);
+        
+        // $apiResponse = $response->baseResponse->getData();
+        
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
 
     public function testGetGraphInfo() {
         $response = $this->withHeaders([
@@ -39,7 +93,25 @@ class AdminFunctionsTest extends TestCase
                     'data',
                 ]);
     }
-    
+
+    public function testBypassApproveKYC() {
+        $user = $this->addUser();
+        $token = $this->getAdminToken();
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('post', '/api/v1/admin/users/bypass-approve-kyc/' . $user->id);
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
     public function testGetUsers() {
         $token = $this->getAdminToken();
         

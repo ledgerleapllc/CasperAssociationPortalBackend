@@ -31,6 +31,20 @@ class Helper
                 $settings[$item->name] = $item->value;
             }
         }
+        if (!isset($settings['peers'])) $settings['peers'] = 0;
+        if (!isset($settings['eras_look_back'])) $settings['eras_look_back'] = 1;
+        if (!isset($settings['eras_to_be_stable'])) $settings['eras_to_be_stable'] = 1;
+        if (!isset($settings['voting_eras_to_vote'])) $settings['voting_eras_to_vote'] = 1;
+        if (!isset($settings['uptime_calc_size'])) $settings['uptime_calc_size'] = 1;
+        if (!isset($settings['voting_eras_since_redmark'])) $settings['voting_eras_since_redmark'] = 1;
+        if (!isset($settings['uptime_warning'])) $settings['uptime_warning'] = 1;
+        if (!isset($settings['uptime_probation'])) $settings['uptime_probation'] = 1;
+        if (!isset($settings['uptime_correction_unit'])) $settings['uptime_correction_unit'] = 'Weeks';
+        if (!isset($settings['uptime_correction_value'])) $settings['uptime_correction_value'] = 1;
+        if (!isset($settings['redmarks_revoke'])) $settings['redmarks_revoke'] = 1;
+        if (!isset($settings['redmarks_revoke_calc_size'])) $settings['redmarks_revoke_calc_size'] = 1;
+        if (!isset($settings['responsiveness_warning'])) $settings['responsiveness_warning'] = 1;
+        if (!isset($settings['responsiveness_probation'])) $settings['responsiveness_probation'] = 1;
         return $settings;
 	}
 
@@ -84,7 +98,6 @@ class Helper
 	public static function getAccountInfoStandard($user)
 	{
 		$vid = strtolower($user->public_address_node ?? '');
-
 		if (!$vid) return;
 
 		// convert to account hash
@@ -101,20 +114,20 @@ class Helper
 		$state_root_hash = $casper_client->getStateRootHash($block_hash);
 		$curl = curl_init();
 
-		$json_data = array(
+		$json_data = [
 			'id' => (int) time(),
 			'jsonrpc' => '2.0',
 			'method' => 'state_get_dictionary_item',
-			'params' => array(
+			'params' => [
 				'state_root_hash' => $state_root_hash,
-				'dictionary_identifier' => array(
-					'URef' => array(
+				'dictionary_identifier' => [
+					'URef' => [
 						'seed_uref' => $account_info_urls_uref,
 						'dictionary_item_key' => $account_hash,
-					)
-				)
-			)
-		);
+					]
+				]
+			]
+		];
 
 		curl_setopt($curl, CURLOPT_URL, $node_ip . '/rpc');
 		curl_setopt($curl, CURLOPT_POST, true);
@@ -206,6 +219,7 @@ class Helper
 		return $response->json();
 	}
 
+	/*
 	public static function getNodeInfo($user, $public_address_node = null)
 	{
 		if (!$public_address_node) $public_address_node = $user->public_address_node;
@@ -301,6 +315,7 @@ class Helper
 		$metric['monitoring_criteria'] = $monitoringCriteria;
 		return $metric;
 	}
+	*/
 
 	public static function paginate($items, $perPage = 5, $page = null, $options = [])
 	{

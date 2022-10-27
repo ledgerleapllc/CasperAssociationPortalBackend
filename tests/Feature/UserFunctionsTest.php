@@ -31,7 +31,7 @@ class UserFunctionsTest extends TestCase
         ])->json('get', '/api/v1/members/ca-kyc-hash/AB10BC99');
 
         // $apiResponse = $response->baseResponse->getData();
-
+        
         $response->assertStatus(200)
                 ->assertJsonStructure([
                     'message',
@@ -126,6 +126,91 @@ class UserFunctionsTest extends TestCase
 
         // $apiResponse = $response->baseResponse->getData();
 
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
+    public function testGetUserDashboard() {
+        $token = $this->getUserToken();
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('get', '/api/v1/users/get-dashboard');
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
+    public function testGetMembershipPage() {
+        $token = $this->getUserToken();
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('get', '/api/v1/users/get-membership-page');
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
+    public function testGetNodesPage() {
+        $token = $this->getUserToken();
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('get', '/api/v1/users/get-nodes-page');
+        
+        // $apiResponse = $response->baseResponse->getData();
+        
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
+    public function testGetMyEras() {
+        $token = $this->getUserToken();
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('get', '/api/v1/users/get-my-eras');
+        
+        // $apiResponse = $response->baseResponse->getData();
+        
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
+    public function testCanVote() {
+        $token = $this->getUserToken();
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('get', '/api/v1/users/can-vote');
+        
+        // $apiResponse = $response->baseResponse->getData();
+        
         $response->assertStatus(200)
                 ->assertJsonStructure([
                     'message',
@@ -283,6 +368,7 @@ class UserFunctionsTest extends TestCase
                 ]);
     }
 
+    /*
     public function testVerifyOwnerNode() {
         $token = $this->getUserToken();
 
@@ -298,7 +384,9 @@ class UserFunctionsTest extends TestCase
                     'data',
                 ]);
     }
+    */
 
+    /*
     public function testGetOwnerNodes() {
         $token = $this->getUserToken();
 
@@ -314,7 +402,9 @@ class UserFunctionsTest extends TestCase
                     'data',
                 ]);
     }
+    */
 
+    /*
     public function testResendInviteOwner() {
         $token = $this->getUserToken();
 
@@ -334,6 +424,7 @@ class UserFunctionsTest extends TestCase
                     'data',
                 ]);
     }
+    */
 
     public function testGetMessageContent() {
         $token = $this->getUserToken();
@@ -368,6 +459,7 @@ class UserFunctionsTest extends TestCase
                 ]);
     }
 
+    /*
     public function testUpdateShuftiproTemp() {
         $token = $this->getUserToken();
 
@@ -387,6 +479,7 @@ class UserFunctionsTest extends TestCase
                     'data',
                 ]);
     }
+    */
 
     public function testDeleteShuftiproTemp() {
         $token = $this->getUserToken();
@@ -483,7 +576,7 @@ class UserFunctionsTest extends TestCase
     /*
     public function testGetEarningByNode() {
         $node = '011117189c666f81c5160cd610ee383dc9b2d0361f004934754d39752eedc64957';
-        $token = $this->getUserToken($node);
+        $token = $this->getUserToken();
 
         $response = $this->withHeaders([
             'Accept' => 'application/json',
@@ -503,7 +596,7 @@ class UserFunctionsTest extends TestCase
     /*
     public function testGetChartEarningByNode() {
         $node = '011117189c666f81c5160cd610ee383dc9b2d0361f004934754d39752eedc64957';
-        $token = $this->getUserToken($node);
+        $token = $this->getUserToken();
 
         $response = $this->withHeaders([
             'Accept' => 'application/json',

@@ -117,7 +117,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
         Route::prefix('admin')->middleware(['role_admin'])->group(function () {
             // New Nodes page endpoint
             Route::get('/users/get-nodes-page', [AdminController::class, 'getNodesPage']);
-
+            
             // New Eras page endpoint
             Route::get('/users/all-eras', [AdminController::class, 'allEras']);
 
