@@ -55,7 +55,7 @@ class NodeHelper
     }
     */
 
-    /*
+    
     public function retrieveGlobalUptime($this_era_id)
     {
         $total_data      = array();
@@ -117,7 +117,7 @@ class NodeHelper
 
         return $total_data;
     }
-    */
+    
 
     /*
     public function discoverPeers()
