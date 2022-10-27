@@ -36,6 +36,7 @@ class NodeHelper
         // do nothing
     }
 
+    /*
     public function decodePeers($__peers)
     {
         $decoded_peers = array();
@@ -52,7 +53,9 @@ class NodeHelper
         }
         return $decoded_peers;
     }
+    */
 
+    /*
     public function retrieveGlobalUptime($this_era_id)
     {
         $total_data      = array();
@@ -114,7 +117,9 @@ class NodeHelper
 
         return $total_data;
     }
+    */
 
+    /*
     public function discoverPeers()
     {
         $port8888_responses = array();
@@ -278,6 +283,7 @@ class NodeHelper
 
         return $port8888_responses;
     }
+    */
 
     public function getValidAddresses()
     {
@@ -335,6 +341,7 @@ class NodeHelper
         return $addresses;
     }
 
+    /*
     public function getValidatorStanding()
     {
         // get node ips from peers
@@ -811,7 +818,9 @@ class NodeHelper
 
         return true;
     }
+    */
 
+    /*
     public function getTotalRewards($validatorId)
     {
         $response = Http::withOptions([
@@ -819,17 +828,18 @@ class NodeHelper
         ])->get("https://api.CSPR.live/validators/$validatorId/total-rewards");
         return $response->json();
     }
+    */
 
     public function getValidatorRewards($validatorId, $_range)
     {
-        $nowtime   = (int)time();
-        $range     = 0;
-        $days      = 30;
-        $leap_year = (int)date('Y');
+        $nowtime = (int) time();
+        $range = 0;
+        $days = 30;
+        $leap_year = (int) date('Y');
         $leap_days = $leap_year % 4 == 0 ? 29 : 28;
-        $month     = (int)date('m');
+        $month = (int) date('m');
 
-        switch($month) {
+        switch ($month) {
             case 1:
                 $days = 31;
                 break;
@@ -870,38 +880,38 @@ class NodeHelper
                 break;
         }
 
-        switch($_range) {
+        switch ($_range) {
             case 'day':
                 $range = $nowtime - 86400;
-                break;
+            break;
             case 'week':
                 $range = $nowtime - (86400 * 7);
-                break;
+            break;
             case 'month':
                 $range = $nowtime - (86400 * $days);
-                break;
+            break;
             case 'year':
                 $range = $nowtime - (86400 * (365 + ($leap_days % 2)));
-                break;
+            break;
             default:
                 return false;
-                break;
+            break;
         }
 
-        $timestamp     = Carbon::createFromTimestamp($range, 'UTC')->toDateTimeString();
+        $timestamp = Carbon::createFromTimestamp($range, 'UTC')->toDateTimeString();
         $total_records = DailyEarning::where('node_address', $validatorId)
             ->where('created_at', '>', $timestamp)
             ->get();
 
-        $new_array            = array();
+        $new_array = [];
         $display_record_count = 100;
 
         if ($total_records) {
-            $modded    = count($total_records) % $display_record_count;
+            $modded = count($total_records) % $display_record_count;
             $numerator = count($total_records) - $modded;
-            $modulo    = $numerator / $display_record_count;
-            $new_array = array();
-            $i         = $modulo;
+            $modulo = $numerator / $display_record_count;
+            $new_array = [];
+            $i = $modulo;
 
             if ($modulo == 0) {
                 $modulo = 1;
@@ -909,7 +919,7 @@ class NodeHelper
 
             foreach ($total_records as $record) {
                 if ($i % $modulo == 0) {
-                    $new_array[(string)strtotime($record->created_at.' UTC')] = (string)$record->self_staked_amount;
+                    $new_array[(string) strtotime($record->created_at.' UTC')] = (string) $record->self_staked_amount;
                 }
                 $i++;
             }

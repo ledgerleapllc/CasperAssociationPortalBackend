@@ -680,7 +680,6 @@ class AdminController extends Controller
 
                 if ($user->profile_status == 'approved') {
                     $status = 'Verified';
-
                     if ($user->extra_status) {
                         $status = $user->extra_status;
                     }
@@ -727,7 +726,7 @@ class AdminController extends Controller
         }
 
         $user->membership_status = $status;
-        $user->metric            = Helper::getNodeInfo($user);
+        // $user->metric            = Helper::getNodeInfo($user);
 
         $addresses = $user->addresses ?? [];
         $current_era_id = Helper::getCurrentERAId();

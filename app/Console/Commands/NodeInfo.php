@@ -35,7 +35,7 @@ class NodeInfo extends Command
 
     public function handle()
     {
-        $nodeHelper = new NodeHelper();
-        $nodeHelper->getValidatorStanding();
+        // $nodeHelper = new NodeHelper();
+        // $nodeHelper->getValidatorStanding();
     }
 }

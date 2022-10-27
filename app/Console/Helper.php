@@ -84,7 +84,6 @@ class Helper
 	public static function getAccountInfoStandard($user)
 	{
 		$vid = strtolower($user->public_address_node ?? '');
-
 		if (!$vid) return;
 
 		// convert to account hash
@@ -206,6 +205,7 @@ class Helper
 		return $response->json();
 	}
 
+	/*
 	public static function getNodeInfo($user, $public_address_node = null)
 	{
 		if (!$public_address_node) $public_address_node = $user->public_address_node;
@@ -301,6 +301,7 @@ class Helper
 		$metric['monitoring_criteria'] = $monitoringCriteria;
 		return $metric;
 	}
+	*/
 
 	public static function paginate($items, $perPage = 5, $page = null, $options = [])
 	{
