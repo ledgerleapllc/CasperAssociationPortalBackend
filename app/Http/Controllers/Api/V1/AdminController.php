@@ -858,7 +858,7 @@ class AdminController extends Controller
         $user = User::find($user_id);
         $now = Carbon::now('UTC');
         $admin_user = auth()->user();
-        
+
         if ($user && $user->role == 'member') {
             $user->kyc_verified_at = $now;
             $user->approve_at = $now;
@@ -1767,7 +1767,7 @@ class AdminController extends Controller
     // Reset KYC
     public function resetKYC($id, Request $request)
     {
-        $admin   = auth()->user();
+        $admin = auth()->user();
         $message = trim($request->get('message'));
 
         if (!$message) {
@@ -1791,8 +1791,8 @@ class AdminController extends Controller
             DocumentFile::where('user_id', $user->id)->delete();
 
             $user->kyc_verified_at = null;
-            $user->approve_at      = null;
-            $user->reset_kyc       = 1;
+            $user->approve_at = null;
+            $user->reset_kyc = 1;
             $user->save();
 
             Mail::to($user->email)->send(new AdminAlert(
@@ -1970,7 +1970,7 @@ class AdminController extends Controller
             ];
         }
 
-        $record        = new EmailerAdmin;
+        $record = new EmailerAdmin;
         $record->email = $email;
         $record->save();
 
@@ -1988,9 +1988,9 @@ class AdminController extends Controller
     // Get Emailer Data
     public function getEmailerData(Request $request)
     {
-        $user         = Auth::user();
-        $data         = [];
-        $admins       = EmailerAdmin::where('id', '>', 0)
+        $user = Auth::user();
+        $data = [];
+        $admins = EmailerAdmin::where('id', '>', 0)
             ->orderBy('email', 'asc')
             ->get();
 
@@ -1998,12 +1998,12 @@ class AdminController extends Controller
             ->orderBy('id', 'asc')
             ->get();
 
-        $triggerUser  = EmailerTriggerUser::where('id', '>', 0)
+        $triggerUser = EmailerTriggerUser::where('id', '>', 0)
             ->orderBy('id', 'asc')
             ->get();
 
         $data = [
-            'admins'       => $admins,
+            'admins' => $admins,
             'triggerAdmin' => $triggerAdmin,
             'triggerUser'  => $triggerUser,
         ];
@@ -2021,7 +2021,7 @@ class AdminController extends Controller
         $record = EmailerTriggerAdmin::find($recordId);
 
         if ($record) {
-            $enabled         = (int)$request->get('enabled');
+            $enabled = (int) $request->get('enabled');
             $record->enabled = $enabled;
             $record->save();
             return ['success' => true];
@@ -2033,12 +2033,12 @@ class AdminController extends Controller
     // Update Emailer Trigger User
     public function updateEmailerTriggerUser($recordId, Request $request)
     {
-        $user   = Auth::user();
+        $user = Auth::user();
         $record = EmailerTriggerUser::find($recordId);
 
         if ($record) {
-            $enabled         = (int)$request->get('enabled');
-            $content         = $request->get('content');
+            $enabled = (int) $request->get('enabled');
+            $content = $request->get('content');
             $record->enabled = $enabled;
 
             if ($content) {
@@ -2063,7 +2063,7 @@ class AdminController extends Controller
             return $this->validateResponse($validator->errors());
         }
 
-        $rule          = LockRules::where('id', $id)->first();
+        $rule = LockRules::where('id', $id)->first();
         $rule->is_lock = $request->is_lock;
         $rule->save();
 
@@ -2073,16 +2073,16 @@ class AdminController extends Controller
     // Get GraphInfo
     public function getGraphInfo(Request $request)
     {
-        $user           = Auth::user();
+        $user = Auth::user();
         $graphDataDay   = 
         $graphDataWeek  = 
         $graphDataMonth = 
         $graphDataYear  = [];
 
-        $timeDay   = Carbon::now('UTC')->subHours(24);
-        $timeWeek  = Carbon::now('UTC')->subDays(7);
+        $timeDay = Carbon::now('UTC')->subHours(24);
+        $timeWeek = Carbon::now('UTC')->subDays(7);
         $timeMonth = Carbon::now('UTC')->subDays(30);
-        $timeYear  = Carbon::now('UTC')->subYear();
+        $timeYear = Carbon::now('UTC')->subYear();
 
         $items = TokenPrice::orderBy('created_at', 'desc')
             ->where('created_at', '>=', $timeDay)
