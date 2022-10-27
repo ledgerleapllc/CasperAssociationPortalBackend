@@ -93,7 +93,25 @@ class AdminFunctionsTest extends TestCase
                     'data',
                 ]);
     }
-    
+
+    public function testBypassApproveKYC() {
+        $user = $this->addUser();
+        $token = $this->getAdminToken();
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('post', '/api/v1/admin/users/bypass-approve-kyc/' . $user->id);
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
     public function testGetUsers() {
         $token = $this->getAdminToken();
         

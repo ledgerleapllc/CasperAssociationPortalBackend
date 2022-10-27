@@ -854,11 +854,11 @@ class AdminController extends Controller
 
     public function bypassApproveKYC($user_id)
     {
-        $user_id    = (int) $user_id;
-        $user       = User::find($user_id);
-        $now        = Carbon::now('UTC');
+        $user_id = (int) $user_id;
+        $user = User::find($user_id);
+        $now = Carbon::now('UTC');
         $admin_user = auth()->user();
-
+        
         if ($user && $user->role == 'member') {
             $user->kyc_verified_at = $now;
             $user->approve_at = $now;
