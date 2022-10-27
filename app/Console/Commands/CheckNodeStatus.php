@@ -102,7 +102,7 @@ class CheckNodeStatus extends Command
                         $hasOnline = true;
 
                         if (isset($settings['uptime_probation']) && (float) $settings['uptime_probation'] > 0) {
-                            $uptime_calc_size = $settings['uptime_calc_size'] ?? 0;
+                            $uptime_calc_size = $settings['uptime_calc_size'] ?? 1;
                             $uptime_calc_size = (int) $uptime_calc_size;
 
                             $uptime = (float) $temp->uptime;

@@ -231,8 +231,8 @@ class UserController extends Controller
 
         $settings = Helper::getSettings();
         
-        $voting_eras_to_vote = isset($settings['voting_eras_to_vote']) ? (int) $settings['voting_eras_to_vote'] : 0;
-        $uptime_calc_size = isset($settings['uptime_calc_size']) ? (int) $settings['uptime_calc_size'] : 0;
+        $voting_eras_to_vote = isset($settings['voting_eras_to_vote']) ? (int) $settings['voting_eras_to_vote'] : 1;
+        $uptime_calc_size = isset($settings['uptime_calc_size']) ? (int) $settings['uptime_calc_size'] : 1;
 
         // for each address belonging to a user
         foreach ($addresses as $address) {
@@ -358,7 +358,7 @@ class UserController extends Controller
         ");
         if (!$addresses) $addresses = [];
 
-        $uptime_calc_size = isset($settings['uptime_calc_size']) ? (int) ($settings['uptime_calc_size']) : 0;
+        $uptime_calc_size = isset($settings['uptime_calc_size']) ? (int) ($settings['uptime_calc_size']) : 1;
 
         foreach ($addresses as $address) {
             $p = $address->public_key ?? '';
@@ -524,7 +524,7 @@ class UserController extends Controller
         ");
         if (!$addresses) $addresses = [];
 
-        $uptime_calc_size = isset($settings['uptime_calc_size']) ? (int) $settings['uptime_calc_size'] : 0;
+        $uptime_calc_size = isset($settings['uptime_calc_size']) ? (int) $settings['uptime_calc_size'] : 1;
 
         // for each member's node address
         foreach ($addresses as $address) {
@@ -631,6 +631,7 @@ class UserController extends Controller
             LIMIT 1
         ");
         if (!$temp) $temp = [];
+
         $return['mbs'] = 0;
         if (isset($temp[0])) $return['mbs'] = (int) ($temp[0]->mbs ?? 0);
 
@@ -666,8 +667,8 @@ class UserController extends Controller
         if (!$addresses) $addresses = [];
 
         // get settings
-        $voting_eras_to_vote = isset($settings['voting_eras_to_vote']) ? (int) $settings['voting_eras_to_vote'] : 0;
-        $uptime_calc_size = isset($settings['uptime_calc_size']) ? (int) $settings['uptime_calc_size'] : 0;
+        $voting_eras_to_vote = isset($settings['voting_eras_to_vote']) ? (int) $settings['voting_eras_to_vote'] : 1;
+        $uptime_calc_size = isset($settings['uptime_calc_size']) ? (int) $settings['uptime_calc_size'] : 1;
 
         // for each member's node address
         foreach ($addresses as $address) {
@@ -1651,8 +1652,8 @@ class UserController extends Controller
         $current_era_id = Helper::getCurrentERAId();
         $settings = Helper::getSettings();
 
-        $voting_eras_to_vote = isset($settings['voting_eras_to_vote']) ? (int) $settings['voting_eras_to_vote'] : 0;
-        $voting_eras_since_redmark = isset($settings['voting_eras_since_redmark']) ? (int) $settings['voting_eras_since_redmark'] : 0;
+        $voting_eras_to_vote = isset($settings['voting_eras_to_vote']) ? (int) $settings['voting_eras_to_vote'] : 1;
+        $voting_eras_since_redmark = isset($settings['voting_eras_since_redmark']) ? (int) $settings['voting_eras_since_redmark'] : 1;
 
         $return['setting_voting_eras'] = $voting_eras_to_vote;
         $return['setting_good_standing_eras'] = $voting_eras_since_redmark;
