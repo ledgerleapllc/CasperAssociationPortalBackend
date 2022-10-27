@@ -990,10 +990,11 @@ class AdminController extends Controller
 
     public function bypassApproveKYC($user_id)
     {
-        $user_id = (int) $user_id;
-        $now     = Carbon::now('UTC');
+        $user_id    = (int) $user_id;
+        $user       = User::find($user_id);
+        $now        = Carbon::now('UTC');
+        $admin_user = auth()->user();
 
-        $user = User::find($user_id);
         if ($user && $user->role == 'member') {
             $user->kyc_verified_at = $now;
             $user->approve_at = $now;
@@ -1001,6 +1002,7 @@ class AdminController extends Controller
             $user->save();
 
             $profile = Profile::where('user_id', $user_id)->first();
+
             if (!$profile) {
                 $profile = new Profile;
                 $profile->user_id = $user_id;
@@ -1008,17 +1010,21 @@ class AdminController extends Controller
                 $profile->last_name = $user->last_name;
                 $profile->type = $user->type;
             }
+
             $profile->status = 'approved';
             $profile->save();
-        
             $shuftipro = Shuftipro::where('user_id', $user_id)->first();
+
             if (!$shuftipro) {
                 $shuftipro = new Shuftipro;
                 $shuftipro->user_id = $user_id;
                 $shuftipro->reference_id = 'ByPass#' . time();
             }
+
             $shuftipro->is_successful = 1;
             $shuftipro->status = 'approved';
+            $shuftipro->manual_approved_at = $now;
+            $shuftipro->manual_reviewer = $admin_user->email;
             $shuftipro->save();
         }
 
@@ -1885,16 +1891,13 @@ class AdminController extends Controller
         $limit = $request->limit ?? 50;
         $users = User::where('users.role', 'member')
             ->where('banned', 0)
-            ->join('profile', function ($query) {
-                $query->on('profile.user_id', '=', 'users.id')
-                    ->where('profile.status', 'pending');
-            })
             ->join('shuftipro', 'shuftipro.user_id', '=', 'users.id')
+            ->where('shuftipro.status', 'denied')
+            ->orWhere('shuftipro.status', 'pending')
             ->select([
                 'users.id as user_id',
                 'users.created_at',
                 'users.email',
-                'profile.*',
                 'shuftipro.status as kyc_status',
                 'shuftipro.background_checks_result',
                 'shuftipro.manual_approved_at'
@@ -2034,6 +2037,7 @@ class AdminController extends Controller
                 'users.*',
                 'shuftipro.status as kyc_status',
                 'shuftipro.background_checks_result',
+                'shuftipro.data'
             ])
             ->where('users.role', 'member')
             ->where('banned', 0)
@@ -2048,6 +2052,15 @@ class AdminController extends Controller
                 $url = Storage::disk('local')->url($user->shuftipro->address_proof);
                 $user->shuftipro->address_proof_link = asset($url);
             }
+
+            $declined_reason = '';
+
+            try {
+                $declined_reason = json_decode(json_decode($user->data))->declined_reason;
+            } catch (Exception $e) {}
+
+            $user->declined_reason = $declined_reason;
+
             return $this->successResponse($user);
         }
 
