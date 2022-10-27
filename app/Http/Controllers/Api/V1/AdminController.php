@@ -1384,13 +1384,7 @@ class AdminController extends Controller
     // Get Global Settings
     public function getGlobalSettings()
     {
-        $items    = Setting::get();
-        $settings = [];
-        if ($items) {
-            foreach ($items as $item) {
-                $settings[$item->name] = $item->value;
-            }
-        }
+        $settings = Helper::getSettings();
 
         $ruleKycNotVerify = LockRules::where('type', 'kyc_not_verify')
             ->orderBy('id', 'ASC')

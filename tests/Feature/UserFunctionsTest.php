@@ -31,7 +31,7 @@ class UserFunctionsTest extends TestCase
         ])->json('get', '/api/v1/members/ca-kyc-hash/AB10BC99');
 
         // $apiResponse = $response->baseResponse->getData();
-
+        
         $response->assertStatus(200)
                 ->assertJsonStructure([
                     'message',
@@ -576,7 +576,7 @@ class UserFunctionsTest extends TestCase
     /*
     public function testGetEarningByNode() {
         $node = '011117189c666f81c5160cd610ee383dc9b2d0361f004934754d39752eedc64957';
-        $token = $this->getUserToken($node);
+        $token = $this->getUserToken();
 
         $response = $this->withHeaders([
             'Accept' => 'application/json',
@@ -596,7 +596,7 @@ class UserFunctionsTest extends TestCase
     /*
     public function testGetChartEarningByNode() {
         $node = '011117189c666f81c5160cd610ee383dc9b2d0361f004934754d39752eedc64957';
-        $token = $this->getUserToken($node);
+        $token = $this->getUserToken();
 
         $response = $this->withHeaders([
             'Accept' => 'application/json',

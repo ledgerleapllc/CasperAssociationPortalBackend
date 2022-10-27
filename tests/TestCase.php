@@ -10,9 +10,11 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Date;
 
 use App\Models\User;
+use App\Models\UserAddress;
 use App\Models\Profile;
 use App\Models\VerifyUser;
 use App\Models\PagePermission;
+use App\Models\AllNodeData2;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -24,6 +26,36 @@ abstract class TestCase extends BaseTestCase
         Artisan::call('config:clear');
         Artisan::call('cache:clear');
         Artisan::call('passport:install');
+
+        $key = '011117189c666f81c5160cd610ee383dc9b2d0361f004934754d39752eedc64957';
+        $eraId = 5537;
+
+        $record = AllNodeData2::where('public_key', $key)
+                            ->where('era_id', $eraId)
+                            ->first();
+        if (!$record) {
+            $record = new AllNodeData2;
+            $record->public_key = $key;
+            $record->era_id = $eraId;
+            $record->uptime = 99.77;
+            $record->current_era_weight = 320860571;
+            $record->next_era_weight = 320868080;
+            $record->in_current_era = 1;
+            $record->in_next_era = 1;
+            $record->in_auction = 1;
+            $record->bid_delegators_count = 173;
+            $record->bid_delegation_rate = 10;
+            $record->bid_inactive = 0;
+            $record->bid_self_staked_amount = 2281468;
+            $record->bid_delegators_staked_amount = 318586612;
+            $record->bid_total_staked_amount = 320868080;
+            $record->port8888_peers = 0;
+            $record->port8888_era_id = null;
+            $record->port8888_block_height = null;
+            $record->port8888_build_version = null;
+            $record->port8888_next_upgrade = null;
+            $record->save();
+        }
     }
     
     public function addAdmin() {
@@ -60,7 +92,9 @@ abstract class TestCase extends BaseTestCase
         return null;
     }
 
-    public function addUser($node = null) {
+    public function addUser() {
+        $node = '011117189c666f81c5160cd610ee383dc9b2d0361f004934754d39752eedc64957';
+
         $first_name = 'Test';
         $last_name = 'Individual';
         $email = 'testindividual@gmail.com';
@@ -82,9 +116,20 @@ abstract class TestCase extends BaseTestCase
             $user->signature_request_id = 'TestSignatureRequestId';
             $user->role = 'member';
             $user->letter_file = 'LetterFileLink';
-            if ($node) $user->public_address_node = $node;
+            $user->public_address_node = $node;
             $user->save();
         }
+
+        $userAddress = UserAddress::where('user_id', $user->id)
+                                    ->where('public_address_node', $node)
+                                    ->first();
+        if (!$userAddress) {
+            $userAddress = new UserAddress;
+            $userAddress->user_id = $user->id;
+            $userAddress->public_address_node = $node;
+            $userAddress->save();
+        }
+
         return $user;
     }
 
@@ -106,8 +151,8 @@ abstract class TestCase extends BaseTestCase
         $permission->save();
     }
 
-    public function getUserTokenData($node = null) {
-        $user = $this->addUser($node);
+    public function getUserTokenData() {
+        $user = $this->addUser();
 
         $params = [
             'email' => 'testindividual@gmail.com',
@@ -125,8 +170,8 @@ abstract class TestCase extends BaseTestCase
         return null;
     }
 
-    public function getUserToken($node = null) {
-        $this->addUser($node);
+    public function getUserToken() {
+        $this->addUser();
 
         $params = [
             'email' => 'testindividual@gmail.com',
