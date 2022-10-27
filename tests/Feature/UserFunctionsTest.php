@@ -157,9 +157,9 @@ class UserFunctionsTest extends TestCase
             'Accept' => 'application/json',
             'Authorization' => 'Bearer ' . $token,
         ])->json('get', '/api/v1/users/get-membership-page');
-        
+
         // $apiResponse = $response->baseResponse->getData();
-        
+
         $response->assertStatus(200)
                 ->assertJsonStructure([
                     'message',
@@ -202,7 +202,20 @@ class UserFunctionsTest extends TestCase
     }
 
     public function testCanVote() {
+        $token = $this->getUserToken();
 
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('get', '/api/v1/users/can-vote');
+        
+        // $apiResponse = $response->baseResponse->getData();
+        
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
     }
 
     public function testChangeEmail() {
@@ -241,10 +254,6 @@ class UserFunctionsTest extends TestCase
                     'message',
                     'data',
                 ]);
-    }
-
-    public function testSendHellosignRequest() {
-
     }
 
     public function testSubmitPublicAddress() {

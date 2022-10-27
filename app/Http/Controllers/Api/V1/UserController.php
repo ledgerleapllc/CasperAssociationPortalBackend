@@ -556,11 +556,10 @@ class UserController extends Controller
                 LIMIT 1
             ");
             if (!$temp) $temp = [];
+
             $total_eras = 0;
-            if (isset($temp[0])) {
-                $total_eras = (int) ($temp[0]->era_id ?? 0);
-                if ($current_era_id > $total_eras) $total_eras = $current_era_id - $total_eras;
-            }
+            if (isset($temp[0])) $total_eras = (int) ($temp[0]->era_id ?? 0);
+            if ($current_era_id > $total_eras) $total_eras = $current_era_id - $total_eras;
 
             // Calculate historical_performance from past $uptime_calc_size eras
             $missed = 0;
@@ -643,33 +642,14 @@ class UserController extends Controller
         $user_id = $user->id ?? 0;
 
         $current_era_id = Helper::getCurrentERAId();
-        
-        // define return object
-        $return = array(
-            "addresses" => array(
-                "0123456789abcdef"          => array(
-                    "uptime"                => 0,
-                    "eras_active"           => 0,
-                    "eras_since_bad_mark"   => $current_era_id,
-                    "total_bad_marks"       => 0
-                )
-            ),
-            "column_count"                  => 2,
-            "eras" => array(
-                array(
-                    "era_start_time"        => '',
-                    "addresses"             => array(
-                        "0123456789abcdef"  => array(
-                            "in_pool"       => false,
-                            "rewards"       => 0
-                        )
-                    )
-                )
-            )
-        );
+        $settings = Helper::getSettings();
 
-        unset($return["addresses"]["0123456789abcdef"]);
-        unset($return["eras"][0]);
+        // define return object
+        $return = [
+            "addresses" => [],
+            "column_count" => 2,
+            "eras" => []
+        ];
         
         // get addresses data
         $addresses = DB::select("
@@ -683,33 +663,17 @@ class UserController extends Controller
             WHERE a.era_id  = $current_era_id
             AND b.user_id   = $user_id
         ");
-
-        if (!$addresses) {
-            $addresses = array();
-        }
+        if (!$addresses) $addresses = [];
 
         // get settings
-        $voting_eras_to_vote = DB::select("
-            SELECT value
-            FROM settings
-            WHERE name = 'voting_eras_to_vote'
-        ");
-        $voting_eras_to_vote = $voting_eras_to_vote[0] ?? array();
-        $voting_eras_to_vote = (int)($voting_eras_to_vote->value ?? 0);
-
-        $uptime_calc_size = DB::select("
-            SELECT value
-            FROM settings
-            WHERE name = 'uptime_calc_size'
-        ");
-        $uptime_calc_size = $uptime_calc_size[0] ?? array();
-        $uptime_calc_size = (int)($uptime_calc_size->value ?? 0);
+        $voting_eras_to_vote = isset($settings['voting_eras_to_vote']) ? (int) $settings['voting_eras_to_vote'] : 0;
+        $uptime_calc_size = isset($settings['uptime_calc_size']) ? (int) $settings['uptime_calc_size'] : 0;
 
         // for each member's node address
         foreach ($addresses as $address) {
             $p = $address->public_key ?? '';
 
-            $total_bad_marks = DB::select("
+            $temp = DB::select("
                 SELECT era_id
                 FROM all_node_data2
                 WHERE public_key = '$p'
@@ -719,60 +683,60 @@ class UserController extends Controller
                 )
                 ORDER BY era_id DESC
             ");
+            if (!$temp) $temp = [];
 
-            $eras_since_bad_mark = $total_bad_marks[0] ?? array();
-            $eras_since_bad_mark = $current_era_id - (int)($eras_since_bad_mark->era_id ?? 0);
-            $total_bad_marks     = count((array)$total_bad_marks);
+            $eras_since_bad_mark = $current_era_id;
+            if (isset($temp[0])) {
+                $eras_since_bad_mark = $current_era_id - (int) ($temp[0]->era_id ?? 0);
+            }
+            $total_bad_marks = count($temp);
 
-            $eras_active = DB::select("
+            $temp = DB::select("
                 SELECT era_id
                 FROM all_node_data2
                 WHERE public_key = '$p'
                 ORDER BY era_id ASC
                 LIMIT 1
             ");
+            if (!$temp) $temp = [];
 
-            $eras_active = (int)($eras_active[0]->era_id ?? 0);
+            $eras_active = 0;
+            if (isset($temp[0])) $eras_active = (int) ($temp[0]->era_id ?? 0);
+            if ($eras_active < $current_era_id) $eras_active = $current_era_id - $eras_active;
 
             // Calculate historical_performance from past $uptime_calc_size eras
             $missed = 0;
-            $in_current_eras = DB::select("
+            $temp = DB::select("
                 SELECT in_current_era
                 FROM all_node_data2
                 WHERE public_key = '$p'
                 ORDER BY era_id DESC
                 LIMIT $uptime_calc_size
             ");
+            if (!$temp) $temp = [];
 
-            $in_current_eras = $in_current_eras ? $in_current_eras : array();
-            $window          = $in_current_eras ? count($in_current_eras) : 0;
+            $window = count($temp);
 
-            foreach ($in_current_eras as $c) {
-                $in = (bool)($c->in_current_era ?? 0);
-
+            foreach ($temp as $c) {
+                $in = (bool) ($c->in_current_era ?? 0);
                 if (!$in) {
                     $missed += 1;
                 }
             }
 
-            $uptime                 = (float)($address->uptime ?? 0);
-            $historical_performance = round(
-                ($uptime * ($window - $missed)) / $window,
-                2,
-                PHP_ROUND_HALF_UP
-            );
+            $uptime = (float) ($address->uptime ?? 0);
+            $historical_performance = round((float) ($uptime * ($window - $missed) / $window), 2);
 
-            $return["addresses"][$p]   = array(
-                "uptime"              => round($historical_performance, 2),
-                "eras_active"         => $current_era_id - $eras_active,
+            $return["addresses"][$p] = [
+                "uptime" => round($historical_performance, 2),
+                "eras_active" => $eras_active,
                 "eras_since_bad_mark" => $eras_since_bad_mark,
-                "total_bad_marks"     => $total_bad_marks
-            );
+                "total_bad_marks" => $total_bad_marks
+            ];
         }
 
         // get eras table data
         $era_minus_360 = $current_era_id - $uptime_calc_size;
-
         if ($era_minus_360 < 1) {
             $era_minus_360 = 1;
         }
@@ -791,41 +755,34 @@ class UserController extends Controller
             AND era_id > $era_minus_360
             ORDER BY a.era_id DESC
         ");
+        if (!$eras) $eras = [];
 
-        if (!$eras) {
-            $eras = array();
-        }
-
-        $sorted_eras = array();
+        $sorted_eras = [];
 
         // for each node address's era
         foreach ($eras as $era) {
-            $era_id               = $era->era_id ?? 0;
-            $era_start_time       = $era->created_at ?? '';
-            $public_key           = $era->public_key;
+            $era_id = $era->era_id ?? 0;
+            $era_start_time = $era->created_at ?? '';
+            $public_key = $era->public_key;
 
             if (!isset($sorted_eras[$era_id])) {
-                $sorted_eras[$era_id] = array(
+                $sorted_eras[$era_id] = [
                     "era_start_time"  => $era_start_time,
-                    "addresses"       => array()
-                );
+                    "addresses"       => []
+                ];
             }
 
-            $sorted_eras
-            [$era_id]
-            ["addresses"]
-            [$public_key] = array(
+            $sorted_eras[$era_id]["addresses"][$public_key] = [
                 "in_pool" => $era->in_auction,
-                "rewards" => $era->uptime,
-            );
+                "rewards" => $era->uptime
+            ];
         }
 
         $return["eras"] = $sorted_eras;
-        $column_count   = 0;
+        $column_count = 0;
 
         foreach ($return["eras"] as $era) {
             $count = $era["addresses"] ? count($era["addresses"]) : 0;
-
             if ($count > $column_count) {
                 $column_count = $count;
             }
@@ -833,7 +790,6 @@ class UserController extends Controller
 
         $return["column_count"] = $column_count + 1;
 
-        // info($return);
         return $this->successResponse($return);
     }
 
@@ -1681,44 +1637,24 @@ class UserController extends Controller
 
     public function canVote()
     {
-        $user    = auth()->user();
+        $user = auth()->user();
         $user_id = $user->id;
 
-        $return = array(
-            'setting_voting_eras'        => 0,
+        $return = [
+            'setting_voting_eras' => 0,
             'setting_good_standing_eras' => 0,
-            'good_standing_eras'         => 0,
-            'total_active_eras'          => 0,
+            'good_standing_eras' => 0,
+            'total_active_eras' => 0,
             'can_vote' => false
-        );
+        ];
 
-        // current era
-        $current_era_id = DB::select("
-            SELECT era_id
-            FROM all_node_data2
-            ORDER BY era_id DESC
-            LIMIT 1
-        ");
-        $current_era_id = (int)($current_era_id[0]->era_id ?? 0);
+        $current_era_id = Helper::getCurrentERAId();
+        $settings = Helper::getSettings();
 
-        // get settings
-        $voting_eras_to_vote = DB::select("
-            SELECT value
-            FROM settings
-            WHERE name = 'voting_eras_to_vote'
-        ");
-        $voting_eras_to_vote = $voting_eras_to_vote[0] ?? array();
-        $voting_eras_to_vote = (int)($voting_eras_to_vote->value ?? 0);
+        $voting_eras_to_vote = isset($settings['voting_eras_to_vote']) ? (int) $settings['voting_eras_to_vote'] : 0;
+        $voting_eras_since_redmark = isset($settings['voting_eras_since_redmark']) ? (int) $settings['voting_eras_since_redmark'] : 0;
 
-        $voting_eras_since_redmark = DB::select("
-            SELECT value
-            FROM settings
-            WHERE name = 'voting_eras_since_redmark'
-        ");
-        $voting_eras_since_redmark = $voting_eras_since_redmark[0] ?? array();
-        $voting_eras_since_redmark = (int)($voting_eras_since_redmark->value ?? 0);
-
-        $return['setting_voting_eras']        = $voting_eras_to_vote;
+        $return['setting_voting_eras'] = $voting_eras_to_vote;
         $return['setting_good_standing_eras'] = $voting_eras_since_redmark;
 
         $user_addresses = DB::select("
@@ -1726,14 +1662,13 @@ class UserController extends Controller
             FROM user_addresses
             WHERE user_id = $user_id
         ");
-        $user_addresses = $user_addresses ?? array();
+        $user_addresses = $user_addresses ?? [];
 
         foreach ($user_addresses as $a) {
             $p = $a->public_address_node ?? '';
 
             // find smallest number of eras since public_key encountered a bad mark
-            // good_standing_eras
-            $good_standing_eras = DB::select("
+            $temp = DB::select("
                 SELECT era_id 
                 FROM all_node_data2
                 WHERE public_key = '$p'
@@ -1744,28 +1679,24 @@ class UserController extends Controller
                 ORDER BY era_id DESC
                 LIMIT 1
             ");
-            $good_standing_eras = $good_standing_eras[0] ?? array();
-            $good_standing_eras = (int)($good_standing_eras->era_id ?? 0);
-            $good_standing_eras = $current_era_id - $good_standing_eras;
+            if (!$temp) $temp = [];
 
-            if ($good_standing_eras < 0) {
-                $good_standing_eras = 0;
-            }
-
+            $good_standing_eras = 0;
+            if (isset($temp[0])) $good_standing_eras = (int) ($temp[0]->era_id ?? 0);
+            if ($current_era_id > $good_standing_eras) $good_standing_eras = $current_era_id - $good_standing_eras;
             if ($good_standing_eras > $return['good_standing_eras']) {
                 $return['good_standing_eras'] = $good_standing_eras;
             }
 
             // total_active_eras
-            $eras = DB::select("
-                SELECT count(id)
+            $temp = DB::select("
+                SELECT count(id) as tCount
                 FROM all_node_data2
                 WHERE public_key = '$p'
             ");
-
-            $eras = (array)($eras[0] ?? array());
-            $eras = (int)($eras['count(id)'] ?? 0);
-
+            if (!$temp) $temp = [];
+            $eras = 0;
+            if (isset($temp[0])) $eras = (int) ($temp[0]->tCount ?? 0);
             if ($current_era_id - $eras > $return['total_active_eras']) {
                 $return['total_active_eras'] = $current_era_id - $eras;
             }
