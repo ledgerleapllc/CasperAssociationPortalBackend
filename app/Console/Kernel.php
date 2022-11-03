@@ -52,6 +52,12 @@ class Kernel extends ConsoleKernel
             ->everyFifteenMinutes()
             ->runInBackground();
         */
+
+        // New historical data getter
+        $schedule->command('historical-data')
+            ->everyFiveMinutes()
+            ->runInBackground();
+
         $schedule->command('refresh:address')
             ->everyFiveMinutes()
             ->runInBackground();
