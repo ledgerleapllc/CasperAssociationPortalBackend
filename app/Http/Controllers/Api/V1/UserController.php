@@ -1759,6 +1759,8 @@ class UserController extends Controller
         $voting_eras_since_redmark = $voting_eras_since_redmark[0] ?? array();
         $voting_eras_since_redmark = (int)($voting_eras_since_redmark->value ?? 0);
 
+        $current_era_id = Helper::getCurrentERAId();
+
         foreach ($addresses as $address) {
             $p = $address->public_address_node ?? '';
 

@@ -1915,7 +1915,7 @@ class AdminController extends Controller
 
             try {
                 $declined_reason = json_decode(json_decode($user->data))->declined_reason;
-            } catch (Exception $e) {}
+            } catch (\Exception $ex) {}
 
             $user->declined_reason = $declined_reason;
 
