@@ -70,7 +70,7 @@ class HistoricalData extends Command
             $test_era   = (int)($json->result->block->header->era_id ?? 0);
             $timestamp  = $json->result->block->header->timestamp ?? '';
 
-            if (!$timestamp) {
+            if (!$timestamp || $timestamp == '') {
                 info('Historical block overflow - reset');
                 $blocks_per_era = 101;
                 $historic_block = $blocks_per_era * $historic_era;
