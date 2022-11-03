@@ -74,6 +74,7 @@ class HistoricalData extends Command
                 info('Historical block overflow - reset');
                 $blocks_per_era = 101;
                 $historic_block = $blocks_per_era * $historic_era;
+                break;
             }
 
             if ($test_era < $historic_era) {
