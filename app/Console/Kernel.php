@@ -55,6 +55,7 @@ class Kernel extends ConsoleKernel
 
         // New historical data getter
         $schedule->command('historical-data')
+            ->withoutOverlapping()
             ->everyFiveMinutes()
             ->runInBackground();
 
