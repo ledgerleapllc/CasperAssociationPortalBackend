@@ -57,17 +57,3 @@ function total_ram_cpu_usage()
         'load' => $load,
     ];
 }
-
-// Get Settings
-function getSettings()
-{
-    // Get Settings
-    $settings = [];
-    $items = Setting::get();
-    if ($items) {
-        foreach ($items as $item) {
-            $settings[$item->name] = $item->value;
-        }
-    }
-    return $settings;
-}

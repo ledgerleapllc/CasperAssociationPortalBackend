@@ -57,8 +57,7 @@ class DiscussionController extends Controller
         if (Helper::isAccessBlocked($user, 'discussions'))
             return $this->successResponse(['data' => []]);
 
-        $limit = $request->limit ?? 50;
-        $trendings = Discussion::where('likes', '!=', 0)->where('is_draft', 0)->take(9)->orderBy('likes', 'desc')->paginate($limit);
+        $trendings = Discussion::where('likes', '!=', 0)->where('is_draft', 0)->take(9)->orderBy('likes', 'desc')->get();
         $count = Discussion::where('likes', '!=', 0)->where('is_draft', 0)->orderBy('likes', 'desc')->count();
         if ($count >= 9) {
             return $this->successResponse($trendings);
@@ -71,10 +70,8 @@ class DiscussionController extends Controller
                 ->where('is_draft', 0)
                 ->take($remains)->orderBy('id', 'desc')->get();
             $trendingArray = $trendings->toArray();
-            $trendingArray['data'] = array_merge($trendingArray['data'], $news->toArray());
-            return $this->successResponse([
-                'data' => $trendingArray['data']
-            ]);
+            $trendingArray = array_merge($trendingArray, $news->toArray());
+            return $this->successResponse($trendingArray);
         }
     }
 

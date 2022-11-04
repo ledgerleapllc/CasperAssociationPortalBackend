@@ -2,12 +2,17 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Helper;
+
 use App\Models\MonitoringCriteria;
 use App\Models\User;
 use App\Models\UserAddress;
 use App\Models\NodeInfo;
+use App\Models\AllNodeData2;
+
 use Carbon\Carbon;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -43,6 +48,119 @@ class CheckNodeStatus extends Command
      * @return int
      */
     public function handle()
+    {
+        $settings = Helper::getSettings();
+        $current_era_id = Helper::getCurrentERAId();
+
+        $now = Carbon::now('UTC');
+        $users = User::with(['addresses', 'profile'])
+                        ->where('role', 'member')
+                        ->where('banned', 0)
+                        ->get();
+
+        foreach ($users as $user) {
+            $addresses = $user->addresses ?? [];
+
+            if (
+                !$addresses ||
+                count($addresses) == 0 ||
+                !$user->node_verified_at ||
+                !$user->letter_verified_at ||
+                !$user->signature_request_id
+            ) {
+                $user->node_status = null;
+                $user->save();
+
+                if ($user->profile) {
+                    $user->profile->extra_status = null;
+                    $user->profile->save();
+                }
+
+                if ($addresses && count($addresses) > 0) {
+                    foreach ($addresses as $address) {
+                        $address->node_status = null;
+                        $address->extra_status = null;
+                        $address->save();
+                    }
+                }
+            } else {
+                $hasOnline = $hasOnProbation = false;
+                foreach ($addresses as $address) {
+                    $public_address_node = strtolower($address->public_address_node);
+
+                    $temp = AllNodeData2::select(['id', 'uptime'])
+                                        ->where('public_key', $public_address_node)
+                                        ->where('era_id', $current_era_id)
+                                        ->where('bid_inactive', 0)
+                                        ->where('in_auction', 1)
+                                        ->where('in_current_era', 1)
+                                        ->first();
+                    if ($temp) {
+                        $address->node_status = 'Online';
+                        $address->extra_status = null;
+                        $address->save();
+                        $hasOnline = true;
+
+                        if (isset($settings['uptime_probation']) && (float) $settings['uptime_probation'] > 0) {
+                            $uptime_calc_size = $settings['uptime_calc_size'] ?? 1;
+                            $uptime_calc_size = (int) $uptime_calc_size;
+
+                            $uptime = (float) $temp->uptime;
+                            if ($uptime_calc_size > 0) {
+                                $missed = 0;
+                                $in_current_eras = DB::select("
+                                    SELECT in_current_era
+                                    FROM all_node_data2
+                                    WHERE public_key = '$public_address_node'
+                                    ORDER BY era_id DESC
+                                    LIMIT $uptime_calc_size
+                                ");
+                                $in_current_eras = $in_current_eras ? $in_current_eras : [];
+                                $window = $in_current_eras ? count($in_current_eras) : 0;
+                                foreach ($in_current_eras as $c) {
+                                    $in = (bool) ($c->in_current_era ?? 0);
+                                    if (!$in) {
+                                        $missed += 1;
+                                    }
+                                }
+                                $uptime = round((float) (($uptime * ($window - $missed)) / $window), 2);
+                            }
+
+                            if ($uptime < (float) $settings['uptime_probation']) {
+                                $address->extra_status = 'On Probation';
+                                $address->save();
+                                $hasOnProbation = true;
+                            }
+                        }
+                    } else {
+                        $address->node_status = 'Offline';
+                        $address->extra_status = null;
+                        $address->save();
+                    }
+                }
+
+                if ($hasOnline) {
+                    $user->node_status = 'Online';
+                    $user->save();
+                } else {
+                    $user->node_status = 'Offline';
+                    $user->save();
+                }
+
+                if ($user->profile) {
+                    if ($hasOnProbation) {
+                        $user->profile->extra_status = 'On Probation';
+                        $user->profile->save();
+                    } else {
+                        $user->profile->extra_status = null;
+                        $user->profile->save();
+                    }
+                }
+            }
+        }
+    }
+
+    public function handleOld()
     {
         $uptime = MonitoringCriteria::where('type', 'uptime')->first();
         $uptimeProbationStart = $uptime->probation_start;

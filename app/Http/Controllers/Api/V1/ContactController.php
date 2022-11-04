@@ -42,15 +42,6 @@ class ContactController extends Controller
         return $this->metaSuccess();
     }
 
-    public function getContactRecipients(Request $request)
-    {
-        $limit = $request->limit ?? 50;
-        $sort_key = $request->sort_key ?? 'created_at';
-        $sort_direction = $request->sort_direction ?? 'desc';
-        $contactRecipients = ContactRecipient::orderBy($sort_key, $sort_direction)->paginate($limit);
-        return $this->successResponse($contactRecipients);
-    }
-
     public function addContactRecipients(Request $request)
     {
         $validator = Validator::make($request->all(), [

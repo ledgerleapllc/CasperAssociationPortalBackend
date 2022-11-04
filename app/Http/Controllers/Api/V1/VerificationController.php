@@ -42,8 +42,7 @@ class VerificationController extends Controller
                 'entity_name' => 'required',
                 'entity_type' => 'required',
                 'entity_registration_number' => 'required',
-                'entity_registration_country' => 'required',
-                'vat_number' => 'required'
+                'entity_registration_country' => 'required'
             ]);
             if ($validator2->fails()) {
                 return $this->validateResponse($validator2->errors());
@@ -53,7 +52,7 @@ class VerificationController extends Controller
             $profile->entity_type = $request->entity_type;
             $profile->entity_registration_number = $request->entity_registration_number;
             $profile->entity_registration_country = $request->entity_registration_country;
-            $profile->vat_number = $request->vat_number;
+            $profile->vat_number = $request->vat_number ?? null;
         } else {
             $profile->entity_name = null;
             $profile->entity_type = null;
@@ -110,7 +109,7 @@ class VerificationController extends Controller
             // Validator
             $validator = Validator::make($request->all(), [
                 'files' => 'array',
-                'files.*' => 'file|max:100000|mimes:pdf,docx,doc,txt,rtf'
+                'files.*' => 'file|max:100000|mimes:pdf,jpeg,jpg,png,txt,rtf'
             ]);
             if ($validator->fails()) {
                 return $this->validateResponse($validator->errors());
@@ -175,16 +174,5 @@ class VerificationController extends Controller
         } catch (\Exception $ex) {
             return $this->errorResponse(__('Failed upload file'), Response::HTTP_BAD_REQUEST, $ex->getMessage());
         }
-    }
-
-    public function removeDocument($id) {  
-        $user = auth()->user();
-        $documentFile = DocumentFile::where('user_id', $user->id)->where('id', $id)->first();
-        if ($documentFile) {
-            Storage::delete($documentFile->path);
-            $documentFile->delete();
-        }
-        $response = DocumentFile::where('user_id', $user->id)->get();
-        return $this->successResponse($response);
     }
 }
