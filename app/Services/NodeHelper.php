@@ -410,9 +410,16 @@ class NodeHelper
         }
 
         $timestamp = Carbon::createFromTimestamp($range, 'UTC')->toDateTimeString();
-        $total_records = DailyEarning::where('node_address', $validatorId)
-            ->where('created_at', '>', $timestamp)
-            ->get();
+        // $total_records = DailyEarning::where('node_address', $validatorId)
+        //     ->where('created_at', '>', $timestamp)
+        //     ->get();
+
+        $total_records = DB::select("
+            SELECT bid_self_staked_amount, created_at
+            FROM all_node_data2
+            WHERE created_at > '$timestamp'
+            AND public_key = '$validatorId'
+        ");
 
         $new_array = [];
         $display_record_count = 100;
@@ -424,13 +431,13 @@ class NodeHelper
             $new_array = [];
             $i = $modulo;
 
-            if ($modulo == 0) {
+            if ((int)$modulo == 0) {
                 $modulo = 1;
             }
 
             foreach ($total_records as $record) {
                 if ($i % $modulo == 0) {
-                    $new_array[(string) strtotime($record->created_at.' UTC')] = (string) $record->self_staked_amount;
+                    $new_array[(string) strtotime($record->created_at.' UTC')] = (string) $record->bid_self_staked_amount;
                 }
                 $i++;
             }
