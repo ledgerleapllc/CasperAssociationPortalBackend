@@ -1680,27 +1680,26 @@ class UserController extends Controller
                 ORDER BY era_id DESC
                 LIMIT 1
             ");
-            if (!$temp) $temp = [];
 
-            $good_standing_eras = 0;
-            if (isset($temp[0])) $good_standing_eras = (int) ($temp[0]->era_id ?? 0);
-            if ($current_era_id > $good_standing_eras) $good_standing_eras = $current_era_id - $good_standing_eras;
+            if (!$temp) {
+                $temp = [];
+            }
+
+            $good_standing_eras = $current_era_id - (int) ($temp[0]->era_id ?? 0);
+
             if ($good_standing_eras > $return['good_standing_eras']) {
                 $return['good_standing_eras'] = $good_standing_eras;
             }
 
             // total_active_eras
-            $temp = DB::select("
+            $total_active_eras = DB::select("
                 SELECT count(id) as tCount
                 FROM all_node_data2
                 WHERE public_key = '$p'
             ");
-            if (!$temp) $temp = [];
-            $eras = 0;
-            if (isset($temp[0])) $eras = (int) ($temp[0]->tCount ?? 0);
-            if ($current_era_id - $eras > $return['total_active_eras']) {
-                $return['total_active_eras'] = $current_era_id - $eras;
-            }
+
+            $total_active_eras           = $total_active_eras[0] ?? array();
+            $return['total_active_eras'] = (int)($total_active_eras->tCount ?? 0);
 
             if (
                 $return['total_active_eras']  >= $voting_eras_to_vote &&
@@ -1787,14 +1786,13 @@ class UserController extends Controller
 
             // total_active_eras
             $total_active_eras = DB::select("
-                SELECT count(id)
+                SELECT count(id) AS tCount
                 FROM all_node_data2
                 WHERE public_key = '$p'
             ");
 
-            $total_active_eras = (array)($total_active_eras[0] ?? array());
-            $total_active_eras = (int)($total_active_eras['count(id)'] ?? 0);
-            $total_active_eras = $current_era_id - $total_active_eras;
+            $total_active_eras = $total_active_eras[0] ?? array();
+            $total_active_eras = (int)($total_active_eras->tCount ?? 0);
 
             if (
                 $total_active_eras  >= $voting_eras_to_vote &&
