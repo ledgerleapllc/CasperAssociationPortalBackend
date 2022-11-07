@@ -415,7 +415,7 @@ class NodeHelper
         //     ->get();
 
         $total_records = DB::select("
-            SELECT bid_self_staked_amount
+            SELECT bid_self_staked_amount, created_at
             FROM all_node_data2
             WHERE created_at > '$timestamp'
             AND public_key = '$validatorId'
