@@ -437,7 +437,7 @@ class NodeHelper
 
             foreach ($total_records as $record) {
                 if ($i % $modulo == 0) {
-                    $new_array[(string) strtotime($record->created_at.' UTC')] = (string) $record->self_staked_amount;
+                    $new_array[(string) strtotime($record->created_at.' UTC')] = (string) $record->bid_self_staked_amount;
                 }
                 $i++;
             }
