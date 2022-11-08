@@ -162,8 +162,10 @@ class CheckNodeStatus extends Command
                             $bad_marks = $bad_marks[0] ?? [];
                             $bad_marks = (int)($bad_marks->bad_marks ?? 0);
 
-                            if ($bad_marks > $settings['redmarks_revoke']) {
+                            if ($bad_marks > (int)$settings['redmarks_revoke']) {
+                                $user->node_status     = 'Offline';
                                 $address->extra_status = 'Suspended';
+                                $address->node_status  = 'Offline';
                                 $address->save();
                                 $hasOnProbation = true;
                             }
