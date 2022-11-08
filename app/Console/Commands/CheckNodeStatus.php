@@ -163,7 +163,7 @@ class CheckNodeStatus extends Command
                             $bad_marks = (int)($bad_marks->bad_marks ?? 0);
 
                             if ($bad_marks > $settings['redmarks_revoke']) {
-                                $address->extra_status = 'On Probation';
+                                $address->extra_status = 'Suspended';
                                 $address->save();
                                 $hasOnProbation = true;
                             }
