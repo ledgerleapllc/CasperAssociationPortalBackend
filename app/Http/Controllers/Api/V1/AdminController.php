@@ -534,7 +534,7 @@ class AdminController extends Controller
             }
             $query .= " ORDER BY " . $sort_key . " " . $sort_direction;
         } else {
-            $query .= " ORDER BY a.id asc";
+            $query .= " ORDER BY a.id desc";
         }
 
         $users = DB::select($query);
