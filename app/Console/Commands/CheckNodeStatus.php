@@ -101,7 +101,11 @@ class CheckNodeStatus extends Command
                         $address->save();
                         $hasOnline = true;
 
-                        if (isset($settings['uptime_probation']) && (float) $settings['uptime_probation'] > 0) {
+                        // historical performance
+                        if (
+                            isset($settings['uptime_probation']) && 
+                            (float) $settings['uptime_probation'] > 0
+                        ) {
                             $uptime_calc_size = $settings['uptime_calc_size'] ?? 1;
                             $uptime_calc_size = (int) $uptime_calc_size;
 
@@ -127,6 +131,39 @@ class CheckNodeStatus extends Command
                             }
 
                             if ($uptime < (float) $settings['uptime_probation']) {
+                                $address->extra_status = 'On Probation';
+                                $address->save();
+                                $hasOnProbation = true;
+                            }
+                        }
+
+                        // redmarks
+                        if (
+                            isset($settings['redmarks_revoke']) &&
+                            (float) $settings['redmarks_revoke'] > 0
+                        ) {
+                            $redmarks_revoke_calc_size = (int)($settings['redmarks_revoke_calc_size'] ?? 1);
+                            $window = $current_era_id - $redmarks_revoke_calc_size;
+
+                            if ($window < 0) {
+                                $window = 0;
+                            }
+
+                            $bad_marks = DB::select("
+                                SELECT count(era_id) AS bad_marks
+                                FROM all_node_data2
+                                WHERE public_key = '$public_address_node'
+                                AND era_id > $window
+                                AND (
+                                    in_current_era = 0 OR
+                                    bid_inactive   = 1
+                                )
+                                ORDER BY era_id DESC
+                            ");
+                            $bad_marks = $bad_marks[0] ?? [];
+                            $bad_marks = (int)($bad_marks->bad_marks ?? 0);
+
+                            if ($bad_marks > $settings['redmarks_revoke']) {
                                 $address->extra_status = 'On Probation';
                                 $address->save();
                                 $hasOnProbation = true;
