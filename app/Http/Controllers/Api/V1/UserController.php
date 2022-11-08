@@ -1722,7 +1722,7 @@ class UserController extends Controller
             $bad_marks = DB::select("
                 SELECT count(era_id) AS bad_marks
                 FROM all_node_data2
-                WHERE public_key = '$public_address_node'
+                WHERE public_key = '$p'
                 AND era_id > $window
                 AND (
                     in_current_era = 0 OR
@@ -1840,7 +1840,7 @@ class UserController extends Controller
             $bad_marks = DB::select("
                 SELECT count(era_id) AS bad_marks
                 FROM all_node_data2
-                WHERE public_key = '$public_address_node'
+                WHERE public_key = '$p'
                 AND era_id > $window
                 AND (
                     in_current_era = 0 OR
