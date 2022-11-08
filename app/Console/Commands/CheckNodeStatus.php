@@ -166,7 +166,6 @@ class CheckNodeStatus extends Command
                                 $address->extra_status = 'Suspended';
                                 $address->node_status  = 'Offline';
                                 $address->save();
-                                $hasOnProbation = true;
                             } else {
                                 $hasOnline = true;
                             }
