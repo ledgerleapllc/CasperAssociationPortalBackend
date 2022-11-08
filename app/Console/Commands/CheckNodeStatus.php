@@ -96,6 +96,7 @@ class CheckNodeStatus extends Command
                                         ->where('in_current_era', 1)
                                         ->first();
                     if ($temp) {
+                        $hasOnline = true;
                         $address->node_status = 'Online';
                         $address->extra_status = null;
                         $address->save();
@@ -162,12 +163,8 @@ class CheckNodeStatus extends Command
                             $bad_marks = (int)($bad_marks->bad_marks ?? 0);
 
                             if ($bad_marks > (int)$settings['redmarks_revoke']) {
-                                $user->node_status     = 'Offline';
                                 $address->extra_status = 'Suspended';
-                                $address->node_status  = 'Offline';
                                 $address->save();
-                            } else {
-                                $hasOnline = true;
                             }
                         }
                     } else {
