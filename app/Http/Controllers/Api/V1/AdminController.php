@@ -1045,15 +1045,15 @@ class AdminController extends Controller
             DB::beginTransaction();
             // Validator
             $validator = Validator::make($request->all(), [
-                'title' => 'nullable',
-                'description' => 'nullable',
-                'files' => 'array',
-                'files.*' => 'file|max:10240|mimes:pdf,docx,doc,txt,rtf',
+                'title'           => 'nullable',
+                'description'     => 'nullable',
+                'files'           => 'array',
+                'files.*'         => 'file|max:10240|mimes:pdf,docx,doc,txt,rtf',
                 'file_ids_remove' => 'array',
-                'start_date' => 'required',
-                'start_time' => 'required',
-                'end_date' => 'required',
-                'end_time' => 'required',
+                'start_date'      => 'required',
+                'start_time'      => 'required',
+                'end_date'        => 'required',
+                'end_time'        => 'required',
             ]);
 
             if ($validator->fails()) {
@@ -1076,9 +1076,13 @@ class AdminController extends Controller
                 $ballot->description = $request->description;
             }
 
+            $endTime       = $request->end_date . ' ' . $request->end_time;
+            $endTimeCarbon = Carbon::createFromFormat('Y-m-d H:i:s', $endTime, 'EST');
+            $endTimeCarbon->setTimezone('UTC');
+
             $now                = Carbon::now('UTC');
             $ballot->created_at = $now;
-            $ballot->time_end   = $request->end_date . ' ' . $request->end_time;
+            $ballot->time_end   = $endTimeCarbon;
             $ballot->start_date = $request->start_date;
             $ballot->start_time = $request->start_time;
             $ballot->end_date   = $request->end_date;
@@ -1213,7 +1217,7 @@ class AdminController extends Controller
 
         if (!$ballot || $ballot->status != 'active') {
             return $this->errorResponse(
-                'Cannot cancle ballot', 
+                'Cannot cancel ballot', 
                 Response::HTTP_BAD_REQUEST
             );
         }
@@ -1266,12 +1270,12 @@ class AdminController extends Controller
 
         $data = [
             'globalSettings' => $settings,
-            'lockRules' => [
+            'lockRules'      => [
                 'kyc_not_verify' => $ruleKycNotVerify,
                 'status_is_poor' => $ruleStatusIsPoor
             ],
             'membershipAgreementFile' => $membershipAgreementFile,
-            'contactRecipients' => $contactRecipients
+            'contactRecipients'       => $contactRecipients
         ];
 
         return $this->successResponse($data);
@@ -1285,12 +1289,12 @@ class AdminController extends Controller
             'uptime_warning'            => ($request->uptime_warning ?? null),
             'uptime_probation'          => ($request->uptime_probation ?? null),
             'uptime_correction_unit'    => ($request->uptime_correction_unit ?? null),
-            'uptime_correction_value'    => ($request->uptime_correction_value ?? null),
+            'uptime_correction_value'   => ($request->uptime_correction_value ?? null),
             'uptime_calc_size'          => ($request->uptime_calc_size ?? null),
             'voting_eras_to_vote'       => ($request->voting_eras_to_vote ?? null),
             'voting_eras_since_redmark' => ($request->voting_eras_since_redmark ?? null),
             'redmarks_revoke'           => ($request->redmarks_revoke ?? null),
-            'redmarks_revoke_calc_size'  => ($request->redmarks_revoke_calc_size ?? null),
+            'redmarks_revoke_calc_size' => ($request->redmarks_revoke_calc_size ?? null),
             'responsiveness_warning'    => ($request->responsiveness_warning ?? null),
             'responsiveness_probation'  => ($request->responsiveness_probation ?? null)
         ];
@@ -1304,7 +1308,7 @@ class AdminController extends Controller
                     $setting->save();
                 } else {
                     $setting = new Setting();
-                    $setting->name = $name;
+                    $setting->name  = $name;
                     $setting->value = $value;
                     $setting->save();
                 }
