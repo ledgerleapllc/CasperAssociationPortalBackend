@@ -158,7 +158,6 @@ class CheckNodeStatus extends Command
                                     in_current_era = 0 OR
                                     bid_inactive   = 1
                                 )
-                                ORDER BY era_id DESC
                             ");
                             $bad_marks = $bad_marks[0] ?? [];
                             $bad_marks = (int)($bad_marks->bad_marks ?? 0);
