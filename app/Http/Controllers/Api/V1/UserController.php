@@ -1652,8 +1652,23 @@ class UserController extends Controller
         $current_era_id = Helper::getCurrentERAId();
         $settings = Helper::getSettings();
 
-        $voting_eras_to_vote = isset($settings['voting_eras_to_vote']) ? (int) $settings['voting_eras_to_vote'] : 1;
-        $voting_eras_since_redmark = isset($settings['voting_eras_since_redmark']) ? (int) $settings['voting_eras_since_redmark'] : 1;
+        $voting_eras_to_vote = 
+            isset($settings['voting_eras_to_vote']) ? 
+            (int) $settings['voting_eras_to_vote'] : 
+            1;
+
+        $voting_eras_since_redmark = 
+            isset($settings['voting_eras_since_redmark']) ? 
+            (int) $settings['voting_eras_since_redmark'] : 
+            1;
+
+        $redmarks_revoke = (int)($settings['redmarks_revoke'] ?? 1);
+        $redmarks_revoke_calc_size = (int)($settings['redmarks_revoke_calc_size'] ?? 1);
+        $window = $current_era_id - $redmarks_revoke_calc_size;
+
+        if ($window < 0) {
+            $window = 0;
+        }
 
         $return['setting_voting_eras'] = $voting_eras_to_vote;
         $return['setting_good_standing_eras'] = $voting_eras_since_redmark;
@@ -1696,14 +1711,31 @@ class UserController extends Controller
                 SELECT count(id) as tCount
                 FROM all_node_data2
                 WHERE public_key = '$p'
+                AND in_current_era = 1
+                AND bid_inactive = 0
             ");
 
             $total_active_eras           = $total_active_eras[0] ?? array();
             $return['total_active_eras'] = (int)($total_active_eras->tCount ?? 0);
 
+            // redmarks
+            $bad_marks = DB::select("
+                SELECT count(era_id) AS bad_marks
+                FROM all_node_data2
+                WHERE public_key = '$public_address_node'
+                AND era_id > $window
+                AND (
+                    in_current_era = 0 OR
+                    bid_inactive   = 1
+                )
+            ");
+            $bad_marks = $bad_marks[0] ?? [];
+            $bad_marks = (int)($bad_marks->bad_marks ?? 0);
+
             if (
                 $return['total_active_eras']  >= $voting_eras_to_vote &&
-                $return['good_standing_eras'] >= $voting_eras_since_redmark
+                $return['good_standing_eras'] >= $voting_eras_since_redmark &&
+                $bad_marks > $redmarks_revoke
             ) {
                 $return['can_vote'] = true;
             }
@@ -1741,6 +1773,8 @@ class UserController extends Controller
             $addresses = array();
         }
 
+        $current_era_id = Helper::getCurrentERAId();
+
         // get settings
         $voting_eras_to_vote = DB::select("
             SELECT value
@@ -1758,7 +1792,13 @@ class UserController extends Controller
         $voting_eras_since_redmark = $voting_eras_since_redmark[0] ?? array();
         $voting_eras_since_redmark = (int)($voting_eras_since_redmark->value ?? 0);
 
-        $current_era_id = Helper::getCurrentERAId();
+        $redmarks_revoke = (int)($settings['redmarks_revoke'] ?? 1);
+        $redmarks_revoke_calc_size = (int)($settings['redmarks_revoke_calc_size'] ?? 1);
+        $window = $current_era_id - $redmarks_revoke_calc_size;
+
+        if ($window < 0) {
+            $window = 0;
+        }
 
         foreach ($addresses as $address) {
             $p = $address->public_address_node ?? '';
@@ -1789,14 +1829,31 @@ class UserController extends Controller
                 SELECT count(id) AS tCount
                 FROM all_node_data2
                 WHERE public_key = '$p'
+                AND in_current_era = 1
+                AND bid_inactive = 0
             ");
 
             $total_active_eras = $total_active_eras[0] ?? array();
             $total_active_eras = (int)($total_active_eras->tCount ?? 0);
 
+            // redmarks
+            $bad_marks = DB::select("
+                SELECT count(era_id) AS bad_marks
+                FROM all_node_data2
+                WHERE public_key = '$public_address_node'
+                AND era_id > $window
+                AND (
+                    in_current_era = 0 OR
+                    bid_inactive   = 1
+                )
+            ");
+            $bad_marks = $bad_marks[0] ?? [];
+            $bad_marks = (int)($bad_marks->bad_marks ?? 0);
+
             if (
                 $total_active_eras  >= $voting_eras_to_vote &&
-                $good_standing_eras >= $voting_eras_since_redmark
+                $good_standing_eras >= $voting_eras_since_redmark &&
+                $bad_marks > $redmarks_revoke
             ) {
                 $stable = true;
             }
