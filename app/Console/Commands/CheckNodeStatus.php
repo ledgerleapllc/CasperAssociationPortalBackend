@@ -99,7 +99,6 @@ class CheckNodeStatus extends Command
                         $address->node_status = 'Online';
                         $address->extra_status = null;
                         $address->save();
-                        $hasOnline = true;
 
                         // historical performance
                         if (
@@ -167,7 +166,8 @@ class CheckNodeStatus extends Command
                                 $address->extra_status = 'Suspended';
                                 $address->node_status  = 'Offline';
                                 $address->save();
-                                $hasOnProbation = true;
+                            } else {
+                                $hasOnline = true;
                             }
                         }
                     } else {
