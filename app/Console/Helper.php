@@ -53,7 +53,7 @@ class Helper
 
 	public static function calculateUptime($baseObject, $public_address_node, $settings = null) {
 		if (!$settings) $settings = self::getSettings();
-
+		
 		$uptime_calc_size = (int) ($settings['uptime_calc_size'] ?? 1);
 		
 		$temp = DB::select("
@@ -87,7 +87,7 @@ class Helper
 
 		$current_era_id = (int) ($settings['current_era_id'] ?? 0);
 		$redmarks_revoke_calc_size = (int) ($settings['redmarks_revoke_calc_size'] ?? 1);
-
+		
 		$window = $current_era_id - $redmarks_revoke_calc_size;
         if ($window < 0) $window = 0;
         

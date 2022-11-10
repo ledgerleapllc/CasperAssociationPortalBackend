@@ -9,7 +9,6 @@ use App\Models\User;
 use App\Models\UserAddress;
 use App\Models\NodeInfo;
 use App\Models\AllNodeData2;
-
 use Carbon\Carbon;
 
 use Illuminate\Support\Facades\DB;
@@ -30,6 +29,9 @@ class CheckNodeStatus extends Command
         $settings = Helper::getSettings();
         $current_era_id = (int) ($settings['current_era_id'] ?? 0);
 
+        $redmarks_revoke = (int) ($settings['redmarks_revoke'] ?? 0);
+        $uptime_probation = (float) ($settings['uptime_probation'] ?? 0);
+
         $now = Carbon::now('UTC');
         $users = User::with(['addresses', 'profile'])
                         ->where('role', 'member')
@@ -41,13 +43,9 @@ class CheckNodeStatus extends Command
             $unit = $settings['uptime_correction_unit'];
             $value = (float) $settings['uptime_correction_value'];
 
-            if ($unit == 'Weeks') {
-                $uptimeHours = $value * 7 * 24;
-            } else if ($unit == 'Days') {
-                $uptimeHours = $value * 24;
-            } else {
-                $uptimeHours = $value;
-            }
+            if ($unit == 'Weeks') $uptimeHours = $value * 7 * 24;
+            else if ($unit == 'Days') $uptimeHours = $value * 24;
+            else $uptimeHours = $value;
         }
 
         foreach ($users as $user) {
@@ -66,7 +64,8 @@ class CheckNodeStatus extends Command
                 // Verified Users
 
                 $hasOnline = $hasOnProbation = $hasNotSuspended = false;
-                
+                $revokeReason = [];
+
                 foreach ($addresses as $address) {
                     $public_address_node = strtolower($address->public_address_node);
 
@@ -85,14 +84,26 @@ class CheckNodeStatus extends Command
                         $address->extra_status = null;
                         $address->save();
 
+                        // Check Redmarks
+                        if ($redmarks_revoke > 0) {
+                            $bad_marks = Helper::calculateBadMarks($temp, $public_address_node, $settings);
+
+                            if ($bad_marks > $redmarks_revoke) {
+                                $address->extra_status = 'Suspended';
+                                $address->probation_start = null;
+                                $address->probation_end = null;
+                                $address->save();
+                                if (!in_array('Too many redmarks', $revokeReason)) {
+                                    $revokeReason[] = 'Too many redmarks';
+                                }
+                            }
+                        }
+
                         // Historical Performance
-                        if (
-                            isset($settings['uptime_probation']) && 
-                            (float) $settings['uptime_probation'] > 0
-                        ) {
+                        if (!$address->extra_status && $uptime_probation > 0) {
                             $uptime = Helper::calculateUptime($temp, $public_address_node, $settings);
 
-                            if ($uptime < (float) $settings['uptime_probation']) {
+                            if ($uptime < $uptime_probation) {
                                 $address->extra_status = 'On Probation';
                                 if (!$address->probation_start || !$address->probation_end) {
                                     $address->probation_start = now();
@@ -106,6 +117,9 @@ class CheckNodeStatus extends Command
                                     $address->probation_start = null;
                                     $address->probation_end = null;
                                     $address->save();
+                                    if (!in_array('Poor uptime', $revokeReason)) {
+                                        $revokeReason[] = 'Poor uptime';
+                                    }
                                 } else {
                                     $hasOnProbation = true;
                                 }
@@ -116,21 +130,8 @@ class CheckNodeStatus extends Command
                             }
                         }
 
-                        // Redmarks
-                        if (
-                            isset($settings['redmarks_revoke']) &&
-                            (int) $settings['redmarks_revoke'] > 0
-                        ) {
-                            $bad_marks = Helper::calculateBadMarks($temp, $public_address_node, $settings);
-                            
-                            if ($bad_marks > (int) $settings['redmarks_revoke']) {
-                                $address->extra_status = 'Suspended';
-                                $address->probation_start = null;
-                                $address->probation_end = null;
-                                $address->save();
-                            } else {
-                                $hasNotSuspended = true;
-                            }
+                        if ($address->extra_status != 'Suspended') {
+                            $hasNotSuspended = true;
                         }
                     } else {
                         // All Node Data2 Record Doesn't Exist!
@@ -161,6 +162,9 @@ class CheckNodeStatus extends Command
 
                 if ($hasOnline && !$hasNotSuspended) {
                     $user->profile->extra_status = 'Suspended';
+                    if (count($revokeReason) > 0) {
+                        $user->profile->revoke_reason = implode(', ', $revokeReason);
+                    }
                     $user->profile->save();
                 }
             } else {
@@ -171,6 +175,7 @@ class CheckNodeStatus extends Command
 
                 if ($user->profile) {
                     $user->profile->extra_status = null;
+                    $user->profile->revoke_reason = null;
                     $user->profile->save();
                 }
 
