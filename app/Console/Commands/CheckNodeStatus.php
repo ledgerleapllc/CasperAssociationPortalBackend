@@ -27,8 +27,8 @@ class CheckNodeStatus extends Command
 
     public function handle() {
         $settings = Helper::getSettings();
-        $current_era_id = (int) ($settings['current_era_id'] ?? 0);
 
+        $current_era_id = (int) ($settings['current_era_id'] ?? 0);
         $redmarks_revoke = (int) ($settings['redmarks_revoke'] ?? 0);
         $uptime_probation = (float) ($settings['uptime_probation'] ?? 0);
 
@@ -63,109 +63,115 @@ class CheckNodeStatus extends Command
             ) {
                 // Verified Users
 
-                $hasOnline = $hasOnProbation = $hasNotSuspended = false;
-                $revokeReason = [];
+                if ($user->profile->extra_status == 'Suspended') {
+                    // Suspended
+                } else {
+                    // Not Suspended
 
-                foreach ($addresses as $address) {
-                    $public_address_node = strtolower($address->public_address_node);
+                    $hasOnline = $hasOnProbation = $hasSuspended = false;
+                    $revokeReason = [];
 
-                    $temp = AllNodeData2::select(['id', 'uptime'])
-                                        ->where('public_key', $public_address_node)
-                                        ->where('era_id', $current_era_id)
-                                        ->where('bid_inactive', 0)
-                                        ->where('in_auction', 1)
-                                        ->where('in_current_era', 1)
-                                        ->first();
-                    if ($temp) {
-                        // All Node Data2 Record Exists!
+                    foreach ($addresses as $address) {
+                        $public_address_node = strtolower($address->public_address_node);
 
-                        $hasOnline = true;
-                        $address->node_status = 'Online';
-                        $address->extra_status = null;
-                        $address->save();
+                        $temp = AllNodeData2::select(['id', 'uptime'])
+                                            ->where('public_key', $public_address_node)
+                                            ->where('era_id', $current_era_id)
+                                            ->where('bid_inactive', 0)
+                                            ->where('in_auction', 1)
+                                            ->where('in_current_era', 1)
+                                            ->first();
+                        if ($temp) {
+                            // All Node Data2 Record Exists!
 
-                        // Check Redmarks
-                        if ($redmarks_revoke > 0) {
-                            $bad_marks = Helper::calculateBadMarks($temp, $public_address_node, $settings);
+                            $hasOnline = true;
+                            $address->node_status = 'Online';
+                            $address->extra_status = null;
+                            $address->save();
 
-                            if ($bad_marks > $redmarks_revoke) {
-                                $address->extra_status = 'Suspended';
-                                $address->probation_start = null;
-                                $address->probation_end = null;
-                                $address->save();
-                                if (!in_array('Too many redmarks', $revokeReason)) {
-                                    $revokeReason[] = 'Too many redmarks';
-                                }
-                            }
-                        }
+                            // Check Redmarks
+                            if ($redmarks_revoke > 0) {
+                                $bad_marks = Helper::calculateBadMarks($temp, $public_address_node, $settings);
 
-                        // Historical Performance
-                        if (!$address->extra_status && $uptime_probation > 0) {
-                            $uptime = Helper::calculateUptime($temp, $public_address_node, $settings);
-
-                            if ($uptime < $uptime_probation) {
-                                $address->extra_status = 'On Probation';
-                                if (!$address->probation_start || !$address->probation_end) {
-                                    $address->probation_start = now();
-                                    $address->probation_end = Carbon::now('UTC')->addHours($uptimeHours);
-                                }
-                                $address->save();
-
-                                $now = Carbon::now('UTC');
-                                if ($address->probation_end <= $now) {
+                                if ($bad_marks > $redmarks_revoke) {
                                     $address->extra_status = 'Suspended';
                                     $address->probation_start = null;
                                     $address->probation_end = null;
                                     $address->save();
-                                    if (!in_array('Poor uptime', $revokeReason)) {
-                                        $revokeReason[] = 'Poor uptime';
+                                    if (!in_array('Too many redmarks', $revokeReason)) {
+                                        $revokeReason[] = 'Too many redmarks';
+                                    }
+                                }
+                            }
+
+                            // Check Historical Performance
+                            if (!$address->extra_status && $uptime_probation > 0) {
+                                $uptime = Helper::calculateUptime($temp, $public_address_node, $settings);
+
+                                if ($uptime < $uptime_probation) {
+                                    $address->extra_status = 'On Probation';
+                                    if (!$address->probation_start || !$address->probation_end) {
+                                        $address->probation_start = now();
+                                        $address->probation_end = Carbon::now('UTC')->addHours($uptimeHours);
+                                    }
+                                    $address->save();
+
+                                    $now = Carbon::now('UTC');
+                                    if ($address->probation_end <= $now) {
+                                        $address->extra_status = 'Suspended';
+                                        $address->probation_start = null;
+                                        $address->probation_end = null;
+                                        $address->save();
+                                        if (!in_array('Poor uptime', $revokeReason)) {
+                                            $revokeReason[] = 'Poor uptime';
+                                        }
+                                    } else {
+                                        $hasOnProbation = true;
                                     }
                                 } else {
-                                    $hasOnProbation = true;
+                                    $address->probation_start = null;
+                                    $address->probation_end = null;
+                                    $address->save();
                                 }
-                            } else {
-                                $address->probation_start = null;
-                                $address->probation_end = null;
-                                $address->save();
                             }
-                        }
 
-                        if ($address->extra_status != 'Suspended') {
-                            $hasNotSuspended = true;
+                            if ($address->extra_status == 'Suspended') {
+                                $hasSuspended = true;
+                            }
+                        } else {
+                            // All Node Data2 Record Doesn't Exist!
+
+                            $address->node_status = 'Offline';
+                            $address->extra_status = null;
+                            $address->probation_start = null;
+                            $address->probation_end = null;
+                            $address->save();
                         }
+                    }
+
+                    if ($hasOnline) {
+                        $user->node_status = 'Online';
+                        $user->save();
                     } else {
-                        // All Node Data2 Record Doesn't Exist!
-
-                        $address->node_status = 'Offline';
-                        $address->extra_status = null;
-                        $address->probation_start = null;
-                        $address->probation_end = null;
-                        $address->save();
+                        $user->node_status = 'Offline';
+                        $user->save();
                     }
-                }
 
-                if ($hasOnline) {
-                    $user->node_status = 'Online';
-                    $user->save();
-                } else {
-                    $user->node_status = 'Offline';
-                    $user->save();
-                }
-
-                if ($hasOnProbation) {
-                    $user->profile->extra_status = 'On Probation';
-                    $user->profile->save();
-                } else {
-                    $user->profile->extra_status = null;
-                    $user->profile->save();
-                }
-
-                if ($hasOnline && !$hasNotSuspended) {
-                    $user->profile->extra_status = 'Suspended';
-                    if (count($revokeReason) > 0) {
-                        $user->profile->revoke_reason = implode(', ', $revokeReason);
+                    if ($hasOnProbation) {
+                        $user->profile->extra_status = 'On Probation';
+                        $user->profile->save();
+                    } else {
+                        $user->profile->extra_status = null;
+                        $user->profile->save();
                     }
-                    $user->profile->save();
+
+                    if ($hasSuspended) {
+                        $user->profile->extra_status = 'Suspended';
+                        if (count($revokeReason) > 0) {
+                            $user->profile->revoke_reason = implode(', ', $revokeReason);
+                        }
+                        $user->profile->save();
+                    }
                 }
             } else {
                 // Non-Verified Users

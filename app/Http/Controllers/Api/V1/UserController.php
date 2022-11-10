@@ -1636,6 +1636,74 @@ class UserController extends Controller
         return $this->successResponse($ballot);
     }
 
+    public function canRequestReactivation()
+    {
+        $user = auth()->user()->load(['addresses', 'profile']);
+        $user_id = $user->id;
+        $addresses = $user->addresses ?? [];
+
+        $settings = Helper::getSettings();
+
+        $current_era_id = (int) ($settings['current_era_id'] ?? 0);
+        $redmarks_revoke = (int) ($settings['redmarks_revoke'] ?? 0);
+        $uptime_probation = (float) ($settings['uptime_probation'] ?? 0);
+
+        $return = [
+            'can_request_reactivation' => false
+        ];
+
+        if (
+            $addresses &&
+            count($addresses) > 0 &&
+            $user->node_verified_at &&
+            $user->letter_verified_at &&
+            $user->signature_request_id &&
+            isset($user->profile) &&
+            $user->profile &&
+            $user->profile->status == 'approved' &&
+            $user->profile->extra_status == 'Suspended'
+        ) {
+            $flag = true;
+            foreach ($addresses as $address) {
+                $public_address_node = strtolower($address->public_address_node);
+
+                $temp = AllNodeData2::select(['id', 'uptime'])
+                                    ->where('public_key', $public_address_node)
+                                    ->where('era_id', $current_era_id)
+                                    ->where('bid_inactive', 0)
+                                    ->where('in_auction', 1)
+                                    ->where('in_current_era', 1)
+                                    ->first();
+
+                if ($temp && $address->extra_status == 'Suspended') {
+                    // Check Redmarks
+                    if ($redmarks_revoke > 0) {
+                        $bad_marks = Helper::calculateBadMarks($temp, $public_address_node, $settings);
+                        if ($bad_marks > $redmarks_revoke) {
+                            $flag = false;
+                            break;
+                        }
+                    }
+
+                    // Check Historical Performance
+                    if ($uptime_probation > 0) {
+                        $uptime = Helper::calculateUptime($temp, $public_address_node, $settings);
+                        if ($uptime < $uptime_probation) {
+                            $flag = false;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            $return = [
+                'can_request_reactivation' => $flag
+            ];
+        }
+
+        return $this->successResponse($return);
+    }
+
     public function canVote()
     {
         $user = auth()->user();

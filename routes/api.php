@@ -69,6 +69,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             
             // New endpoint for User voting eligibility check
             Route::get('/users/can-vote', [UserController::class, 'canVote']);
+            Route::post('/users/can-request-reactivation', [UserController::class, 'canRequestReactivation']);
 
             Route::post('/users/verify-email', [AuthController::class, 'verifyEmail']);
             Route::post('/users/resend-verify-email', [AuthController::class, 'resendVerifyEmail']);
