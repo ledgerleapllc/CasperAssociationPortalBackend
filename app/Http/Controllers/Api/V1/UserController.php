@@ -1636,6 +1636,34 @@ class UserController extends Controller
         return $this->successResponse($ballot);
     }
 
+    public function requestReactivation(Request $request)
+    {
+        $user = auth()->user()->load(['addresses', 'profile']);
+        $addresses = $user->addresses ?? [];
+
+        $reactivation_reason = $request->reactivationReason ?? '';
+        
+        if (
+            $addresses &&
+            count($addresses) > 0 &&
+            $user->node_verified_at &&
+            $user->letter_verified_at &&
+            $user->signature_request_id &&
+            isset($user->profile) &&
+            $user->profile &&
+            $user->profile->status == 'approved' &&
+            $user->profile->extra_status == 'Suspended' &&
+            !$user->profile->reactivation_requested
+        ) {
+            $user->profile->reactivation_reason = $reactivation_reason;
+            $user->profile->reactivation_requested = true;
+            $user->profile->reactivation_requested_at = now();
+            $user->profile->save();
+        }
+
+        return $this->metaSuccess();
+    }
+
     public function canRequestReactivation()
     {
         $user = auth()->user()->load(['addresses', 'profile']);
@@ -1649,7 +1677,9 @@ class UserController extends Controller
         $uptime_probation = (float) ($settings['uptime_probation'] ?? 0);
 
         $return = [
-            'can_request_reactivation' => false
+            'canRequest' => false,
+            'avg_uptime' => 0,
+            'avg_redmarks' => 0
         ];
 
         if (
@@ -1664,41 +1694,48 @@ class UserController extends Controller
             $user->profile->extra_status == 'Suspended'
         ) {
             $flag = true;
+            $count = 0;
             foreach ($addresses as $address) {
                 $public_address_node = strtolower($address->public_address_node);
 
-                $temp = AllNodeData2::select(['id', 'uptime'])
+                if ($address->extra_status == 'Suspended') {
+                    $count++;
+
+                    $temp = AllNodeData2::select(['id', 'uptime'])
                                     ->where('public_key', $public_address_node)
                                     ->where('era_id', $current_era_id)
                                     ->where('bid_inactive', 0)
                                     ->where('in_auction', 1)
                                     ->where('in_current_era', 1)
                                     ->first();
-
-                if ($temp && $address->extra_status == 'Suspended') {
-                    // Check Redmarks
-                    if ($redmarks_revoke > 0) {
-                        $bad_marks = Helper::calculateBadMarks($temp, $public_address_node, $settings);
-                        if ($bad_marks > $redmarks_revoke) {
-                            $flag = false;
-                            break;
+                    if ($temp) {
+                        // Check Redmarks
+                        if ($redmarks_revoke > 0) {
+                            $bad_marks = Helper::calculateBadMarks($temp, $public_address_node, $settings);
+                            if ($bad_marks > $redmarks_revoke) {
+                                $flag = false;
+                            }
+                            $return['avg_redmarks'] += $bad_marks;
                         }
-                    }
 
-                    // Check Historical Performance
-                    if ($uptime_probation > 0) {
-                        $uptime = Helper::calculateUptime($temp, $public_address_node, $settings);
-                        if ($uptime < $uptime_probation) {
-                            $flag = false;
-                            break;
+                        // Check Historical Performance
+                        if ($uptime_probation > 0) {
+                            $uptime = Helper::calculateUptime($temp, $public_address_node, $settings);
+                            if ($uptime < $uptime_probation) {
+                                $flag = false;
+                            }
+                            $return['avg_uptime'] += $uptime;
                         }
                     }
                 }
             }
 
-            $return = [
-                'can_request_reactivation' => $flag
-            ];
+            $return['canRequest'] = $flag;
+            if ($count <= 0) $count = 1;
+
+            $return['avg_redmarks'] = (int) ($return['avg_redmarks'] / $count);
+            $return['avg_uptime'] = (float) ($return['avg_uptime'] / $count);
+            $return['avg_uptime'] = round($return['avg_uptime'], 2);
         }
 
         return $this->successResponse($return);

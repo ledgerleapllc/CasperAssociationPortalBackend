@@ -10,6 +10,7 @@ use App\Models\Profile;
 use App\Models\Shuftipro;
 use App\Models\User;
 use App\Models\Setting;
+use App\Models\AllNodeData2;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;

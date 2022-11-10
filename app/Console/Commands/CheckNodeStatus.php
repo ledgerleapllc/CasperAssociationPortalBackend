@@ -92,7 +92,7 @@ class CheckNodeStatus extends Command
                             // Check Redmarks
                             if ($redmarks_revoke > 0) {
                                 $bad_marks = Helper::calculateBadMarks($temp, $public_address_node, $settings);
-
+                                
                                 if ($bad_marks > $redmarks_revoke) {
                                     $address->extra_status = 'Suspended';
                                     $address->probation_start = null;
@@ -165,7 +165,7 @@ class CheckNodeStatus extends Command
                         $user->profile->save();
                     }
 
-                    if ($hasSuspended) {
+                    if ($hasOnline && $hasSuspended) {
                         $user->profile->extra_status = 'Suspended';
                         if (count($revokeReason) > 0) {
                             $user->profile->revoke_reason = implode(', ', $revokeReason);
