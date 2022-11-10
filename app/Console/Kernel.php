@@ -47,6 +47,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('token-price:check')
             ->everyThirtyMinutes()
             ->runInBackground();
+        
         /*
         $schedule->command('node-info')
             ->everyFifteenMinutes()
