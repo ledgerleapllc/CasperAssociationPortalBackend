@@ -134,7 +134,10 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('/dashboard', [AdminController::class, 'infoDashboard']);
             
             Route::get('/active-reinstatements', [AdminController::class, 'getActiveReinstatements']);
+            Route::get('/history-reinstatements', [AdminController::class, 'getHistoryReinstatements']);
 
+            Route::post('/approve-reinstatement', [AdminController::class, 'approveReinstatement']);
+            Route::post('/reject-reinstatement', [AdminController::class, 'rejectReinstatement']);
 
             // intakes
             Route::middleware([])->group(function () {
