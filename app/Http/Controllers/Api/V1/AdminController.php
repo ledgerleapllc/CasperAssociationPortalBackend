@@ -480,6 +480,58 @@ class AdminController extends Controller
         return $this->successResponse($items);
     }
 
+    public function revokeUser($id)
+    {
+        $user = User::with('profile')
+                    ->has('profile')
+                    ->where('id', $id)
+                    ->where('role', 'member')
+                    ->first();
+
+        if ($user && $user->profile->status == 'approved' && $user->profile->extra_status != 'Suspended') {
+            $user->profile->extra_status = 'Suspended';
+            $user->profile->revoke_reason = 'Admin action';
+            $user->profile->revoke_at = now();
+            $user->profile->reactivation_reason = null;
+            $user->profile->reactivation_requested = null;
+            $user->profile->reactivation_requested_at = null;
+            $user->profile->save();
+
+            return $this->metaSuccess();
+        }
+
+        return $this->errorResponse('Fail Revoke User', Response::HTTP_BAD_REQUEST);
+    }
+
+    public function reactivateUser($id)
+    {
+        $user = User::with('profile')
+                    ->has('profile')
+                    ->where('id', $id)
+                    ->where('role', 'member')
+                    ->first();
+
+        if (
+            $user &&
+            $user->profile->status == 'approved' &&
+            $user->profile->extra_status == 'Suspended' &&
+            $user->profile->revoke_reason &&
+            $user->profile->revoke_at
+        ) {
+            $user->profile->extra_status = null;
+            $user->profile->revoke_reason = null;
+            $user->profile->revoke_at = null;
+            $user->profile->reactivation_reason = null;
+            $user->profile->reactivation_requested = null;
+            $user->profile->reactivation_requested_at = null;
+            $user->profile->save();
+
+            return $this->metaSuccess();
+        }
+
+        return $this->errorResponse('Fail Reactivate User', Response::HTTP_BAD_REQUEST);
+    }
+
     public function approveReinstatement(Request $request)
     {
         $profileId = (int) ($request->profileId ?? 0);
@@ -613,7 +665,7 @@ class AdminController extends Controller
             a.signature_request_id, a.node_status, a.node_verified_at,
             a.member_status, a.kyc_verified_at,
             b.dob, b.country_citizenship, b.country_residence,
-            b.status AS profile_status, b.extra_status,
+            b.status AS profile_status, b.extra_status, b.revoke_reason,
             b.type, b.casper_association_kyc_hash,
             b.blockchain_name, b.blockchain_desc
             FROM users AS a
@@ -667,6 +719,9 @@ class AdminController extends Controller
                     $status = 'Verified';
                     if ($user->extra_status) {
                         $status = $user->extra_status;
+                        if ($user->extra_status == 'Suspended') {
+                            $status = 'Revoked';
+                        }
                     }
                 }
 
@@ -707,6 +762,12 @@ class AdminController extends Controller
             $status = 'Verified';
             if ($user->profile->extra_status) {
                 $status = $user->profile->extra_status;
+                if ($user->profile->extra_status == 'Suspended') {
+                    $status = 'Revoked';
+                    if ($user->profile->revoke_reason) {
+                        $status = 'Revoked for ' . $user->profile->revoke_reason;
+                    }
+                }
             }
         }
 
