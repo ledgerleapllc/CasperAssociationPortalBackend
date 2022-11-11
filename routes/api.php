@@ -69,7 +69,9 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             
             // New endpoint for User voting eligibility check
             Route::get('/users/can-vote', [UserController::class, 'canVote']);
-
+            Route::post('/users/can-request-reactivation', [UserController::class, 'canRequestReactivation']);
+            Route::post('/users/request-reactivation', [UserController::class, 'requestReactivation']);
+            
             Route::post('/users/verify-email', [AuthController::class, 'verifyEmail']);
             Route::post('/users/resend-verify-email', [AuthController::class, 'resendVerifyEmail']);
             Route::post('/users/change-email', [UserController::class, 'changeEmail']);
@@ -131,6 +133,12 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('/users/{id}', [AdminController::class, 'getUserDetail'])->where('id', '[0-9]+');
             Route::get('/dashboard', [AdminController::class, 'infoDashboard']);
             
+            Route::get('/active-reinstatements', [AdminController::class, 'getActiveReinstatements']);
+            Route::get('/history-reinstatements', [AdminController::class, 'getHistoryReinstatements']);
+
+            Route::post('/approve-reinstatement', [AdminController::class, 'approveReinstatement']);
+            Route::post('/reject-reinstatement', [AdminController::class, 'rejectReinstatement']);
+
             // intakes
             Route::middleware([])->group(function () {
                 Route::get('/users/intakes', [AdminController::class, 'getIntakes']);
