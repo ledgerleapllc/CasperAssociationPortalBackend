@@ -1636,6 +1636,111 @@ class UserController extends Controller
         return $this->successResponse($ballot);
     }
 
+    public function requestReactivation(Request $request)
+    {
+        $user = auth()->user()->load(['addresses', 'profile']);
+        $addresses = $user->addresses ?? [];
+
+        $reactivation_reason = $request->reactivationReason ?? '';
+        
+        if (
+            $addresses &&
+            count($addresses) > 0 &&
+            $user->node_verified_at &&
+            $user->letter_verified_at &&
+            $user->signature_request_id &&
+            isset($user->profile) &&
+            $user->profile &&
+            $user->profile->status == 'approved' &&
+            $user->profile->extra_status == 'Suspended' &&
+            !$user->profile->reactivation_requested
+        ) {
+            $user->profile->reactivation_reason = $reactivation_reason;
+            $user->profile->reactivation_requested = true;
+            $user->profile->reactivation_requested_at = now();
+            $user->profile->save();
+        }
+
+        return $this->metaSuccess();
+    }
+
+    public function canRequestReactivation()
+    {
+        $user = auth()->user()->load(['addresses', 'profile']);
+        $user_id = $user->id;
+        $addresses = $user->addresses ?? [];
+
+        $settings = Helper::getSettings();
+
+        $current_era_id = (int) ($settings['current_era_id'] ?? 0);
+        $redmarks_revoke = (int) ($settings['redmarks_revoke'] ?? 0);
+        $uptime_probation = (float) ($settings['uptime_probation'] ?? 0);
+
+        $return = [
+            'canRequest' => false,
+            'avg_uptime' => 0,
+            'avg_redmarks' => 0
+        ];
+
+        if (
+            $addresses &&
+            count($addresses) > 0 &&
+            $user->node_verified_at &&
+            $user->letter_verified_at &&
+            $user->signature_request_id &&
+            isset($user->profile) &&
+            $user->profile &&
+            $user->profile->status == 'approved' &&
+            $user->profile->extra_status == 'Suspended'
+        ) {
+            $flag = true;
+            $count = 0;
+            foreach ($addresses as $address) {
+                $public_address_node = strtolower($address->public_address_node);
+
+                if ($address->extra_status == 'Suspended') {
+                    $count++;
+
+                    $temp = AllNodeData2::select(['id', 'uptime'])
+                                    ->where('public_key', $public_address_node)
+                                    ->where('era_id', $current_era_id)
+                                    ->where('bid_inactive', 0)
+                                    ->where('in_auction', 1)
+                                    ->where('in_current_era', 1)
+                                    ->first();
+                    if ($temp) {
+                        // Check Redmarks
+                        if ($redmarks_revoke > 0) {
+                            $bad_marks = Helper::calculateBadMarks($temp, $public_address_node, $settings);
+                            if ($bad_marks > $redmarks_revoke) {
+                                $flag = false;
+                            }
+                            $return['avg_redmarks'] += $bad_marks;
+                        }
+
+                        // Check Historical Performance
+                        if ($uptime_probation > 0) {
+                            $uptime = Helper::calculateUptime($temp, $public_address_node, $settings);
+                            if ($uptime < $uptime_probation) {
+                                $flag = false;
+                            }
+                            $return['avg_uptime'] += $uptime;
+                        }
+                    }
+                }
+            }
+
+            $return['canRequest'] = $flag;
+            if ($count <= 0) $count = 1;
+
+            $return['avg_redmarks'] = (int) ($return['avg_redmarks'] / $count);
+            $return['avg_uptime'] = (float) ($return['avg_uptime'] / $count);
+            $return['avg_uptime'] = round($return['avg_uptime'], 2);
+        }
+
+        return $this->successResponse($return);
+    }
+
     public function canVote()
     {
         $user = auth()->user();
@@ -1661,14 +1766,6 @@ class UserController extends Controller
             isset($settings['voting_eras_since_redmark']) ? 
             (int) $settings['voting_eras_since_redmark'] : 
             1;
-
-        $redmarks_revoke = (int)($settings['redmarks_revoke'] ?? 1);
-        $redmarks_revoke_calc_size = (int)($settings['redmarks_revoke_calc_size'] ?? 1);
-        $window = $current_era_id - $redmarks_revoke_calc_size;
-
-        if ($window < 0) {
-            $window = 0;
-        }
 
         $return['setting_voting_eras'] = $voting_eras_to_vote;
         $return['setting_good_standing_eras'] = $voting_eras_since_redmark;
@@ -1718,24 +1815,9 @@ class UserController extends Controller
             $total_active_eras           = $total_active_eras[0] ?? array();
             $return['total_active_eras'] = (int)($total_active_eras->tCount ?? 0);
 
-            // redmarks
-            $bad_marks = DB::select("
-                SELECT count(era_id) AS bad_marks
-                FROM all_node_data2
-                WHERE public_key = '$p'
-                AND era_id > $window
-                AND (
-                    in_current_era = 0 OR
-                    bid_inactive   = 1
-                )
-            ");
-            $bad_marks = $bad_marks[0] ?? [];
-            $bad_marks = (int)($bad_marks->bad_marks ?? 0);
-
             if (
                 $return['total_active_eras']  >= $voting_eras_to_vote &&
-                $return['good_standing_eras'] >= $voting_eras_since_redmark &&
-                $bad_marks > $redmarks_revoke
+                $return['good_standing_eras'] >= $voting_eras_since_redmark
             ) {
                 $return['can_vote'] = true;
             }
@@ -1792,14 +1874,6 @@ class UserController extends Controller
         $voting_eras_since_redmark = $voting_eras_since_redmark[0] ?? array();
         $voting_eras_since_redmark = (int)($voting_eras_since_redmark->value ?? 0);
 
-        $redmarks_revoke = (int)($settings['redmarks_revoke'] ?? 1);
-        $redmarks_revoke_calc_size = (int)($settings['redmarks_revoke_calc_size'] ?? 1);
-        $window = $current_era_id - $redmarks_revoke_calc_size;
-
-        if ($window < 0) {
-            $window = 0;
-        }
-
         foreach ($addresses as $address) {
             $p = $address->public_address_node ?? '';
 
@@ -1836,24 +1910,9 @@ class UserController extends Controller
             $total_active_eras = $total_active_eras[0] ?? array();
             $total_active_eras = (int)($total_active_eras->tCount ?? 0);
 
-            // redmarks
-            $bad_marks = DB::select("
-                SELECT count(era_id) AS bad_marks
-                FROM all_node_data2
-                WHERE public_key = '$p'
-                AND era_id > $window
-                AND (
-                    in_current_era = 0 OR
-                    bid_inactive   = 1
-                )
-            ");
-            $bad_marks = $bad_marks[0] ?? [];
-            $bad_marks = (int)($bad_marks->bad_marks ?? 0);
-
             if (
                 $total_active_eras  >= $voting_eras_to_vote &&
-                $good_standing_eras >= $voting_eras_since_redmark &&
-                $bad_marks > $redmarks_revoke
+                $good_standing_eras >= $voting_eras_since_redmark
             ) {
                 $stable = true;
             }

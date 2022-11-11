@@ -10,6 +10,7 @@ use App\Models\Profile;
 use App\Models\Shuftipro;
 use App\Models\User;
 use App\Models\Setting;
+use App\Models\AllNodeData2;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -45,7 +46,65 @@ class Helper
         if (!isset($settings['redmarks_revoke_calc_size'])) $settings['redmarks_revoke_calc_size'] = 1;
         if (!isset($settings['responsiveness_warning'])) $settings['responsiveness_warning'] = 1;
         if (!isset($settings['responsiveness_probation'])) $settings['responsiveness_probation'] = 1;
+
+        $settings['current_era_id'] = self::getCurrentERAId();
+
         return $settings;
+	}
+
+	public static function calculateUptime($baseObject, $public_address_node, $settings = null) {
+		if (!$settings) $settings = self::getSettings();
+		
+		$uptime_calc_size = (int) ($settings['uptime_calc_size'] ?? 1);
+		
+		$temp = DB::select("
+            SELECT in_current_era
+            FROM all_node_data2
+            WHERE public_key = '$public_address_node'
+            ORDER BY era_id DESC
+            LIMIT $uptime_calc_size
+        ");
+        if (!$temp) $temp = [];
+
+        $window = count($temp);
+        $missed = 0;
+        foreach ($temp as $c) {
+            $in = (bool) ($c->in_current_era ?? 0);
+            if (!$in) {
+                $missed += 1;
+            }
+        }
+
+        $uptime = (float) ($baseObject->uptime ?? 0);
+        if ($window > 0) {
+        	$uptime = (float) (($uptime * ($window - $missed)) / $window);
+        }
+        
+        return round($uptime, 2);
+	}
+
+	public static function calculateBadMarks($baseObject, $public_address_node, $settings = null) {
+		if (!$settings) $settings = self::getSettings();
+
+		$current_era_id = (int) ($settings['current_era_id'] ?? 0);
+		$redmarks_revoke_calc_size = (int) ($settings['redmarks_revoke_calc_size'] ?? 1);
+		
+		$window = $current_era_id - $redmarks_revoke_calc_size;
+        if ($window < 0) $window = 0;
+        
+        $temp = DB::select("
+            SELECT count(era_id) AS bad_marks
+            FROM all_node_data2
+            WHERE public_key = '$public_address_node'
+            AND era_id > $window
+            AND (
+                in_current_era = 0 OR
+                bid_inactive   = 1
+            )
+        ");
+        if (!$temp) $temp = [];
+        
+        return (int) ($temp[0]->bad_marks ?? 0);
 	}
 
 	public static function getCurrentERAId() {
@@ -80,7 +139,7 @@ class Helper
 	{
 		$public_key = (string)$public_key;
 		$first_byte = substr($public_key, 0, 2);
-
+		
 		if($first_byte === '01') {
 			$algo = unpack('H*', 'ed25519');
 		} else {
@@ -88,7 +147,7 @@ class Helper
 		}
 
 		$algo = $algo[1] ?? '';
-
+		
 		$blake2b = new Blake2b();
 		$account_hash = bin2hex($blake2b->hash(hex2bin($algo.'00'.substr($public_key, 2))));
 
@@ -105,7 +164,7 @@ class Helper
 
 		$uid = $user->id ?? 0;
 		$pseudonym = $user->pseudonym ?? null;
-
+		
 		$account_info_urls_uref = getenv('ACCOUNT_INFO_STANDARD_URLS_UREF');
 		$node_ip = 'http://' . getenv('NODE_IP') . ':7777';
 		$casper_client = new RpcClient($node_ip);
@@ -203,8 +262,7 @@ class Helper
 	}
 
 	// Get Token Price
-	public static function getTokenPrice()
-	{
+	public static function getTokenPrice() {
 		$url = 'https://pro-api.coinmarketcap.com/v1/tools/price-conversion';
 
 		$apiKey = config('services.token_price.api_key');

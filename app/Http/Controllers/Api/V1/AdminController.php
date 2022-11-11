@@ -43,6 +43,7 @@ use App\Models\Vote;
 use App\Models\VoteResult;
 use App\Models\ContactRecipient;
 use App\Models\AllNodeData2;
+use App\Models\ReinstatementHistory;
 
 use App\Services\NodeHelper;
 
@@ -455,6 +456,125 @@ class AdminController extends Controller
         if (isset($temp[0])) $return['mbs'] = (int) ($temp[0]->mbs ?? 0);
 
         return $this->successResponse($return);
+    }
+
+    public function getActiveReinstatements()
+    {
+        $items = Profile::with('user')
+                        ->has('user')
+                        ->where('extra_status', 'Suspended')
+                        ->where('reactivation_requested', true)
+                        ->whereNotNull('reactivation_requested_at')
+                        ->orderBy('reactivation_requested_at', 'desc')
+                        ->get();
+        return $this->successResponse($items);
+    }
+
+    public function getHistoryReinstatements()
+    {
+        $items = ReinstatementHistory::with('user')
+                                    ->has('user')
+                                    ->whereNotNull('decision_at')
+                                    ->orderBy('decision_at', 'desc')
+                                    ->get();
+        return $this->successResponse($items);
+    }
+
+    public function approveReinstatement(Request $request)
+    {
+        $profileId = (int) ($request->profileId ?? 0);
+        $profile = Profile::find($profileId);
+
+        if (!$profile) {
+            return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
+        }
+
+        if ($profile->extra_status != 'Suspended' || !$profile->reactivation_requested) {
+            return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
+        }
+
+        $userId = (int) $profile->user_id;
+        $revoke_at = $profile->revoke_at;
+        $revoke_reason = $profile->revoke_reason;
+        $reactivation_reason = $profile->reactivation_reason;
+        $reactivation_requested_at = $profile->reactivation_requested_at;
+
+        if (!$revoke_at || !$reactivation_requested_at) {
+            return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
+        }
+
+        $historyRecord = ReinstatementHistory::where('revoke_at', $revoke_at)
+                                            ->where('reactivation_requested_at', $reactivation_requested_at)
+                                            ->where('user_id', $userId)
+                                            ->first();
+        if (!$historyRecord) {
+            $historyRecord = new ReinstatementHistory;
+            $historyRecord->user_id = $userId;
+            $historyRecord->revoke_at = $revoke_at;
+            $historyRecord->revoke_reason = $revoke_reason;
+            $historyRecord->reactivation_reason = $reactivation_reason;
+            $historyRecord->reactivation_requested_at = $reactivation_requested_at;
+            $historyRecord->decision = true;
+            $historyRecord->decision_at = now();
+            $historyRecord->save();
+        }
+
+        $profile->extra_status = null;
+        $profile->revoke_at = null;
+        $profile->revoke_reason = null;
+        $profile->reactivation_reason = null;
+        $profile->reactivation_requested = null;
+        $profile->reactivation_requested_at = null;
+        $profile->save();
+        
+        $this->metaSuccess();
+    }
+
+    public function rejectReinstatement(Request $request)
+    {
+        $profileId = (int) ($request->profileId ?? 0);
+        $profile = Profile::find($profileId);
+
+        if (!$profile) {
+            return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
+        }
+
+        if ($profile->extra_status != 'Suspended' || !$profile->reactivation_requested) {
+            return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
+        }
+
+        $userId = (int) $profile->user_id;
+        $revoke_at = $profile->revoke_at;
+        $revoke_reason = $profile->revoke_reason;
+        $reactivation_reason = $profile->reactivation_reason;
+        $reactivation_requested_at = $profile->reactivation_requested_at;
+
+        if (!$revoke_at || !$reactivation_requested_at) {
+            return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
+        }
+
+        $historyRecord = ReinstatementHistory::where('revoke_at', $revoke_at)
+                                            ->where('reactivation_requested_at', $reactivation_requested_at)
+                                            ->where('user_id', $userId)
+                                            ->first();
+        if (!$historyRecord) {
+            $historyRecord = new ReinstatementHistory;
+            $historyRecord->user_id = $userId;
+            $historyRecord->revoke_at = $revoke_at;
+            $historyRecord->revoke_reason = $revoke_reason;
+            $historyRecord->reactivation_reason = $reactivation_reason;
+            $historyRecord->reactivation_requested_at = $reactivation_requested_at;
+            $historyRecord->decision = false;
+            $historyRecord->decision_at = now();
+            $historyRecord->save();
+        }
+
+        $profile->reactivation_reason = null;
+        $profile->reactivation_requested = null;
+        $profile->reactivation_requested_at = null;
+        $profile->save();
+
+        $this->metaSuccess();
     }
 
     public function getUsers(Request $request)

@@ -18,4 +18,9 @@ class Profile extends Model
         }
         return null;
     }
+
+    public function user()
+    {
+        return $this->hasOne('App\Models\User', 'id', 'user_id');
+    }
 }
