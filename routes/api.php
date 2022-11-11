@@ -133,6 +133,9 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('/users/{id}', [AdminController::class, 'getUserDetail'])->where('id', '[0-9]+');
             Route::get('/dashboard', [AdminController::class, 'infoDashboard']);
             
+            Route::get('/active-reinstatements', [AdminController::class, 'getActiveReinstatements']);
+
+
             // intakes
             Route::middleware([])->group(function () {
                 Route::get('/users/intakes', [AdminController::class, 'getIntakes']);

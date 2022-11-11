@@ -62,9 +62,12 @@ class CheckNodeStatus extends Command
                 $user->profile->status == 'approved'
             ) {
                 // Verified Users
-
                 if ($user->profile->extra_status == 'Suspended') {
                     // Suspended
+                    if (!$user->profile->revoke_at) {
+                        $user->profile->revoke_at = now();
+                        $user->profile->save();
+                    }
                 } else {
                     // Not Suspended
 
@@ -167,6 +170,7 @@ class CheckNodeStatus extends Command
 
                     if ($hasOnline && $hasSuspended) {
                         $user->profile->extra_status = 'Suspended';
+                        $user->profile->revoke_at = now();
                         if (count($revokeReason) > 0) {
                             $user->profile->revoke_reason = implode(', ', $revokeReason);
                         }

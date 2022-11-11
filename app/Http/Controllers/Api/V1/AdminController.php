@@ -457,6 +457,16 @@ class AdminController extends Controller
         return $this->successResponse($return);
     }
 
+    public function getActiveReinstatements()
+    {
+        $items = Profile::where('extra_status', 'Suspended')
+                        ->where('reactivation_requested', true)
+                        ->whereNotNull('reactivation_requested_at')
+                        ->orderBy('reactivation_requested_at', 'desc')
+                        ->get();
+        return $this->successResponse($items);
+    }
+
     public function getUsers(Request $request)
     {
         /*
