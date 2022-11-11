@@ -145,6 +145,8 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
                 Route::post('/users/intakes/{id}/approve', [AdminController::class, 'approveIntakeUser'])->where('id', '[0-9]+');
                 Route::post('/users/intakes/{id}/reset', [AdminController::class, 'resetIntakeUser'])->where('id', '[0-9]+');
                 Route::post('/users/{id}/ban', [AdminController::class, 'banUser'])->where('id', '[0-9]+');
+                Route::post('/users/{id}/revoke', [AdminController::class, 'revokeUser'])->where('id', '[0-9]+');
+                Route::post('/users/{id}/reactivate', [AdminController::class, 'reactivateUser'])->where('id', '[0-9]+');
                 Route::post('/users/{id}/remove', [AdminController::class, 'removeUser'])->where('id', '[0-9]+');
             });
             
