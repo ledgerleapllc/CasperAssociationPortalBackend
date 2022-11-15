@@ -32,7 +32,6 @@ class CheckNodeStatus extends Command
         $redmarks_revoke = (int) ($settings['redmarks_revoke'] ?? 0);
         $uptime_probation = (float) ($settings['uptime_probation'] ?? 0);
 
-        $now = Carbon::now('UTC');
         $users = User::with(['addresses', 'profile'])
                         ->where('role', 'member')
                         ->where('banned', 0)
@@ -65,7 +64,7 @@ class CheckNodeStatus extends Command
                 if ($user->profile->extra_status == 'Suspended') {
                     // Suspended
                     if (!$user->profile->revoke_at) {
-                        $user->profile->revoke_at = now();
+                        $user->profile->revoke_at = Carbon::now('UTC');
                         $user->profile->save();
                     }
                 } else {
@@ -114,13 +113,12 @@ class CheckNodeStatus extends Command
                                 if ($uptime < $uptime_probation) {
                                     $address->extra_status = 'On Probation';
                                     if (!$address->probation_start || !$address->probation_end) {
-                                        $address->probation_start = now();
+                                        $address->probation_start = Carbon::now('UTC');
                                         $address->probation_end = Carbon::now('UTC')->addHours($uptimeHours);
                                     }
                                     $address->save();
 
-                                    $now = Carbon::now('UTC');
-                                    if ($address->probation_end <= $now) {
+                                    if ($address->probation_end <= Carbon::now('UTC')) {
                                         $address->extra_status = 'Suspended';
                                         $address->probation_start = null;
                                         $address->probation_end = null;
@@ -170,7 +168,7 @@ class CheckNodeStatus extends Command
 
                     if ($hasOnline && $hasSuspended) {
                         $user->profile->extra_status = 'Suspended';
-                        $user->profile->revoke_at = now();
+                        $user->profile->revoke_at = Carbon::now('UTC');
                         if (count($revokeReason) > 0) {
                             $user->profile->revoke_reason = implode(', ', $revokeReason);
                         }
