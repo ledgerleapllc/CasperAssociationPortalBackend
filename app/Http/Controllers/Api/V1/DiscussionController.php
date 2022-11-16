@@ -21,6 +21,7 @@ use App\Models\Discussion;
 use App\Models\DiscussionComment;
 use App\Models\DiscussionPin;
 use App\Models\DiscussionRemoveNew;
+use App\Models\DiscussionVote;
 
 use Carbon\Carbon;
 
@@ -407,6 +408,32 @@ class DiscussionController extends Controller
             ->where('discussions.user_id', $user->id)
             ->orderBy('discussions.created_at', 'DESC')->paginate($limit);
         return $this->successResponse($data);
+    }
+
+    public function deleteDiscussion($id)
+    {
+    	$user = auth()->user()->load(['pagePermissions']);
+    	if (Helper::isAccessBlocked($user, 'discussions'))
+            return $this->errorResponse('Your access is blocked', Response::HTTP_BAD_REQUEST);
+        
+        $discussion = Discussion::where('id', $id)
+        						->where(function ($query) use ($user) {
+        							if ($user->role != 'admin') {
+        								$query->where('user_id', $user->id);
+        							}
+        						})
+        						->first();
+        if (!$discussion) {
+        	return $this->errorResponse('Can not delete discussion', Response::HTTP_BAD_REQUEST);
+        }
+
+        DiscussionComment::where('discussion_id', $discussion->id)->delete();
+        DiscussionPin::where('discussion_id', $discussion->id)->delete();
+        DiscussionRemoveNew::where('discussion_id', $discussion->id)->delete();
+        DiscussionVote::where('discussion_id', $discussion->id)->delete();
+        $discussion->delete();
+
+        return $this->metaSuccess();
     }
 
     public function deleteDraftDiscussions($id)
