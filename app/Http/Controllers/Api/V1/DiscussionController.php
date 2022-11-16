@@ -288,7 +288,9 @@ class DiscussionController extends Controller
         if ($validator->fails()) {
             return $this->validateResponse($validator->errors());
         }
-        $comment = DiscussionComment::where('discussion_id', $request->comment_id)->where('user_id', $user->id)->first();
+        $comment = DiscussionComment::where('id', $request->comment_id)
+        							->where('discussion_id', $id)
+        							->where('user_id', $user->id)->first();
         if ($comment) {
             $comment->description = $request->description;
             $comment->save();
