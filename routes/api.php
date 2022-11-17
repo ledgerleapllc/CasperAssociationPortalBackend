@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-//// REMOVE 
+/// REMOVE 
 Route::get('/dev-verify-node/{address}', [AuthController::class, 'devVerifyNode'])->where('address', '[0-9a-zA-Z]+');
 
 Route::namespace('Api')->middleware([])->group(function () {
@@ -227,6 +227,8 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('/detail/{id}', [DiscussionController::class, 'getDiscussion']);
             Route::post('/new', [DiscussionController::class, 'postDiscussion']);
             Route::put('/{id}', [DiscussionController::class, 'updateDiscussion']);
+            Route::delete('/{id}', [DiscussionController::class, 'deleteDiscussion']);
+            Route::delete('/{id}/comment/{commentId}', [DiscussionController::class, 'deleteComment']);
             Route::delete('/{id}/new', [DiscussionController::class, 'removeNewMark']);
             Route::post('/{id}/comment', [DiscussionController::class, 'createComment']);
             Route::put('/{id}/comment', [DiscussionController::class, 'updateComment']);
