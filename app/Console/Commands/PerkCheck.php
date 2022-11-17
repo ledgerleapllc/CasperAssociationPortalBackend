@@ -39,17 +39,25 @@ class PerkCheck extends Command
      */
     public function handle()
     {
-        $now = Carbon::now()->format('Y-m-d');
+        $now = Carbon::now('UTC');
+
         // check perk waiting
-        $waitingPerks = Perk::where('status', 'waiting')->where('setting', 1)->where('start_date', '<=', $now)->where('end_date', '>=', $now)->get();
+        $waitingPerks = Perk::where('status', 'waiting')
+        					->where('setting', 1)
+        					->where('time_begin', '<=', $now)
+        					->where('time_end', '>=', $now)
+        					->get();
         foreach ($waitingPerks as $perk) {
             $perk->status = 'active';
             $perk->visibility = 'visible';
             $perk->save();
         }
-
+        
         // check perk expired
-        $expiredPerks = Perk::where('end_date', '<', $now)->where('setting', 1)->where('status', '!=', 'expired')->get();
+        $expiredPerks = Perk::where('time_end', '<', $now)
+        					->where('setting', 1)
+        					->where('status', '!=', 'expired')
+        					->get();
         foreach ($expiredPerks as $perk) {
             $perk->status = 'expired';
             $perk->visibility = 'hidden';

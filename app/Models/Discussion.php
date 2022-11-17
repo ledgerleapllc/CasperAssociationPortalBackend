@@ -31,8 +31,8 @@ class Discussion extends Model
             'user_id' => $user->id,
             'discussion_id' => $this->id
         ])->first() == null;
-        $notOld = Carbon::now()->diffInDays(Carbon::parse($this->created_at)) < 3;
-        return  $notOld && $notRemoved;
+        $notOld = Carbon::now('UTC')->diffInDays(Carbon::parse($this->created_at)) < 3;
+        return $notOld && $notRemoved;
     }
 
     public function getTotalPinnedAttribute()

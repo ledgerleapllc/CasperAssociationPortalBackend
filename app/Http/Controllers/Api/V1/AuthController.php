@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use Carbon\Carbon;
 use App\Console\Helper;
 
 use App\Http\Controllers\Controller;
@@ -128,11 +129,11 @@ class AuthController extends Controller
                 $verify->email = $user->email;
                 $verify->type = VerifyUser::TYPE_LOGIN_TWO_FA;
                 $verify->code = $code;
-                $verify->created_at = now();
+                $verify->created_at = Carbon::now('UTC');
                 $verify->save();
                 Mail::to($user)->send(new LoginTwoFA($code));
             }
-            $user->last_login_at = now();
+            $user->last_login_at = Carbon::now('UTC');
             $user->last_login_ip_address = request()->ip();
             $user->save();
             $ipHistory = new IpHistory();
@@ -160,7 +161,7 @@ class AuthController extends Controller
             $data = $request->all();
 
             $data['password'] = bcrypt($request->password);
-            $data['last_login_at'] = now();
+            $data['last_login_at'] = Carbon::now('UTC');
             $data['type'] = User::TYPE_ENTITY;
             $user = $this->userRepo->create($data);
             $code = generateString(7);
@@ -171,13 +172,13 @@ class AuthController extends Controller
                 ],
                 [
                     'code' => $code,
-                    'created_at' => now()
+                    'created_at' => Carbon::now('UTC')
                 ]
             );
             Mail::to($user->email)->send(new UserVerifyMail($code));
             DB::commit();
             $user->pending_node = 1;
-            $user->last_login_at = now();
+            $user->last_login_at = Carbon::now('UTC');
             $user->last_login_ip_address = request()->ip();
             $user->save();
 
@@ -206,7 +207,7 @@ class AuthController extends Controller
             $data = $request->all();
 
             $data['password'] = bcrypt($request->password);
-            $data['last_login_at'] = now();
+            $data['last_login_at'] = Carbon::now('UTC');
             $data['type'] = User::TYPE_INDIVIDUAL;
             $user = $this->userRepo->create($data);
             $code = generateString(7);
@@ -217,13 +218,13 @@ class AuthController extends Controller
                 ],
                 [
                     'code' => $code,
-                    'created_at' => now(),
+                    'created_at' => Carbon::now('UTC'),
                 ]
             );
             Mail::to($user->email)->send(new UserVerifyMail($code));
             DB::commit();
             $user->pending_node = 1;
-            $user->last_login_at = now();
+            $user->last_login_at = Carbon::now('UTC');
             $user->last_login_ip_address = request()->ip();
             $user->save();
             
@@ -253,7 +254,7 @@ class AuthController extends Controller
                 ['code' => $request->code, 'email' => $user->email]
             );
             if ($this->checCode($verifyUser)) {
-                $user->update(['email_verified_at' => now()]);
+                $user->update(['email_verified_at' => Carbon::now('UTC')]);
                 $verifyUser->delete();
                 $emailerData = EmailerHelper::getEmailerData();
                 EmailerHelper::triggerUserEmail($user->email, 'Welcome to the Casper', $emailerData, $user);
@@ -294,7 +295,7 @@ class AuthController extends Controller
                 ],
                 [
                     'code' => $code,
-                    'created_at' => now(),
+                    'created_at' => Carbon::now('UTC'),
                 ]
             );
             if ($passwordReset) {
@@ -356,7 +357,7 @@ class AuthController extends Controller
                 ],
                 [
                     'code' => $code,
-                    'created_at' => now()
+                    'created_at' => Carbon::now('UTC')
                 ]
             );
             if ($userVerify) {
@@ -392,7 +393,7 @@ class AuthController extends Controller
         $user->first_name = $request->first_name;
         $user->last_name = $request->last_name;
         $user->password = bcrypt($request->password);
-        $user->last_login_at = now();
+        $user->last_login_at = Carbon::now('UTC');
         $user->last_login_ip_address = request()->ip();
         $user->member_status = 'active';
         $user->save();
@@ -422,6 +423,6 @@ class AuthController extends Controller
      */
     private function checCode($verifyUser)
     {
-        return ($verifyUser && $verifyUser->created_at >= now()->subMinutes(VerifyUser::TOKEN_LIFETIME));
+        return ($verifyUser && $verifyUser->created_at >= Carbon::now('UTC')->subMinutes(VerifyUser::TOKEN_LIFETIME));
     }
 }

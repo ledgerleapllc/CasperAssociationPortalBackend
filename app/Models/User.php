@@ -202,7 +202,7 @@ class User extends Authenticatable
     public function getNewThreadsAttribute() {
         $removedNews = DiscussionRemoveNew::where(['user_id' => $this->id])->pluck('discussion_id');
         $count = Discussion::whereNotIn('id', $removedNews)
-                ->whereDate('created_at', '>',  Carbon::now()->subDays(3))
+                ->whereDate('created_at', '>',  Carbon::now('UTC')->subDays(3))
                 ->count();
         return $count;
     }

@@ -491,7 +491,7 @@ class AdminController extends Controller
         if ($user && $user->profile->status == 'approved' && $user->profile->extra_status != 'Suspended') {
             $user->profile->extra_status = 'Suspended';
             $user->profile->revoke_reason = 'Admin action';
-            $user->profile->revoke_at = now();
+            $user->profile->revoke_at = Carbon::now('UTC');
             $user->profile->reactivation_reason = null;
             $user->profile->reactivation_requested = null;
             $user->profile->reactivation_requested_at = null;
@@ -567,7 +567,7 @@ class AdminController extends Controller
             $historyRecord->reactivation_reason = $reactivation_reason;
             $historyRecord->reactivation_requested_at = $reactivation_requested_at;
             $historyRecord->decision = true;
-            $historyRecord->decision_at = now();
+            $historyRecord->decision_at = Carbon::now('UTC');
             $historyRecord->save();
         }
 
@@ -617,7 +617,7 @@ class AdminController extends Controller
             $historyRecord->reactivation_reason = $reactivation_reason;
             $historyRecord->reactivation_requested_at = $reactivation_requested_at;
             $historyRecord->decision = false;
-            $historyRecord->decision_at = now();
+            $historyRecord->decision_at = Carbon::now('UTC');
             $historyRecord->save();
         }
 
@@ -1126,46 +1126,39 @@ class AdminController extends Controller
                 'start_time'  => 'required',
                 'end_date'    => 'required',
                 'end_time'    => 'required',
+                'timezone' => 'required'
             ]);
 
             if ($validator->fails()) {
                 return $this->validateResponse($validator->errors());
             }
 
-            $time     = $request->time;
-            $timeUnit = $request->time_unit;
-            $mins     = 0;
+            $timezone = $request->timezone;
+            
+            $startTime = $request->start_date . ' ' . $request->start_time;
+            $startTimeCarbon = Carbon::createFromFormat('Y-m-d H:i:s', $startTime, $timezone);
+            $startTimeCarbon->setTimezone('UTC');
 
-            if ($timeUnit == 'minutes') {
-                $mins = $time;
-            } else if ($timeUnit == 'hours') {
-                $mins = $time * 60;
-            } else if ($timeUnit == 'days') {
-                $mins = $time * 60 * 24;
-            }
-
-            $start         = Carbon::createFromFormat("Y-m-d H:i:s", Carbon::now('UTC'), "UTC");
-            $now           = Carbon::now('UTC');
-            $timeEnd       = $start->addMinutes($mins);
-            $endTime       = $request->end_date . ' ' . $request->end_time;
-            $endTimeCarbon = Carbon::createFromFormat('Y-m-d H:i:s', $endTime, 'EST');
+            $endTime = $request->end_date . ' ' . $request->end_time;
+            $endTimeCarbon = Carbon::createFromFormat('Y-m-d H:i:s', $endTime, $timezone);
             $endTimeCarbon->setTimezone('UTC');
 
             $ballot = new Ballot();
             $ballot->user_id     = $user->id;
             $ballot->title       = $request->title;
             $ballot->description = $request->description;
+            $ballot->time_begin = $startTimeCarbon;
             $ballot->time_end    = $endTimeCarbon;
             $ballot->start_date  = $request->start_date;
             $ballot->start_time  = $request->start_time;
             $ballot->end_date    = $request->end_date;
             $ballot->end_time    = $request->end_time;
             $ballot->status      = 'active';
-            $ballot->created_at  = $now;
+            $ballot->timezone = $timezone;
             $ballot->save();
 
             $vote = new Vote();
-            $vote->ballot_id     = $ballot->id;
+            $vote->ballot_id = $ballot->id;
             $vote->save();
 
             if ($request->hasFile('files')) {
@@ -1235,19 +1228,19 @@ class AdminController extends Controller
                 'start_time'      => 'required',
                 'end_date'        => 'required',
                 'end_time'        => 'required',
+                'timezone' => 'required'
             ]);
 
             if ($validator->fails()) {
                 return $this->validateResponse($validator->errors());
             }
 
-            $time     = $request->time;
-            $timeUnit = $request->time_unit;
-            $ballot   = Ballot::where('id', $id)->first();
-
+            $ballot = Ballot::where('id', $id)->first();
             if (!$ballot) {
                 return $this->errorResponse('Not found ballot', Response::HTTP_BAD_REQUEST);
             }
+
+            $timezone = $request->timezone;
 
             if ($request->title) {
                 $ballot->title = $request->title;
@@ -1257,17 +1250,21 @@ class AdminController extends Controller
                 $ballot->description = $request->description;
             }
 
-            $endTime       = $request->end_date . ' ' . $request->end_time;
-            $endTimeCarbon = Carbon::createFromFormat('Y-m-d H:i:s', $endTime, 'EST');
-            $endTimeCarbon->setTimezone('UTC');
+            $startTime = $request->start_date . ' ' . $request->start_time;
+            $startTimeCarbon = Carbon::createFromFormat('Y-m-d H:i:s', $startTime, $timezone);
+            $startTimeCarbon->setTimezone('UTC');
 
-            $now                = Carbon::now('UTC');
-            $ballot->created_at = $now;
+            $endTime       = $request->end_date . ' ' . $request->end_time;
+            $endTimeCarbon = Carbon::createFromFormat('Y-m-d H:i:s', $endTime, $timezone);
+            $endTimeCarbon->setTimezone('UTC');
+            
+            $ballot->time_begin = $startTimeCarbon;
             $ballot->time_end   = $endTimeCarbon;
             $ballot->start_date = $request->start_date;
             $ballot->start_time = $request->start_time;
             $ballot->end_date   = $request->end_date;
             $ballot->end_time   = $request->end_time;
+            $ballot->timezone = $request->timezone;
             $ballot->save();
 
             if ($request->hasFile('files')) {
@@ -1335,32 +1332,18 @@ class AdminController extends Controller
         $status         = $request->status;
         $sort_key       = $request->sort_key ?? 'ballot.id';
         $sort_direction = $request->sort_direction ?? 'desc';
-        $now            = Carbon::now('EST');
-        $startDate      = $now->format('Y-m-d');
-        $startTime      = $now->format('H:i:s');
-
+        $now = Carbon::now('UTC');
+        
         if ($status == 'active') {
             $ballots = Ballot::with(['user', 'vote'])
                 ->where('ballot.status', 'active')
-                ->where(function ($query) use ($startDate, $startTime) {
-                    $query->where('start_date', '<', $startDate)
-                            ->orWhere(function ($query) use ($startDate, $startTime) {
-                                $query->where('start_date', $startDate)
-                                        ->where('start_time', '<=', $startTime);
-                            });
-                })
+                ->where('ballot.time_begin', '<=', $now)
                 ->orderBy($sort_key, $sort_direction)
                 ->paginate($limit);
         } else if ($status && $status == 'scheduled') {
             $ballots = Ballot::with(['user', 'vote'])
                 ->where('ballot.status', 'active')
-                ->where(function ($query) use ($startDate, $startTime) {
-                    $query->where('start_date', '>', $startDate)
-                            ->orWhere(function ($query) use ($startDate, $startTime) {
-                                $query->where('start_date', $startDate)
-                                        ->where('start_time', '>', $startTime);
-                            });
-                })
+                ->where('ballot.time_begin', '>', $now)
                 ->orderBy($sort_key, $sort_direction)
                 ->paginate($limit);
         } else if ($status && $status != 'active' && $status != 'scheduled') {
@@ -1403,7 +1386,7 @@ class AdminController extends Controller
             );
         }
 
-        $ballot->time_end = now();
+        $ballot->time_end = Carbon::now('UTC');
         $ballot->status   = 'cancelled';
         $ballot->save();
         return $this->metaSuccess();
@@ -1548,7 +1531,7 @@ class AdminController extends Controller
         $verify->email      = $request->email;
         $verify->type       = VerifyUser::TYPE_INVITE_ADMIN;
         $verify->code       = $code;
-        $verify->created_at = now();
+        $verify->created_at = Carbon::now('UTC');
         $verify->save();
 
         $admin = User::create([
@@ -1698,7 +1681,7 @@ class AdminController extends Controller
         $verify->email      = $admin->email;
         $verify->type       = VerifyUser::TYPE_INVITE_ADMIN;
         $verify->code       = $code;
-        $verify->created_at = now();
+        $verify->created_at = Carbon::now('UTC');
         $verify->save();
 
         Mail::to($admin->email)->send(new InvitationMail($inviteUrl));
@@ -1738,7 +1721,7 @@ class AdminController extends Controller
         $verify->email      = $admin->email;
         $verify->type       = VerifyUser::TYPE_RESET_PASSWORD;
         $verify->code       = $code;
-        $verify->created_at = now();
+        $verify->created_at = Carbon::now('UTC');
         $verify->save();
 
         Mail::to($admin->email)->send(new ResetPasswordMail($resetUrl));
@@ -1824,7 +1807,7 @@ class AdminController extends Controller
             ->first();
 
         if ($user && $user->letter_file) {
-            $user->letter_verified_at = now();
+            $user->letter_verified_at = Carbon::now('UTC');
             $user->save();
 
             $emailerData = EmailerHelper::getEmailerData();
@@ -1867,7 +1850,7 @@ class AdminController extends Controller
         if ($user) {
             $user->letter_verified_at = null;
             $user->letter_file        = null;
-            $user->letter_rejected_at = now();
+            $user->letter_rejected_at = Carbon::now('UTC');
             $user->save();
             $message = trim($request->get('message'));
 
@@ -2122,7 +2105,7 @@ class AdminController extends Controller
             ->first();
 
         if ($user && $user->profile) {
-            $user->profile->document_verified_at = now();
+            $user->profile->document_verified_at = Carbon::now('UTC');
             $user->profile->save();
             return $this->metaSuccess();
         }

@@ -60,9 +60,11 @@ class Kernel extends ConsoleKernel
             ->everyFiveMinutes()
             ->runInBackground();
 
+        /*
         $schedule->command('refresh:address')
             ->everyFiveMinutes()
             ->runInBackground();
+        */
         $schedule->command('kyc:report')
             ->dailyAt('10:02')
             ->runInBackground();

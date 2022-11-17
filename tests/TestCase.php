@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 
@@ -66,7 +67,7 @@ abstract class TestCase extends BaseTestCase
             $user->last_name = 'Leap';
             $user->email = 'ledgerleapllcadmin@gmail.com';
             $user->password = Hash::make('Ledgerleapllcadmin111@');
-            $user->email_verified_at = now();
+            $user->email_verified_at = Carbon::now('UTC');
             $user->type = 'active';
             $user->role = 'admin';
             $user->save();
@@ -112,7 +113,7 @@ abstract class TestCase extends BaseTestCase
             $user->pseudonym = $pseudonym;
             $user->telegram = $telegram;
             $user->type = User::TYPE_INDIVIDUAL;
-            $user->email_verified_at = now();
+            $user->email_verified_at = Carbon::now('UTC');
             $user->signature_request_id = 'TestSignatureRequestId';
             $user->role = 'member';
             $user->letter_file = 'LetterFileLink';
