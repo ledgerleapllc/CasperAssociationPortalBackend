@@ -46,9 +46,9 @@ class HistoricalData extends Command
         $get_auction    = 'casper-client get-auction-info ';
         $node_arg       = '--node-address http://18.219.70.138:7777/rpc ';
 
-        $json           = shell_exec($get_block.$node_arg);
+        $json           = shell_exec($get_block . $node_arg);
         $json           = json_decode($json);
-        $current_era    = (int)($json->result->block->header->era_id ?? 0);
+        $current_era    = (int) ($json->result->block->header->era_id ?? 0);
 
         $historic_era   = DB::select("
             SELECT era_id
@@ -56,16 +56,16 @@ class HistoricalData extends Command
             ORDER BY era_id DESC
             LIMIT 1
         ");
-        $historic_era   = (int)($historic_era[0]->era_id ?? 0);
-        info('historic_era: '.$historic_era);
+        $historic_era   = (int) ($historic_era[0]->era_id ?? 0);
+        info('historic_era: ' . $historic_era);
         $blocks_per_era = 100;
         $historic_block = $blocks_per_era * $historic_era;
-        info('historic_block: '.$historic_block);
+        info('historic_block: ' . $historic_block);
         $test_era       = 0;
         $timestamp      = '';
 
         while ($test_era < $historic_era) {
-            $json       = shell_exec($get_block.$node_arg.'-b '.$historic_block);
+            $json       = shell_exec($get_block . $node_arg . '-b ' . $historic_block);
             $json       = json_decode($json);
             $test_era   = (int)($json->result->block->header->era_id ?? 0);
             $timestamp  = $json->result->block->header->timestamp ?? '';
@@ -115,7 +115,7 @@ class HistoricalData extends Command
 
                 if ($era_id == $historic_era) {
                     // start timer
-                    $start_time = (int)time();
+                    $start_time = (int) time();
 
                     // get auction info for this new detected era switch
                     info($era_id.' '.$block_hash);
@@ -395,12 +395,12 @@ class HistoricalData extends Command
                     // DailyEarning garbage cleanup
                     DailyEarning::where(
                         'created_at', 
-                        '<', 
+                        '<',
                         Carbon::now('UTC')->subDays(90)
                     )->delete();
 
                     // end timer
-                    $end_time = (int)time();
+                    $end_time = (int) time();
 
                     info("Time spent on era: ".($end_time - $start_time));
                 }

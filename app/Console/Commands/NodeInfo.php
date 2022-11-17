@@ -10,8 +10,6 @@ use App\Services\NodeHelper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
-use Carbon\Carbon;
-
 class NodeInfo extends Command
 {
     /**

@@ -13,11 +13,6 @@ class Ballot extends Model
     protected $table = 'ballot';
     protected $guarded = [];
 
-    public function getTimeEndAttribute($value)
-    {
-        return Carbon::parse($value);
-    }
-
     public function user()
     {
         return $this->belongsTo('App\Models\User',  'user_id', 'id');

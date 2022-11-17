@@ -874,7 +874,7 @@ class UserController extends Controller
                 ],
                 [
                     'code' => $code,
-                    'created_at' => now()
+                    'created_at' => Carbon::now('UTC')
                 ]
             );
 
@@ -1283,7 +1283,7 @@ class UserController extends Controller
                     $userAddress->user_id             = $user->id;
                     $userAddress->public_address_node = $public_validator_key;
                     $userAddress->signed_file         = $ObjectURL;
-                    $userAddress->node_verified_at    = now();
+                    $userAddress->node_verified_at    = Carbon::now('UTC');
                     $userAddress->save();
 
                     $emailerData = EmailerHelper::getEmailerData();
@@ -1373,11 +1373,11 @@ class UserController extends Controller
 
                     $user->signed_file             = $ObjectURL;
                     $user->has_verified_address    = 1;
-                    $user->node_verified_at        = now();
+                    $user->node_verified_at        = Carbon::now('UTC');
                     $user->save();
 
                     $userAddress->signed_file      = $ObjectURL;
-                    $userAddress->node_verified_at = now();
+                    $userAddress->node_verified_at = Carbon::now('UTC');
                     $userAddress->save();
 
                     $emailerData = EmailerHelper::getEmailerData();
@@ -1568,32 +1568,19 @@ class UserController extends Controller
             );
         }
 
-        $now       = Carbon::now('EST');
+        $now       = Carbon::now('UTC');
+
         $startDate = $now->format('Y-m-d');
         $startTime = $now->format('H:i:s');
 
         if ($status == 'active') {
             $query = Ballot::where('status', 'active')
-                ->where(function ($query) use ($startDate, $startTime) {
-                    $query->where('start_date', '<', $startDate)
-                        ->orWhere(function ($query) use ($startDate, $startTime) {
-                            $query->where('start_date', $startDate)
-                                ->where('start_time', '<=', $startTime);
-                        });
-                });
+            	->where('time_begin', '<=', $now);
         }
-
         else if ($status == 'scheduled') {
             $query = Ballot::where('status', 'active')
-                ->where(function ($query) use ($startDate, $startTime) {
-                    $query->where('start_date', '>', $startDate)
-                        ->orWhere(function ($query) use ($startDate, $startTime) {
-                            $query->where('start_date', $startDate)
-                                ->where('start_time', '>', $startTime);
-                        });
-                });
+            	->where('time_begin', '>', $now);
         }
-
         else {
             $query = Ballot::where('status', '<>', 'active');
         }
@@ -1657,7 +1644,7 @@ class UserController extends Controller
         ) {
             $user->profile->reactivation_reason = $reactivation_reason;
             $user->profile->reactivation_requested = true;
-            $user->profile->reactivation_requested_at = now();
+            $user->profile->reactivation_requested_at = Carbon::now('UTC');
             $user->profile->save();
         }
 
@@ -1943,7 +1930,7 @@ class UserController extends Controller
                 return $this->metaSuccess();
             } else {
                 $voteResult->type       = $vote;
-                $voteResult->updated_at = now();
+                $voteResult->updated_at = Carbon::now('UTC');
 
                 if ($vote == 'for') {
                     $ballot->vote->for_value     = $ballot->vote->for_value + 1;
@@ -1953,7 +1940,7 @@ class UserController extends Controller
                     $ballot->vote->against_value = $ballot->vote->against_value + 1;
                 }
 
-                $ballot->vote->updated_at = now();
+                $ballot->vote->updated_at = Carbon::now('UTC');
                 $ballot->vote->save();
                 $voteResult->save();
             }
@@ -1972,7 +1959,7 @@ class UserController extends Controller
             }
 
             $ballot->vote->result_count = $ballot->vote->result_count + 1;
-            $ballot->vote->updated_at   = now();
+            $ballot->vote->updated_at   = Carbon::now('UTC');
             $ballot->vote->save();
         }
         return $this->metaSuccess();
@@ -2557,7 +2544,7 @@ class UserController extends Controller
             $verify->code       = $codeCurrentEmail;
             $verify->email      = $currentEmail;
             $verify->type       = VerifyUser::TYPE_CANCEL_EMAIL;
-            $verify->created_at = now();
+            $verify->created_at = Carbon::now('UTC');
             $verify->save();
 
             // new email
@@ -2594,7 +2581,7 @@ class UserController extends Controller
             $verify->email      = $newEmail;
             $verify->code       = $codeNewEmail;
             $verify->type       = VerifyUser::TYPE_CONFIRM_EMAIL;
-            $verify->created_at = now();
+            $verify->created_at = Carbon::now('UTC');
             $verify->save();
         }
         $user->save();
@@ -2701,7 +2688,7 @@ class UserController extends Controller
             $verify->email      = $user->email;
             $verify->type       = VerifyUser::TYPE_LOGIN_TWO_FA;
             $verify->code       = $code;
-            $verify->created_at = now();
+            $verify->created_at = Carbon::now('UTC');
             $verify->save();
             Mail::to($user)->send(new LoginTwoFA($code));
             return $this->metaSuccess();
@@ -2970,7 +2957,7 @@ class UserController extends Controller
             LIMIT 1
         ");
         $nodeInfo = $nodeInfo[0] ?? null;
-
+		
         // Calc earning
         $one_day_ago   = Carbon::now('UTC')->subHours(24);
         $daily_earningObject = DB::select("

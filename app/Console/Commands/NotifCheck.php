@@ -39,9 +39,13 @@ class NotifCheck extends Command
      */
     public function handle()
     {
-        $now = Carbon::now()->format('Y-m-d');
+        $now = Carbon::now('UTC')->format('Y-m-d');
         // check notification waiting
-        $waitingNotification = Notification::where('status', 'waiting')->where('setting', 1)->where('start_date', '<=', $now)->where('end_date', '>=', $now)->get();
+        $waitingNotification = Notification::where('status', 'waiting')
+        									->where('setting', 1)
+        									->where('start_date', '<=', $now)
+        									->where('end_date', '>=', $now)
+        									->get();
         foreach ($waitingNotification as $data) {
             $data->status = 'active';
             $data->visibility = 'visible';
@@ -49,7 +53,9 @@ class NotifCheck extends Command
         }
 
         // check notification expired
-        $expiredNotification = Notification::where('end_date', '<', $now)->where('setting', 1)->get();
+        $expiredNotification = Notification::where('end_date', '<', $now)
+        									->where('setting', 1)
+        									->get();
         foreach ($expiredNotification as $data) {
             $data->status = 'expired';
             $data->visibility = 'hidden';

@@ -397,7 +397,7 @@ class DiscussionController extends Controller
         if (Helper::isAccessBlocked($user, 'discussions'))
             return $this->errorResponse('Your access is blocked', Response::HTTP_BAD_REQUEST);
 
-        $this->discussionRemoveNewRepo->deleteConditions([['created_at', '<=',  Carbon::now()->subDays(3)]]);
+        $this->discussionRemoveNewRepo->deleteConditions([['created_at', '<=',  Carbon::now('UTC')->subDays(3)]]);
         $this->discussionRemoveNewRepo->create(['discussion_id' => $id, 'user_id' => $user->id]);
 
         return $this->metaSuccess();
