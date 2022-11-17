@@ -21,6 +21,7 @@ use App\Models\Discussion;
 use App\Models\DiscussionComment;
 use App\Models\DiscussionPin;
 use App\Models\DiscussionRemoveNew;
+use App\Models\DiscussionVote;
 
 use Carbon\Carbon;
 
@@ -82,7 +83,6 @@ class DiscussionController extends Controller
         if (Helper::isAccessBlocked($user, 'discussions'))
             return $this->successResponse(['data' => []]);
 
-        $data = array();
         $limit = $request->limit ?? 50;
         $data = Discussion::with(['user', 'user.profile'])->where('discussions.is_draft', 0)
             ->leftJoin('discussion_pins', function ($query) use ($user) {
@@ -247,7 +247,7 @@ class DiscussionController extends Controller
         if (Helper::isAccessBlocked($user, 'discussions'))
             return $this->errorResponse('Your access is blocked', Response::HTTP_BAD_REQUEST);
 
-        $data = array();
+        $data = [];
         $validator = Validator::make($request->all(), [
             'description' => 'required'
         ]);
@@ -279,7 +279,6 @@ class DiscussionController extends Controller
         if (Helper::isAccessBlocked($user, 'discussions'))
             return $this->errorResponse('Your access is blocked', Response::HTTP_BAD_REQUEST);
 
-        $data = array();
         $validator = Validator::make($request->all(), [
             'description' => 'required',
             'comment_id' => 'required'
@@ -287,13 +286,39 @@ class DiscussionController extends Controller
         if ($validator->fails()) {
             return $this->validateResponse($validator->errors());
         }
-        $comment = DiscussionComment::where('discussion_id', $request->comment_id)->where('user_id', $user->id)->first();
+        $comment = DiscussionComment::where('id', $request->comment_id)
+        							->where('discussion_id', $id)
+        							->where('user_id', $user->id)->first();
         if ($comment) {
             $comment->description = $request->description;
+            $comment->edited_at = Carbon::now('UTC');
             $comment->save();
             return $this->successResponse($comment);
         }
         return $this->errorResponse('Invalid discussion id', Response::HTTP_BAD_REQUEST);
+    }
+
+    public function deleteComment($id, $commentId)
+    {
+    	$user = auth()->user()->load(['pagePermissions']);
+        if (Helper::isAccessBlocked($user, 'discussions'))
+            return $this->errorResponse('Your access is blocked', Response::HTTP_BAD_REQUEST);
+
+        $comment = DiscussionComment::where('id', $commentId)
+        							->where('discussion_id', $id)
+        							->where(function ($query) use ($user) {
+        								if ($user->role != 'admin') {
+        									$query->where('user_id', $user->id);
+        								}
+        							})
+        							->first();
+        if ($comment) {
+        	$comment->description = '<p>Comment deleted</p>';
+        	$comment->deleted_at = Carbon::now('UTC');
+        	$comment->save();
+        	return $this->metaSuccess();
+        }
+    	return $this->errorResponse('Invalid discussion id', Response::HTTP_BAD_REQUEST);
     }
 
     public function setVote(Request $request, $id)
@@ -302,7 +327,6 @@ class DiscussionController extends Controller
         if (Helper::isAccessBlocked($user, 'discussions'))
             return $this->errorResponse('Your access is blocked', Response::HTTP_BAD_REQUEST);
 
-        $data = array();
         $validator = Validator::make($request->all(), [
             'is_like' => 'required|boolean'
         ]);
@@ -358,7 +382,6 @@ class DiscussionController extends Controller
         if (Helper::isAccessBlocked($user, 'discussions'))
             return $this->errorResponse('Your access is blocked', Response::HTTP_BAD_REQUEST);
 
-        $data = array();
         $pinned = $this->discussionPinRepo->first(['discussion_id' => $id, 'user_id' => $user->id]);
         if ($pinned == null) {
             $this->discussionPinRepo->create(['discussion_id' => $id, 'user_id' => $user->id]);
@@ -407,6 +430,32 @@ class DiscussionController extends Controller
             ->where('discussions.user_id', $user->id)
             ->orderBy('discussions.created_at', 'DESC')->paginate($limit);
         return $this->successResponse($data);
+    }
+
+    public function deleteDiscussion($id)
+    {
+    	$user = auth()->user()->load(['pagePermissions']);
+    	if (Helper::isAccessBlocked($user, 'discussions'))
+            return $this->errorResponse('Your access is blocked', Response::HTTP_BAD_REQUEST);
+        
+        $discussion = Discussion::where('id', $id)
+        						->where(function ($query) use ($user) {
+        							if ($user->role != 'admin') {
+        								$query->where('user_id', $user->id);
+        							}
+        						})
+        						->first();
+        if (!$discussion) {
+        	return $this->errorResponse('Can not delete discussion', Response::HTTP_BAD_REQUEST);
+        }
+
+        DiscussionComment::where('discussion_id', $discussion->id)->delete();
+        DiscussionPin::where('discussion_id', $discussion->id)->delete();
+        DiscussionRemoveNew::where('discussion_id', $discussion->id)->delete();
+        DiscussionVote::where('discussion_id', $discussion->id)->delete();
+        $discussion->delete();
+
+        return $this->metaSuccess();
     }
 
     public function deleteDraftDiscussions($id)
