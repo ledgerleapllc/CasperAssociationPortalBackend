@@ -2055,6 +2055,8 @@ class UserController extends Controller
                 'users.id',
                 'users.pseudonym',
                 'users.created_at',
+                'users.approve_at',
+                'users.kyc_verified_at',
                 'user_addresses.node_verified_at',
                 'all_node_data2.public_key',
                 'all_node_data2.uptime',
