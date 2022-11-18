@@ -153,6 +153,14 @@ class UserController extends Controller
         ");
         $return["total_members"] = $total_members ? count($total_members) : 0;
 
+        // fetch MBS
+        $mbs = DB::select("
+            SELECT mbs
+            FROM mbs
+            WHERE era_id = $current_era_id
+        ");
+        $mbs = $mbs[0]->mbs ?? 0;
+
         // find rank
         $ranking = DB::select("
             SELECT
@@ -280,6 +288,7 @@ class UserController extends Controller
                 SELECT in_current_era
                 FROM all_node_data2
                 WHERE public_key = '$p'
+                AND bid_total_staked_amount > $mbs
                 ORDER BY era_id DESC
                 LIMIT $uptime_calc_size
             ");
@@ -360,6 +369,14 @@ class UserController extends Controller
 
         $uptime_calc_size = isset($settings['uptime_calc_size']) ? (int) ($settings['uptime_calc_size']) : 1;
 
+        // fetch MBS
+        $mbs = DB::select("
+            SELECT mbs
+            FROM mbs
+            WHERE era_id = $current_era_id
+        ");
+        $mbs = $mbs[0]->mbs ?? 0;
+
         foreach ($addresses as $address) {
             $p = $address->public_key ?? '';
 
@@ -406,6 +423,7 @@ class UserController extends Controller
                 SELECT in_current_era
                 FROM all_node_data2
                 WHERE public_key = '$p'
+                AND bid_total_staked_amount > $mbs
                 ORDER BY era_id DESC
                 LIMIT $uptime_calc_size
             ");
@@ -526,6 +544,14 @@ class UserController extends Controller
 
         $uptime_calc_size = isset($settings['uptime_calc_size']) ? (int) $settings['uptime_calc_size'] : 1;
 
+        // fetch MBS
+        $mbs = DB::select("
+            SELECT mbs
+            FROM mbs
+            WHERE era_id = $current_era_id
+        ");
+        $mbs = $mbs[0]->mbs ?? 0;
+
         // for each member's node address
         foreach ($addresses as $address) {
             $p = $address->public_key ?? '';
@@ -567,6 +593,7 @@ class UserController extends Controller
                 SELECT in_current_era
                 FROM all_node_data2
                 WHERE public_key = '$p'
+                AND bid_total_staked_amount > $mbs
                 ORDER BY era_id DESC
                 LIMIT $uptime_calc_size
             ");
@@ -623,17 +650,7 @@ class UserController extends Controller
             ];
         }
 
-        // get mbs
-        $temp = DB::select("
-            SELECT mbs
-            FROM mbs
-            ORDER BY era_id DESC
-            LIMIT 1
-        ");
-        if (!$temp) $temp = [];
-
-        $return['mbs'] = 0;
-        if (isset($temp[0])) $return['mbs'] = (int) ($temp[0]->mbs ?? 0);
+        $return['mbs'] = $mbs;
 
         return $this->successResponse($return);
     }
@@ -669,6 +686,14 @@ class UserController extends Controller
         // get settings
         $voting_eras_to_vote = isset($settings['voting_eras_to_vote']) ? (int) $settings['voting_eras_to_vote'] : 1;
         $uptime_calc_size = isset($settings['uptime_calc_size']) ? (int) $settings['uptime_calc_size'] : 1;
+
+        // fetch MBS
+        $mbs = DB::select("
+            SELECT mbs
+            FROM mbs
+            WHERE era_id = $current_era_id
+        ");
+        $mbs = $mbs[0]->mbs ?? 0;
 
         // for each member's node address
         foreach ($addresses as $address) {
@@ -711,6 +736,7 @@ class UserController extends Controller
                 SELECT in_current_era
                 FROM all_node_data2
                 WHERE public_key = '$p'
+                AND bid_total_staked_amount > $mbs
                 ORDER BY era_id DESC
                 LIMIT $uptime_calc_size
             ");
