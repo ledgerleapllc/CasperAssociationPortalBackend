@@ -109,7 +109,8 @@ class VerificationController extends Controller
             // Validator
             $validator = Validator::make($request->all(), [
                 'files' => 'array',
-                'files.*' => 'file|max:100000|mimes:pdf,jpeg,jpg,png,txt,rtf'
+                // 'files.*' => 'file|max:100000|mimes:pdf,jpeg,jpg,png,txt,rtf'
+                'files.*' => 'file|max:2048|mimes:pdf,jpeg,jpg,png,txt,rtf'
             ]);
             if ($validator->fails()) {
                 return $this->validateResponse($validator->errors());

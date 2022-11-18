@@ -1121,7 +1121,8 @@ class AdminController extends Controller
                 'title'       => 'required',
                 'description' => 'required',
                 'files'       => 'array',
-                'files.*'     => 'file|max:10240|mimes:pdf,docx,doc,txt,rtf',
+                // 'files.*'     => 'file|max:10240|mimes:pdf,docx,doc,txt,rtf',
+                'files.*'     => 'file|max:2048|mimes:pdf,docx,doc,txt,rtf',
                 'start_date'  => 'required',
                 'start_time'  => 'required',
                 'end_date'    => 'required',
@@ -1222,7 +1223,8 @@ class AdminController extends Controller
                 'title'           => 'nullable',
                 'description'     => 'nullable',
                 'files'           => 'array',
-                'files.*'         => 'file|max:10240|mimes:pdf,docx,doc,txt,rtf',
+                // 'files.*'         => 'file|max:10240|mimes:pdf,docx,doc,txt,rtf',
+                'files.*'         => 'file|max:2048|mimes:pdf,docx,doc,txt,rtf',
                 'file_ids_remove' => 'array',
                 'start_date'      => 'required',
                 'start_time'      => 'required',
@@ -2309,7 +2311,8 @@ class AdminController extends Controller
         try {
             // Validator
             $validator = Validator::make($request->all(), [
-                'file' => 'required|mimes:pdf,docx,doc,txt,rtf|max:5000',
+                // 'file' => 'required|mimes:pdf,docx,doc,txt,rtf|max:5000',
+                'file' => 'required|mimes:pdf,docx,doc,txt,rtf|max:2048',
             ]);
 
             if ($validator->fails()) {

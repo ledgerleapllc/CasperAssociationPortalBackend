@@ -900,7 +900,8 @@ class UserController extends Controller
         try {
             // Validator
             $validator = Validator::make($request->all(), [
-                'file' => 'required|mimes:pdf,jpeg,jpg,png,txt,rtf|max:200000'
+                // 'file' => 'required|mimes:pdf,jpeg,jpg,png,txt,rtf|max:200000'
+                'file' => 'required|mimes:pdf,jpeg,jpg,png,txt,rtf|max:2048'
             ]);
 
             if ($validator->fails()) {
@@ -2000,7 +2001,8 @@ class UserController extends Controller
         try {
             // Validator
             $validator = Validator::make($request->all(), [
-                'avatar' => 'sometimes|mimes:jpeg,jpg,png,gif,webp|max:100000',
+                // 'avatar' => 'sometimes|mimes:jpeg,jpg,png,gif,webp|max:100000',
+                'avatar' => 'sometimes|mimes:jpeg,jpg,png,gif,webp|max:2048',
             ]);
 
             if ($validator->fails()) {
