@@ -234,7 +234,6 @@ class NodeHelper
             usleep(50000);
         }
 
-
         // do last chunk
         $mh = curl_multi_init();
         $ch = array();
@@ -285,6 +284,7 @@ class NodeHelper
     }
     */
 
+    /*
     public function getValidAddresses()
     {
         $curl      = curl_init();
@@ -340,6 +340,7 @@ class NodeHelper
         }
         return $addresses;
     }
+    */
 
     public function getValidatorRewards($validatorId, $_range)
     {

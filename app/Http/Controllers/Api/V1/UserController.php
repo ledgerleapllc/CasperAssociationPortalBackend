@@ -900,7 +900,8 @@ class UserController extends Controller
         try {
             // Validator
             $validator = Validator::make($request->all(), [
-                'file' => 'required|mimes:pdf,jpeg,jpg,png,txt,rtf|max:200000'
+                // 'file' => 'required|mimes:pdf,jpeg,jpg,png,txt,rtf|max:200000'
+                'file' => 'required|mimes:pdf,jpeg,jpg,png,txt,rtf|max:2048'
             ]);
 
             if ($validator->fails()) {
@@ -1046,11 +1047,18 @@ class UserController extends Controller
         }
 
         // Pool Check
+        /*
         $nodeHelper = new NodeHelper();
         $addresses = $nodeHelper->getValidAddresses();
-
         if (!in_array($public_address, $addresses)) {
             return $this->errorResponse(
+                __('The validator ID specified could not be found in the Casper validator pool'), 
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+        */
+        if (!Helper::checkAddressValidity($public_address)) {
+        	return $this->errorResponse(
                 __('The validator ID specified could not be found in the Casper validator pool'), 
                 Response::HTTP_BAD_REQUEST
             );
@@ -1116,14 +1124,21 @@ class UserController extends Controller
             );
         }
 
+        /*
         $nodeHelper = new NodeHelper();
         $addresses = $nodeHelper->getValidAddresses();
-
         if (!in_array($public_address, $addresses)) {
             return $this->successResponse(
                 ['message' => __('The validator ID specified could not be found in the Casper validator pool')]
             );
         }
+        */
+        if (!Helper::checkAddressValidity($public_address)) {
+        	return $this->successResponse(
+                ['message' => __('The validator ID specified could not be found in the Casper validator pool')]
+            );
+      	}
+
         return $this->metaSuccess();
     }
 
@@ -1170,11 +1185,18 @@ class UserController extends Controller
         }
 
         // Pool Check
+        /*
         $nodeHelper = new NodeHelper();
         $addresses = $nodeHelper->getValidAddresses();
-
         if (!in_array($public_address, $addresses)) {
             return $this->errorResponse(
+                __('The validator ID specified could not be found in the Casper validator pool'), 
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+        */
+        if (!Helper::checkAddressValidity($public_address)) {
+        	return $this->errorResponse(
                 __('The validator ID specified could not be found in the Casper validator pool'), 
                 Response::HTTP_BAD_REQUEST
             );
@@ -2000,7 +2022,8 @@ class UserController extends Controller
         try {
             // Validator
             $validator = Validator::make($request->all(), [
-                'avatar' => 'sometimes|mimes:jpeg,jpg,png,gif,webp|max:100000',
+                // 'avatar' => 'sometimes|mimes:jpeg,jpg,png,gif,webp|max:100000',
+                'avatar' => 'sometimes|mimes:jpeg,jpg,png,gif,webp|max:2048',
             ]);
 
             if ($validator->fails()) {
