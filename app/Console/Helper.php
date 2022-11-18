@@ -24,6 +24,17 @@ use App\Services\Blake2b;
 
 class Helper
 {
+	public static function checkAddressValidity($public_address_node) {
+		$current_era_id = self::getCurrentERAId();
+
+		$temp = AllNodeData2::select(['id'])
+	                        ->where('public_key', $public_address_node)
+	                        ->where('era_id', $current_era_id)
+	                        ->first();
+		if ($temp) return true;
+		return false;
+	}
+
 	public static function getSettings() {
 		$items = Setting::get();
         $settings = [];
