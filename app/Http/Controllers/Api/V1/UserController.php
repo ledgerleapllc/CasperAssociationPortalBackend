@@ -97,7 +97,8 @@ class UserController extends Controller
         $user    = auth()->user();
         $user_id = $user->id ?? 0;
 
-        $current_era_id = Helper::getCurrentERAId();
+        $settings = Helper::getSettings();
+        $current_era_id = (int) ($settings['current_era_id'] ?? 0);
 
         // Define complete return object
         $return = [
@@ -152,14 +153,6 @@ class UserController extends Controller
             WHERE role = 'member'
         ");
         $return["total_members"] = $total_members ? count($total_members) : 0;
-
-        // fetch MBS
-        $mbs = DB::select("
-            SELECT mbs
-            FROM mbs
-            WHERE era_id = $current_era_id
-        ");
-        $mbs = $mbs[0]->mbs ?? 0;
 
         // find rank
         $ranking = DB::select("
@@ -234,17 +227,14 @@ class UserController extends Controller
             WHERE a.era_id  = $current_era_id
             AND b.user_id   = $user_id
         ");
-
         if (!$addresses) $addresses = [];
-
-        $settings = Helper::getSettings();
         
-        $voting_eras_to_vote = isset($settings['voting_eras_to_vote']) ? (int) $settings['voting_eras_to_vote'] : 1;
-        $uptime_calc_size = isset($settings['uptime_calc_size']) ? (int) $settings['uptime_calc_size'] : 1;
-
         // for each address belonging to a user
         foreach ($addresses as $address) {
             $p = $address->public_key ?? '';
+
+            $baseObject = new \stdClass();
+            $baseObject->uptime = (float) ($address->uptime ?? 0);
 
             $temp = DB::select("
                 SELECT era_id
@@ -282,28 +272,7 @@ class UserController extends Controller
                 $return["eras_active"] = $current_era_id - $eras_active;
             }
 
-            // Calculate historical_performance from past $uptime_calc_size eras
-            $missed = 0;
-            $temp = DB::select("
-                SELECT in_current_era
-                FROM all_node_data2
-                WHERE public_key = '$p'
-                AND bid_total_staked_amount > $mbs
-                ORDER BY era_id DESC
-                LIMIT $uptime_calc_size
-            ");
-            if (!$temp) $temp = [];
-
-            $window = count($temp);
-            foreach ($temp as $c) {
-                $in = (bool) ($c->in_current_era ?? 0);
-                if (!$in) {
-                    $missed += 1;
-                }
-            }
-
-            $uptime = (float) ($address->uptime ?? 0);
-            $historical_performance = round((float) ($uptime * ($window - $missed) / $window), 2);
+            $historical_performance = Helper::calculateUptime($baseObject, $p, $settings);
 
             if (
                 array_key_exists($p, $return["ranking"]) &&
@@ -321,7 +290,8 @@ class UserController extends Controller
         }
 
         $addresses_count = count($addresses);
-        $addresses_count = $addresses_count ? $addresses_count : 1;
+        if (!$addresses_count) $addresses_count = 1;
+
         $return["uptime"] = round((float) ($return["uptime"] / $addresses_count), 2);
 
         unset($return["ranking"]);
@@ -333,8 +303,8 @@ class UserController extends Controller
         $user = auth()->user()->load(['profile']);
         $user_id = $user->id ?? 0;
 
-        $current_era_id = Helper::getCurrentERAId();
         $settings = Helper::getSettings();
+        $current_era_id = (int) ($settings['current_era_id'] ?? 0);
 
         $return = [
             "node_status" => $user->node_status ?? '',
@@ -367,18 +337,11 @@ class UserController extends Controller
         ");
         if (!$addresses) $addresses = [];
 
-        $uptime_calc_size = isset($settings['uptime_calc_size']) ? (int) ($settings['uptime_calc_size']) : 1;
-
-        // fetch MBS
-        $mbs = DB::select("
-            SELECT mbs
-            FROM mbs
-            WHERE era_id = $current_era_id
-        ");
-        $mbs = $mbs[0]->mbs ?? 0;
-
         foreach ($addresses as $address) {
             $p = $address->public_key ?? '';
+
+            $baseObject = new \stdClass();
+            $baseObject->uptime = (float) ($address->uptime ?? 0);
 
             $temp = DB::select("
                 SELECT era_id
@@ -417,29 +380,7 @@ class UserController extends Controller
                 $return["total_eras"] = $current_era_id - $total_eras;
             }
 
-            // Calculate historical_performance from past $uptime_calc_size eras
-            $missed = 0;
-            $temp = DB::select("
-                SELECT in_current_era
-                FROM all_node_data2
-                WHERE public_key = '$p'
-                AND bid_total_staked_amount > $mbs
-                ORDER BY era_id DESC
-                LIMIT $uptime_calc_size
-            ");
-            if (!$temp) $temp = [];
-
-            $window = count($temp);
-
-            foreach ($temp as $c) {
-                $in = (bool) ($c->in_current_era ?? 0);
-                if (!$in) {
-                    $missed += 1;
-                }
-            }
-
-            $uptime = (float) ($address->uptime ?? 0);
-            $historical_performance = round((float) ($uptime * ($window - $missed) / $window), 2);
+            $historical_performance = Helper::calculateUptime($baseObject, $p, $settings);
 
             $return["total_bad_marks"] += $total_bad_marks;
             $return["peers"] += (int) ($address->peers ?? 0);
@@ -459,8 +400,9 @@ class UserController extends Controller
         $user_id = $user->id ?? 0;
 
         $nodeHelper = new NodeHelper();
-        $current_era_id = Helper::getCurrentERAId();
+        
         $settings = Helper::getSettings();
+        $current_era_id = (int) ($settings['current_era_id'] ?? 0);
 
         // Define complete return object
         $return = [
@@ -542,8 +484,6 @@ class UserController extends Controller
         ");
         if (!$addresses) $addresses = [];
 
-        $uptime_calc_size = isset($settings['uptime_calc_size']) ? (int) $settings['uptime_calc_size'] : 1;
-
         // fetch MBS
         $mbs = DB::select("
             SELECT mbs
@@ -555,6 +495,10 @@ class UserController extends Controller
         // for each member's node address
         foreach ($addresses as $address) {
             $p = $address->public_key ?? '';
+
+            $baseObject = new \stdClass();
+            $baseObject->uptime = (float) ($address->uptime ?? 0);
+            $baseObject->mbs = $mbs;
 
             $temp = DB::select("
                 SELECT era_id
@@ -587,29 +531,7 @@ class UserController extends Controller
             if (isset($temp[0])) $total_eras = (int) ($temp[0]->era_id ?? 0);
             if ($current_era_id > $total_eras) $total_eras = $current_era_id - $total_eras;
 
-            // Calculate historical_performance from past $uptime_calc_size eras
-            $missed = 0;
-            $temp = DB::select("
-                SELECT in_current_era
-                FROM all_node_data2
-                WHERE public_key = '$p'
-                AND bid_total_staked_amount > $mbs
-                ORDER BY era_id DESC
-                LIMIT $uptime_calc_size
-            ");
-            if (!$temp) $temp = [];
-
-            $window = count($temp);
-
-            foreach ($temp as $c) {
-                $in = (bool) ($c->in_current_era ?? 0);
-                if (!$in) {
-                    $missed += 1;
-                }
-            }
-
-            $uptime = (float) ($address->uptime ?? 0);
-            $historical_performance = round((float) ($uptime * ($window - $missed) / $window), 2);
+            $historical_performance = Helper::calculateUptime($baseObject, $p, $settings);
 
             $one_day_ago = Carbon::now('UTC')->subHours(24);
             $temp = DB::select("
@@ -659,8 +581,8 @@ class UserController extends Controller
         $user = auth()->user();
         $user_id = $user->id ?? 0;
 
-        $current_era_id = Helper::getCurrentERAId();
         $settings = Helper::getSettings();
+        $current_era_id = (int) ($settings['current_era_id'] ?? 0);
 
         // define return object
         $return = [
@@ -699,6 +621,10 @@ class UserController extends Controller
         foreach ($addresses as $address) {
             $p = $address->public_key ?? '';
 
+            $baseObject = new \stdClass();
+            $baseObject->uptime = (float) ($address->uptime ?? 0);
+            $baseObject->mbs = $mbs;
+
             $temp = DB::select("
                 SELECT era_id
                 FROM all_node_data2
@@ -729,31 +655,9 @@ class UserController extends Controller
             $eras_active = 0;
             if (isset($temp[0])) $eras_active = (int) ($temp[0]->era_id ?? 0);
             if ($eras_active < $current_era_id) $eras_active = $current_era_id - $eras_active;
-
-            // Calculate historical_performance from past $uptime_calc_size eras
-            $missed = 0;
-            $temp = DB::select("
-                SELECT in_current_era
-                FROM all_node_data2
-                WHERE public_key = '$p'
-                AND bid_total_staked_amount > $mbs
-                ORDER BY era_id DESC
-                LIMIT $uptime_calc_size
-            ");
-            if (!$temp) $temp = [];
-
-            $window = count($temp);
-
-            foreach ($temp as $c) {
-                $in = (bool) ($c->in_current_era ?? 0);
-                if (!$in) {
-                    $missed += 1;
-                }
-            }
-
-            $uptime = (float) ($address->uptime ?? 0);
-            $historical_performance = round((float) ($uptime * ($window - $missed) / $window), 2);
-
+            
+            $historical_performance = Helper::calculateUptime($baseObject, $p, $settings);
+            
             $return["addresses"][$p] = [
                 "uptime" => round($historical_performance, 2),
                 "eras_active" => $eras_active,
