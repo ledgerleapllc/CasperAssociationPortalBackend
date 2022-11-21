@@ -574,7 +574,7 @@ class UserController extends Controller
     public function getProfile()
     {
         $user = auth()->user()->load(['profile', 'pagePermissions', 'permissions', 'shuftipro', 'shuftiproTemp']);
-        // Helper::getAccountInfoStandard($user);
+        Helper::getAccountInfoStandard($user);
         // $user->metric = Helper::getNodeInfo($user);
         $user->globalSettings = Helper::getSettings();
         return $this->successResponse($user);
@@ -1754,7 +1754,7 @@ class UserController extends Controller
             );
         }
 
-        // Helper::getAccountInfoStandard($user);
+        Helper::getAccountInfoStandard($user);
 
         $current_era_id = Helper::getCurrentERAId();
 
