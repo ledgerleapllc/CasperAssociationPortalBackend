@@ -330,10 +330,10 @@ class Helper
 	public static function getAccountInfoStandard($user) {
 		$vid = strtolower($user->public_address_node ?? '');
 		if (!$vid) return;
-
+		
 		// convert to account hash
 		$account_hash = self::publicKeyToAccountHash($vid);
-
+		
 		$uid = $user->id ?? 0;
 		$pseudonym = $user->pseudonym ?? null;
 		
@@ -344,7 +344,7 @@ class Helper
 		$block_hash = $latest_block->getHash();
 		$state_root_hash = $casper_client->getStateRootHash($block_hash);
 		$curl = curl_init();
-
+		
 		$json_data = [
 			'id' => (int) time(),
 			'jsonrpc' => '2.0',
