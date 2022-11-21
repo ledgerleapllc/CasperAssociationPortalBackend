@@ -66,12 +66,26 @@ class Helper
 	public static function calculateUptime($baseObject, $public_address_node, $settings = null) {
 		if (!$settings) $settings = self::getSettings();
 		
+		$current_era_id = (int) ($settings['current_era_id'] ?? 0);
 		$uptime_calc_size = (int) ($settings['uptime_calc_size'] ?? 1);
 		
+		$mbs = 0;
+		if (isset($baseObject->mbs)) {
+			$mbs = (float) ($baseObject->mbs ?? 0);
+		} else {
+			$temp = DB::select("
+	            SELECT mbs
+	            FROM mbs
+	            WHERE era_id = $current_era_id
+	        ");
+	        $mbs = (float) ($temp[0]->mbs ?? 0);
+    	}
+
 		$temp = DB::select("
             SELECT in_current_era
             FROM all_node_data2
             WHERE public_key = '$public_address_node'
+            AND bid_total_staked_amount > $mbs
             ORDER BY era_id DESC
             LIMIT $uptime_calc_size
         ");
