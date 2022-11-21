@@ -218,6 +218,16 @@
   - first_setup
   when: clone_repo.changed
 
+- name: Horizon
+  shell: sudo supervisorctl reread && sudo supervisorctl update && sudo service supervisor restart
+  args:
+    chdir: "{{ app.home }}"
+  tags:
+  - php
+  - update
+  - horizon
+  when: clone_repo.changed
+
 - name: Authorize Laravel to write to the storage directory
   file:
     dest: "{{ app.home }}/storage"
