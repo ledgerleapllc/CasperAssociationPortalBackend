@@ -16,6 +16,8 @@ packages:
     - php7.4-curl
     - php7.4-xml
     - php7.4-gmp
+    - redis-server
+    - supervisor
 
 
 php:
