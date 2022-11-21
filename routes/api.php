@@ -106,7 +106,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('/users/lock-rules',  [UserController::class, 'getLockRules']);
             Route::get('users/list-node-by', [UserController::class, 'getListNodesBy']);
             Route::get('users/dashboard', [UserController::class, 'infoDashboard']);
-
+            
             // Route::get('/nodes/{node}/earning', [UserController::class, 'getEarningByNode']);
             // Route::get('/nodes/{node}/chart', [UserController::class, 'getChartEarningByNode']);
             

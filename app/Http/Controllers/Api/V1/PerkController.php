@@ -9,6 +9,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Perk;
 use App\Models\PerkResult;
 
+use App\Jobs\PerkNotification;
+
 use Carbon\Carbon;
 
 use Illuminate\Http\Request;
@@ -51,7 +53,7 @@ class PerkController extends Controller
 
         $setting = $request->setting;
 
-        if ($startTimeCarbon->gt($endTimeCarbon)) {
+        if ($startTimeCarbon->gte($endTimeCarbon)) {
             return $this->errorResponse('End date must greater than start date', Response::HTTP_BAD_REQUEST);
         }
 
@@ -116,6 +118,11 @@ class PerkController extends Controller
         $perk->visibility = $visibility;
         $perk->status = $status;
         $perk->save();
+
+        if ($perk->visibility == 'visible' && $perk->status == 'active') {
+	    	PerkNotification::dispatch($perk)->onQueue('default_long');
+	    }
+
         return $this->successResponse($perk);
     }
 
@@ -146,6 +153,9 @@ class PerkController extends Controller
             return $this->errorResponse('Not found perk', Response::HTTP_BAD_REQUEST);
         }
 
+        $originalStatus = $perk->status;
+        $originalVisibility = $perk->visibility;
+
         $timezone = $request->timezone;
 
         $startTime = $request->start_date . ' ' . $request->start_time;
@@ -156,7 +166,7 @@ class PerkController extends Controller
         $endTimeCarbon = Carbon::createFromFormat('Y-m-d H:i:s', $endTime, $timezone);
         $endTimeCarbon->setTimezone('UTC');
 
-        if ($startTimeCarbon->gt($endTimeCarbon)) {
+        if ($startTimeCarbon->gte($endTimeCarbon)) {
             return $this->errorResponse('End date must greater than start date', Response::HTTP_BAD_REQUEST);
         }
 
@@ -228,6 +238,15 @@ class PerkController extends Controller
         $perk->visibility = $visibility;
         $perk->status = $status;
         $perk->save();
+
+        if (
+        	$perk->visibility == 'visible' &&
+        	$perk->status == 'active' &&
+        	($perk->visibility != $originalVisibility || $perk->status != $originalStatus)
+        ) {
+	    	PerkNotification::dispatch($perk)->onQueue('default_long');
+	    }
+
         return $this->successResponse($perk);
     }
 
