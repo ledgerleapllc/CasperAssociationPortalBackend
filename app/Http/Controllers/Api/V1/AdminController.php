@@ -734,7 +734,9 @@ class AdminController extends Controller
             WHERE era_id = $current_era_id
             AND b.user_id IS NOT NULL
         ");
-        $avg_uptime = (float) (($temp[0]->numerator ?? 0) / ($temp[0]->denominator ?? 1));
+        $denominator = (int) ($temp[0]->denominator ?? 1);
+        if (!$denominator) $denominator = 1;
+        $avg_uptime = (float) (($temp[0]->numerator ?? 0) / $denominator);
         $avg_uptime = round($avg_uptime, 2);
 
         $avg_responsiveness = 100;
