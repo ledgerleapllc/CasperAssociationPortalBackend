@@ -61,7 +61,6 @@ class AuthController extends Controller
     public function testHash() {
         exit(Hash::make('ledgerleapllc'));
     }
-
     
     public function devVerifyNode($address)
     {
@@ -140,7 +139,7 @@ class AuthController extends Controller
             $ipHistory->user_id = $user->id;
             $ipHistory->ip_address =  request()->ip();
             $ipHistory->save();
-            Helper::getAccountInfoStandard($user);
+            // Helper::getAccountInfoStandard($user);
             return $this->createTokenFromUser($user);
         }
 

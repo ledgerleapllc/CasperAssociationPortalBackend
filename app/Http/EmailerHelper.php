@@ -16,7 +16,7 @@ class EmailerHelper {
 			'admins' => [],
 			'triggerAdmin' => [],
 			'triggerUser' => [],
-      'triggerMember' => []
+      		'triggerMember' => []
 		];
 
 		$admins = EmailerAdmin::where('id', '>', 0)->orderBy('email', 'asc')->get();
@@ -50,40 +50,53 @@ class EmailerHelper {
     }
     
     // Send Admin Email
-  public static function triggerAdminEmail($title, $emailerData, $user = null) {
-    if (count($emailerData['admins'] ?? [])) {
-      $item = $emailerData['triggerAdmin'][$title] ?? null;
-      if ($item) {
-        $content = $item['content'];
-        $subject =$item['subject'];
-        if ($user) {
-            $name =  $user->first_name . ' ' .  $user->last_name;
-            $content = str_replace('[name]', $name, $content);
-            $subject = str_replace('[name]', $name, $subject);
-            $content = str_replace('[email]', $user->email, $content);
-            $subject = str_replace('[email]', $user->email, $subject);
-        }
-        Mail::to($emailerData['admins'])->send(new AdminAlert($subject, $content));
-      }
-    }
-  }
+  	public static function triggerAdminEmail($title, $emailerData, $user = null) {
+	    if (count($emailerData['admins'] ?? [])) {
+			$item = $emailerData['triggerAdmin'][$title] ?? null;
+			if ($item) {
+				$content = $item['content'];
+				$subject =$item['subject'];
+				if ($user) {
+				    $name =  $user->first_name . ' ' .  $user->last_name;
+				    $content = str_replace('[name]', $name, $content);
+				    $subject = str_replace('[name]', $name, $subject);
+				    $content = str_replace('[email]', $user->email, $content);
+				    $subject = str_replace('[email]', $user->email, $subject);
+				}
+				Mail::to($emailerData['admins'])->send(new AdminAlert($subject, $content));
+			}
+	    }
+  	}
 
-  // Send User Email
-  public static function triggerUserEmail($to, $title, $emailerData, $user = null, $userAddress = null) {
-    $item = $emailerData['triggerUser'][$title] ?? null;
-    if ($item) {
+  	// Send User Email
+  	public static function triggerUserEmail($to, $title, $emailerData, $user = null, $userAddress = null, $extraOptions = []) {
+	    $item = $emailerData['triggerUser'][$title] ?? null;
+	    if ($item) {
 			$content = $item['content'];
 			$subject = $item['subject'];
-      if ($user) {
-        $name = $user->first_name . ' ' .  $user->last_name;
-        $content = str_replace('[name]', $name, $content);
-        $subject = str_replace('[name]', $name, $subject);
-        $content = str_replace('[email]', $user->email, $content);
-        if ($userAddress) $content = str_replace('[node address]', $userAddress->public_address_node, $content);
-        else $content = str_replace('[node address]', $user->public_address_node, $content);
-        $subject = str_replace('[email]', $user->email, $subject);
-      }
-      Mail::to($to)->send(new UserAlert($subject, $content));
-    }
-  }
+	      	if ($user) {
+	      		if (isset($user->first_name) && isset($user->last_name)) {
+	        		$name = $user->first_name . ' ' .  $user->last_name;
+	        		$subject = str_replace('[name]', $name, $subject);
+	        		$content = str_replace('[name]', $name, $content);
+	        	}
+	        	if (isset($user->email)) {
+	        		$subject = str_replace('[email]', $user->email, $subject);
+	        		$content = str_replace('[email]', $user->email, $content);
+	        	}
+	        	if (isset($extraOptions['perk_title'])) {
+	        		$content = str_replace('[perk]', $extraOptions['perk_title'], $content);
+	        	}
+	        	if (isset($extraOptions['vote_title'])) {
+	        		$content = str_replace('[vote]', $extraOptions['vote_title'], $content);
+	        	}
+	        	if ($userAddress && isset($userAddress->public_address_node)) {
+	        		$content = str_replace('[node address]', $userAddress->public_address_node, $content);
+	        	} else if (isset($user->public_address_node)) {
+	        		$content = str_replace('[node address]', $user->public_address_node, $content);
+	        	}
+	      	}
+	    	Mail::to($to)->send(new UserAlert($subject, $content));
+	    }
+  	}
 }

@@ -42,6 +42,16 @@ curl -sS https://getcomposer.org/installer | sudo php -- --install-dir=/usr/loca
 # Load php_gmp extension
 echo "extension=php_gmp.so" | sudo tee /etc/php/7.4/mods-available/ext_gmp.ini
 sudo ln -s /etc/php/7.4/mods-available/ext_gmp.ini /etc/php/7.4/cli/conf.d/20-ext_gmp.ini
+
+# Configure Horizon
+php artisan queue:table
+php artisan migrate
+## Install Redis. Link: https://www.digitalocean.com/community/tutorials/how-to-install-and-secure-redis-on-ubuntu-20-04
+composer require predis/predis
+composer require laravel/horizon
+php artisan horizon:install
+php artisan horizon:publish
+## Configure Supervisor. Link: https://laravel.com/docs/9.x/horizon#installing-supervisor ( Only 'Installing Supervisor', 'Supervisor Configuration', 'Starting Supervisor' Sections )
 ```
 
 Setup the repo according to our VHOST path. Note, the actual VHOST path in this case should be set to **/var/www/CasperAssociationPortalBackend/public**

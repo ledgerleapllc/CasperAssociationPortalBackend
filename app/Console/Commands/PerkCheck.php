@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Perk;
+use App\Jobs\PerkNotification;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 
@@ -51,6 +52,8 @@ class PerkCheck extends Command
             $perk->status = 'active';
             $perk->visibility = 'visible';
             $perk->save();
+
+            PerkNotification::dispatch($perk)->onQueue('default_long');
         }
         
         // check perk expired

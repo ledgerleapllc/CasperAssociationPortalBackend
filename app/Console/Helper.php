@@ -63,6 +63,25 @@ class Helper
         return $settings;
 	}
 
+	public function getActiveMembers() {
+		$current_era_id = Helper::getCurrentERAId();
+		$temp = DB::select("
+            SELECT
+            a.public_key,
+            c.id, c.email, c.pseudonym, c.node_status,
+            d.status, d.extra_status
+            FROM all_node_data2 AS a
+            JOIN user_addresses AS b
+            ON a.public_key = b.public_address_node
+            JOIN users AS c
+            ON b.user_id = c.id
+            JOIN profile AS d
+            ON c.id = d.user_id
+            WHERE a.era_id = $current_era_id and c.email is not NULL and d.status = 'approved'
+        ");
+        return ($temp ?? []);
+	}
+
 	public static function calculateUptime($baseObject, $public_address_node, $settings = null) {
 		if (!$settings) $settings = self::getSettings();
 		
@@ -108,7 +127,66 @@ class Helper
         return round($uptime, 2);
 	}
 
-	public static function calculateBadMarks($baseObject, $public_address_node, $settings = null) {
+	public static function calculateVariables($identifier, $public_address_node, $settings = null) {
+		if (!$settings) $settings = self::getSettings();
+
+		$current_era_id = (int) ($settings['current_era_id'] ?? 0);
+
+		if ($identifier == 'good_standing_eras') {
+			$temp = DB::select("
+                SELECT era_id 
+                FROM all_node_data2
+                WHERE public_key = '$public_address_node'
+                AND (
+                    in_current_era = 0 OR
+                	bid_inactive   = 1
+                )
+                ORDER BY era_id DESC
+                LIMIT 1
+            ");
+            $value = $current_era_id - (int) ($temp[0]->era_id ?? 0);
+			if ($value > 0) return $value;
+			return 0;
+		} else if ($identifier == 'total_active_eras') {
+			$temp = DB::select("
+                SELECT count(id) as tCount
+                FROM all_node_data2
+                WHERE public_key = '$public_address_node'
+                AND in_current_era = 1
+                AND bid_inactive = 0
+            ");
+            return (int) ($temp[0]->tCount ?? 0);
+		} else if ($identifier == 'bad_marks_info') {
+			$temp = DB::select("
+                SELECT era_id
+                FROM all_node_data2
+                WHERE public_key = '$public_address_node'
+                AND (
+                    in_current_era = 0 OR
+                    bid_inactive   = 1
+                )
+                ORDER BY era_id DESC
+            ");
+            $total_bad_marks = count($temp ?? []);
+            $eras_since_bad_mark = $current_era_id - (int) ($temp[0]->era_id ?? 0);
+            return [
+            	'total_bad_marks' => $total_bad_marks,
+            	'eras_since_bad_mark' => $eras_since_bad_mark
+            ];
+		} else if ($identifier == 'min_era') {
+			$temp = DB::select("
+                SELECT era_id
+                FROM all_node_data2
+                WHERE public_key = '$public_address_node'
+                ORDER BY era_id ASC
+                LIMIT 1
+            ");
+            return (int) ($temp[0]->era_id ?? 0);
+		}
+		return 0;
+	}
+
+	public static function calculateBadMarksRevoke($baseObject, $public_address_node, $settings = null) {
 		if (!$settings) $settings = self::getSettings();
 
 		$current_era_id = (int) ($settings['current_era_id'] ?? 0);
@@ -146,6 +224,77 @@ class Helper
         return 0;
 	}
 
+	public static function getTotalScore($r, $max_delegators, $max_stake_amount) {
+		$uptime_rate = $fee_rate = $count_rate = $stake_rate = 25;
+		if (isset($r->uptime_rate)) $uptime_rate = (float) $r->uptime_rate;
+		if (isset($r->fee_rate)) $fee_rate = (float) $r->fee_rate;
+		if (isset($r->count_rate)) $count_rate = (float) $r->count_rate;
+		if (isset($r->stake_rate)) $stake_rate = (float) $r->stake_rate;
+
+		$uptime_score = (float) ($uptime_rate * (float) $r->uptime / 100);
+        $uptime_score = $uptime_score < 0 ? 0 : $uptime_score;
+
+        $fee_score = $fee_rate * (1 - (float) ((float) $r->bid_delegation_rate / 100));
+        $fee_score = $fee_score < 0 ? 0 : $fee_score;
+
+        $count_score = (float) ((float) $r->bid_delegators_count / $max_delegators) * $count_rate;
+        $count_score = $count_score < 0 ? 0 : $count_score;
+
+        $stake_score = (float) ((float) $r->bid_total_staked_amount / $max_stake_amount) * $stake_rate;
+        $stake_score = $stake_score < 0 ? 0 : $stake_score;
+        
+        return $uptime_score + $fee_score + $count_score + $stake_score;
+	}
+
+	public static function getRanking($current_era_id) {
+		$rankingData = [];
+
+		$ranking = DB::select("
+            SELECT
+            public_key, uptime,
+            bid_delegators_count,
+            bid_delegation_rate,
+            bid_total_staked_amount
+            FROM all_node_data2
+            WHERE era_id = $current_era_id
+            AND in_current_era = 1
+            AND in_next_era = 1
+            AND in_auction = 1
+        ");
+        $max_delegators = $max_stake_amount = 0;
+
+        foreach ($ranking as $r) {
+            if ((int) $r->bid_delegators_count > $max_delegators) {
+                $max_delegators = (int) $r->bid_delegators_count;
+            }
+            if ((int) $r->bid_total_staked_amount > $max_stake_amount) {
+                $max_stake_amount = (int) $r->bid_total_staked_amount;
+            }
+        }
+
+        foreach ($ranking as $r) {
+        	$rankingData['ranking'][$r->public_key] = self::getTotalScore($r, $max_delegators, $max_stake_amount);
+        }
+
+        uasort($rankingData['ranking'], function($x, $y) {
+            if ($x == $y) {
+                return 0;
+            }
+            return ($x > $y) ? -1 : 1;
+        });
+
+        $sorted_ranking = [];
+        $i = 1;
+        foreach ($rankingData['ranking'] as $public_key => $score) {
+            $sorted_ranking[$public_key] = $i;
+            $i += 1;
+        }
+        $rankingData['ranking'] = $sorted_ranking;
+        $rankingData['node_rank_total'] = count($sorted_ranking);
+
+		return $rankingData;
+	}
+
 	public static function isAccessBlocked($user, $page) {
 		if ($user->role == 'admin') return false;
 		$flag = false;
@@ -160,8 +309,7 @@ class Helper
 		return $flag;
 	}
 
-	public static function publicKeyToAccountHash($public_key)
-	{
+	public static function publicKeyToAccountHash($public_key) {
 		$public_key = (string)$public_key;
 		$first_byte = substr($public_key, 0, 2);
 		
@@ -179,14 +327,13 @@ class Helper
 		return $account_hash;
 	}
 
-	public static function getAccountInfoStandard($user)
-	{
+	public static function getAccountInfoStandard($user) {
 		$vid = strtolower($user->public_address_node ?? '');
 		if (!$vid) return;
-
+		
 		// convert to account hash
 		$account_hash = self::publicKeyToAccountHash($vid);
-
+		
 		$uid = $user->id ?? 0;
 		$pseudonym = $user->pseudonym ?? null;
 		
@@ -197,7 +344,7 @@ class Helper
 		$block_hash = $latest_block->getHash();
 		$state_root_hash = $casper_client->getStateRootHash($block_hash);
 		$curl = curl_init();
-
+		
 		$json_data = [
 			'id' => (int) time(),
 			'jsonrpc' => '2.0',
@@ -400,8 +547,7 @@ class Helper
 	}
 	*/
 
-	public static function paginate($items, $perPage = 5, $page = null, $options = [])
-	{
+	public static function paginate($items, $perPage = 5, $page = null, $options = []) {
 		$page = $page ?: (Paginator::resolveCurrentPage() ?: 1);
 		$items = $items instanceof Collection ? $items : Collection::make($items);
 		return new LengthAwarePaginator($items->forPage($page, $perPage), $items->count(), $perPage, $page, $options);

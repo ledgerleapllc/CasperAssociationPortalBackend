@@ -35,6 +35,9 @@ class Kernel extends ConsoleKernel
         $schedule->command('ballot:check')
             ->everyMinute()
             ->runInBackground();
+        $schedule->command('ballot:check2')
+            ->hourly()
+            ->runInBackground();
         $schedule->command('perk:check')
             ->everyThirtyMinutes()
             ->runInBackground();
