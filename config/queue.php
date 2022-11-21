@@ -70,7 +70,15 @@ return [
             'block_for' => null,
             'after_commit' => false,
         ],
-
+        
+        'redis-long-running' => [
+            'driver' => 'redis',
+            'connection' => 'default',
+            'queue' => 'default_long',
+            'retry_after' => 3800,
+            'block_for' => null,
+            'after_commit' => false,
+        ],
     ],
 
     /*

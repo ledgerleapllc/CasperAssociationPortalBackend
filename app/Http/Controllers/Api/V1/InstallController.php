@@ -64,6 +64,21 @@ class InstallController extends Controller
                 'subject' => 'User [email] has uploaded a letter of motivation',
                 'content' => 'Excellent work! You have completed all the required steps to access the member\'s dashboard.<br/><br/>Please log in to explore. You now have access to the following:<br/>- Node and network metrics<br/>- Discussion previews<br/>- Viewing previous votes<br/><br/>To fully unlock your dashboard\'s features, you will need to verify yourself inside the portal. This will grant you the Casper Red Checkmark, proving to the network that you are a Verified Member worthy of a higher level of trust. This process is free and takes only 5 minutes of your time.<br/><br/>Verified Members access all membership perks more likely to be trusted by the public for staking delegation and even get access to a public profile. It\'s a very fast process to upgrade to a Verified Member. Just look for the get verified links on the dashboard.<br/><br/>Verified Members can do the following:<br/>- Start and participate in member discussions<br/>- Vote on protocol updates or changes<br/>- Display a page to verify their status to the public<br/>- Access member benefits and perks<br/>- View all network and node metrics<br/>- Easily view details earnings from staking<br/>- Track all health metrics for their node<br/>'
             ],
+            [
+            	'title' => 'New Perk Created',
+            	'subject' => 'A new perk has been added to the portal',
+            	'content' => '"[perk]" is now available in the portal. Please log in and view this perk on the Perks tab.'
+            ],
+            [
+            	'title' => 'New Vote Started',
+            	'subject' => 'A new vote is live in the Casper Members portal',
+            	'content' => 'Voting has started for "[vote]". Please log in to the Casper Membership portal and submit your vote on the Votes tab.'
+            ],
+            [
+            	'title' => '24hr Vote Reminder',
+            	'subject' => 'We need your vote',
+            	'content' => 'Only 24 hours are left in the vote titled "[vote]". Please log in and submit your vote.'
+            ]
         ];
 
         EmailerTriggerUser::where('id', '>', 0)->delete();
@@ -72,7 +87,7 @@ class InstallController extends Controller
             foreach ($userData as $item) {
                 $record = EmailerTriggerUser::where('title', $item['title'])->first();
                 if ($record) $record->delete();
-
+                
                 $record = new EmailerTriggerUser;
                 $record->title = $item['title'];
                 $record->subject = $item['subject'];

@@ -13,11 +13,13 @@
         "guzzlehttp/guzzle": "^7.4.3",
         "hellosign/hellosign-php-sdk": "^3.7",
         "laravel/framework": "^8.40",
+        "laravel/horizon": "^5.10",
         "laravel/passport": "^10.1",
         "laravel/tinker": "^2.5",
+        "make-software/casper-php-sdk": "dev-master",
         "phpseclib/phpseclib": "~3.0",
-        "stripe/stripe-php": "^7.121",
-        "make-software/casper-php-sdk": "dev-master"
+        "predis/predis": "^2.0",
+        "stripe/stripe-php": "^7.121"
     },
     "require-dev": {
         "facade/ignition": "^2.5",

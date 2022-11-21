@@ -4,7 +4,7 @@ return [
     'successfully' => 'success',
     'error' => [
         "bad_request" => "Bad request",
-        "internal_error" => "Our service has occurred unexpected issue. Please try again later.",
+        "internal_error" => "Our services have encountered an unexpected issue - please try again later.",
         "not_found" => "Not found",
         "unauthorized" => "Unauthorized",
         "forbidden" => "Forbidden",

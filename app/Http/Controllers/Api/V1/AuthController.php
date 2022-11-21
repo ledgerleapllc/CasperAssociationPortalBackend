@@ -61,7 +61,6 @@ class AuthController extends Controller
     public function testHash() {
         exit(Hash::make('ledgerleapllc'));
     }
-
     
     public function devVerifyNode($address)
     {
