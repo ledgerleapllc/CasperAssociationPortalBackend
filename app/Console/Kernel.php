@@ -62,7 +62,7 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->everyFiveMinutes()
             ->runInBackground();
-
+		
         /*
         $schedule->command('refresh:address')
             ->everyFiveMinutes()

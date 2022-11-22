@@ -25,6 +25,9 @@ class CreateNodesTable extends Migration
             $table->integer('era_id')->nullable();
             $table->string('activation_point')->nullable();
             $table->string('protocol_version')->nullable();
+            $table->float('weight', 30, 2)->nullable();
+            $table->boolean('refreshed')->default(0);
+            $table->timestamp('timestamp')->nullable();
             $table->timestamps();
         });
     }

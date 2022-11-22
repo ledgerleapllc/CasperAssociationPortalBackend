@@ -56,7 +56,7 @@ class HistoricalData extends Command
             ORDER BY era_id DESC
             LIMIT 1
         ");
-        $historic_era   = (int) ($historic_era[0]->era_id ?? 6000);
+        $historic_era   = (int) ($historic_era[0]->era_id ?? 6000) + 1;
         info('historic_era: ' . $historic_era);
         $blocks_per_era = 100;
         $historic_block = $blocks_per_era * $historic_era;
@@ -128,7 +128,7 @@ class HistoricalData extends Command
                     $decoded_response       = json_decode($auction_info);
                     $auction_state          = $decoded_response->result->auction_state ?? array();
                     $bids                   = $auction_state->bids ?? array();
-
+                    
                     // get era ID
                     $era_validators         = $auction_state->era_validators ?? array();
                     $current_era_validators = $era_validators[0] ?? array();
@@ -337,22 +337,6 @@ class HistoricalData extends Command
                             )
                         );
 
-                        // save current stake amount to daily earnings table
-                        $earning = new DailyEarning();
-                        $earning->node_address       = $public_key;
-                        $earning->self_staked_amount = (int)$self_staked_amount;
-                        $earning->created_at         = $timestamp;
-                        $earning->save();
-
-                        // get difference between current self stake and yesterdays self stake
-                        // $get_earning = DailyEarning::where('node_address', $public_key)
-                        //     ->where('created_at', '>', Carbon::now('UTC')->subHours(24))
-                        //     ->orderBy('created_at', 'asc')
-                        //     ->first();
-
-                        // $yesterdays_self_staked_amount = (int)($get_earning->self_staked_amount ?? 0);
-                        // $daily_earning = $self_staked_amount - $yesterdays_self_staked_amount;
-
                         info($v["public_key"].' - done');
                     }
 
@@ -392,20 +376,13 @@ class HistoricalData extends Command
                         );
                     }
 
-                    // DailyEarning garbage cleanup
-                    DailyEarning::where(
-                        'created_at', 
-                        '<',
-                        Carbon::now('UTC')->subDays(90)
-                    )->delete();
-
                     // end timer
                     $end_time = (int) time();
 
                     info("Time spent on era: ".($end_time - $start_time));
                 }
 
-                $historic_block += 10;
+                $historic_block += 5;
             }
         }
 
