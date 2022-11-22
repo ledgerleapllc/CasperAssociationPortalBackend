@@ -15,7 +15,7 @@ class CreateTokenPriceTable extends Migration
     {
         Schema::create('token_price', function (Blueprint $table) {
             $table->id();
-            $table->double('price', 8, 2);
+            $table->float('price', 10, 4);
             $table->timestamps();
         });
     }

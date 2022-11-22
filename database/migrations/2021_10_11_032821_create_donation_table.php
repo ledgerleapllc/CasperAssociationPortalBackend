@@ -20,6 +20,8 @@ class CreateDonationTable extends Migration
             $table->string('email');
             $table->float('amount', 15, 2);
             $table->text('message')->nullable();
+            $table->string('checkout_session_id')->nullable();
+            $table->string('status')->nullable();
             $table->timestamps();
         });
     }
