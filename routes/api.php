@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\Route;
 
 /// REMOVE 
 Route::get('/dev-verify-node/{address}', [AuthController::class, 'devVerifyNode'])->where('address', '[0-9a-zA-Z]+');
+Route::get('/test-job', [AuthController::class, 'testJob']);
 
 Route::namespace('Api')->middleware([])->group(function () {
     Route::post('hellosign', [HelloSignController::class, 'hellosignHook']);
