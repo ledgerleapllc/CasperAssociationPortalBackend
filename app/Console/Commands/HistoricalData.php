@@ -56,7 +56,7 @@ class HistoricalData extends Command
             ORDER BY era_id DESC
             LIMIT 1
         ");
-        $historic_era   = (int) ($historic_era[0]->era_id ?? 0);
+        $historic_era   = (int) ($historic_era[0]->era_id ?? 6000);
         info('historic_era: ' . $historic_era);
         $blocks_per_era = 100;
         $historic_block = $blocks_per_era * $historic_era;
@@ -405,7 +405,7 @@ class HistoricalData extends Command
                     info("Time spent on era: ".($end_time - $start_time));
                 }
 
-                $historic_block += 1;
+                $historic_block += 10;
             }
         }
 
