@@ -25,6 +25,8 @@ use App\Models\VerifyUser;
 use App\Repositories\UserRepository;
 use App\Repositories\VerifyUserRepository;
 
+use App\Jobs\TestJob;
+
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -56,6 +58,11 @@ class AuthController extends Controller
     ) {
         $this->userRepo = $userRepo;
         $this->verifyUserRepo = $verifyUserRepo;
+    }
+
+    public function testJob() {
+    	TestJob::dispatch();
+    	return 'Test Job!';
     }
 
     public function testHash() {
