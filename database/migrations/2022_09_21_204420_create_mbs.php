@@ -16,7 +16,7 @@ class CreateMbs extends Migration
         Schema::create('mbs', function (Blueprint $table) {
             $table->id();
             $table->integer('era_id');
-            $table->float('mbs')->nullable();
+            $table->float('mbs', 30, 2)->nullable();
             $table->timestamps();
         });
     }

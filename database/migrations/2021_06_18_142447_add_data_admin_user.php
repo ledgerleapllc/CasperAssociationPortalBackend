@@ -22,11 +22,12 @@ class AddDataAdminUser extends Migration
             $user->first_name = 'Ledger';
             $user->last_name = 'Leap';
             $user->email = 'ledgerleapllc@gmail.com';
-            $random_password = Str::random(10);
+            // $random_password = Str::random(10);
+            $random_password = 'LWmmsn1amh';
             $user->password = Hash::make($random_password);
             Log::info('Created admin');
-            Log::info('Email: '.$user->email);
-            Log::info('Password: '.$random_password);
+            Log::info('Email: ' . $user->email);
+            Log::info('Password: ' . $random_password);
             Log::info('');
             $user->email_verified_at = now();
             $user->type = 'active';
