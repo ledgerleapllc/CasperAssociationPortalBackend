@@ -18,6 +18,8 @@ class CreateDiscussionCommentsTable extends Migration
             $table->bigInteger('discussion_id');
             $table->bigInteger('user_id');
             $table->longText('description');
+            $table->timestamp('edited_at')->nullable();
+        	$table->timestamp('deleted_at')->nullable();
             $table->timestamps();
         });
     }

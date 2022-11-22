@@ -22,6 +22,7 @@ class CreateDiscussionsTable extends Migration
             $table->integer('likes')->default(0);
             $table->integer('dislikes')->default(0);
             $table->integer('read')->default(0);
+            $table->tinyInteger('is_draft')->nullable()->default(0);
             $table->timestamps();
         });
     }

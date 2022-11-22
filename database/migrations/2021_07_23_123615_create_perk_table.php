@@ -22,11 +22,16 @@ class CreatePerkTable extends Migration
             $table->string('image')->nullable();
             $table->date('start_date')->nullable();
             $table->date('end_date')->nullable();
+            $table->string('start_time')->nullable();
+            $table->string('end_time')->nullable();
             $table->string('status')->nullable();
             $table->string('visibility')->nullable();
             $table->tinyInteger('setting')->nullable()->default(0);
             $table->integer('total_views')->nullable()->default(0);
             $table->integer('total_clicks')->nullable()->default(0);
+            $table->string('timezone')->nullable();
+        	$table->timestamp('time_begin')->nullable();
+        	$table->timestamp('time_end')->nullable();
             $table->timestamps();
         });
     }
