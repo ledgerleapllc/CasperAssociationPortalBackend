@@ -58,13 +58,11 @@ class Kernel extends ConsoleKernel
         */
 
         // New historical data getter
-        /* Temporary Disabled
         $schedule->command('historical-data')
             ->withoutOverlapping()
             ->everyFiveMinutes()
             ->runInBackground();
-		*/
-
+		
         /*
         $schedule->command('refresh:address')
             ->everyFiveMinutes()
