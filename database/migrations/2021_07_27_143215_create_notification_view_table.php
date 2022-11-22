@@ -32,6 +32,6 @@ class CreateNotificationViewTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('perk');
+        Schema::dropIfExists('notification_view');
     }
 }
