@@ -327,109 +327,124 @@ class Helper
 		return $account_hash;
 	}
 
+	public static function getStateRootHash() {
+		$get_block = 'casper-client get-block ';
+		$node_arg  = '--node-address http://' . getenv('NODE_IP') . ':7777/rpc';
+
+		$json = shell_exec($get_block . $node_arg);
+		$json = json_decode($json);
+
+		$state_root_hash = $json->result->block->header->state_root_hash ?? '';
+		return $state_root_hash;
+	}
+
 	public static function getAccountInfoStandard($user) {
 		$vid = strtolower($user->public_address_node ?? '');
 		if (!$vid) return;
 		
-		// convert to account hash
-		$account_hash = self::publicKeyToAccountHash($vid);
-		
-		$uid = $user->id ?? 0;
-		$pseudonym = $user->pseudonym ?? null;
-		
-		$account_info_urls_uref = getenv('ACCOUNT_INFO_STANDARD_URLS_UREF');
-		$node_ip = 'http://' . getenv('NODE_IP') . ':7777';
-		$casper_client = new RpcClient($node_ip);
-		$latest_block = $casper_client->getLatestBlock();
-		$block_hash = $latest_block->getHash();
-		$state_root_hash = $casper_client->getStateRootHash($block_hash);
-		$curl = curl_init();
-		
-		$json_data = [
-			'id' => (int) time(),
-			'jsonrpc' => '2.0',
-			'method' => 'state_get_dictionary_item',
-			'params' => [
-				'state_root_hash' => $state_root_hash,
-				'dictionary_identifier' => [
-					'URef' => [
-						'seed_uref' => $account_info_urls_uref,
-						'dictionary_item_key' => $account_hash,
+		try {
+			// convert to account hash
+			$account_hash = self::publicKeyToAccountHash($vid);
+			
+			$uid = $user->id ?? 0;
+			$pseudonym = $user->pseudonym ?? null;
+			
+			$account_info_urls_uref = getenv('ACCOUNT_INFO_STANDARD_URLS_UREF');
+			$node_ip = 'http://' . getenv('NODE_IP') . ':7777';
+			$casper_client = new RpcClient($node_ip);
+			$latest_block = $casper_client->getLatestBlock();
+			$block_hash = $latest_block->getHash();
+			$state_root_hash = $casper_client->getStateRootHash($block_hash);
+			$curl = curl_init();
+			
+			$json_data = [
+				'id' => (int) time(),
+				'jsonrpc' => '2.0',
+				'method' => 'state_get_dictionary_item',
+				'params' => [
+					'state_root_hash' => $state_root_hash,
+					'dictionary_identifier' => [
+						'URef' => [
+							'seed_uref' => $account_info_urls_uref,
+							'dictionary_item_key' => $account_hash,
+						]
 					]
 				]
-			]
-		];
+			];
 
-		curl_setopt($curl, CURLOPT_URL, $node_ip . '/rpc');
-		curl_setopt($curl, CURLOPT_POST, true);
-		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($json_data));
-		curl_setopt($curl, CURLOPT_HTTPHEADER, array(
-			'Accept: application/json',
-			'Content-type: application/json',
-		));
+			curl_setopt($curl, CURLOPT_URL, $node_ip . '/rpc');
+			curl_setopt($curl, CURLOPT_POST, true);
+			curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($json_data));
+			curl_setopt($curl, CURLOPT_HTTPHEADER, array(
+				'Accept: application/json',
+				'Content-type: application/json',
+			));
 
-		$response = curl_exec($curl);
-		$decodedResponse = [];
-
-		if ($response) {
-			$decodedResponse = json_decode($response, true);
-		}
-
-		$parsed = $decodedResponse['result']['stored_value']['CLValue']['parsed'] ?? '';
-		$json = array();
-
-		if($parsed) {
-			curl_setopt(
-				$curl, 
-				CURLOPT_URL, 
-				$parsed.'/.well-known/casper/account-info.casper.json'
-			);
-			curl_setopt($curl, CURLOPT_POST, false);
 			$response = curl_exec($curl);
+			$decodedResponse = [];
 
-			try {
-				$json = json_decode($response, true);
-			} catch (\Exception $e) {
-				$json = array();
-			}
-		}
-
-		curl_close($curl);
-
-		$blockchain_name = $json['owner']['name'] ?? null;
-		$blockchain_desc = $json['owner']['description'] ?? null;
-		$blockchain_logo = $json['owner']['branding']['logo']['png_256'] ?? null;
-		$profile = Profile::where('user_id', $uid)->first();
-
-		if ($profile && $json) {
-			if ($blockchain_name) {
-				$profile->blockchain_name = $blockchain_name;
+			if ($response) {
+				$decodedResponse = json_decode($response, true);
 			}
 
-			if ($blockchain_desc) {
-				$profile->blockchain_desc = $blockchain_desc;
+			$parsed = $decodedResponse['result']['stored_value']['CLValue']['parsed'] ?? '';
+			$json = array();
+
+			if($parsed) {
+				curl_setopt(
+					$curl, 
+					CURLOPT_URL, 
+					$parsed . '/.well-known/casper/account-info.casper.json'
+				);
+				curl_setopt($curl, CURLOPT_POST, false);
+				$response = curl_exec($curl);
+
+				try {
+					$json = json_decode($response, true);
+				} catch (\Exception $e) {
+					$json = array();
+				}
 			}
 
-			if ($blockchain_logo && $user->avatar == null) {
-				$user->avatar = $blockchain_logo;
-				$user->save();
-			}
+			curl_close($curl);
 
-			$profile->save();
-			$shufti_profile = Shuftipro::where('user_id', $uid)->first();
+			$blockchain_name = $json['owner']['name'] ?? null;
+			$blockchain_desc = $json['owner']['description'] ?? null;
+			$blockchain_logo = $json['owner']['branding']['logo']['png_256'] ?? null;
+			$profile = Profile::where('user_id', $uid)->first();
 
-			if (
-				$shufti_profile && 
-				$shufti_profile->status == 'approved' && 
-				$pseudonym
-			) {
-				$shuft_status = $shufti_profile->status;
-				$reference_id = $shufti_profile->reference_id;
-				$hash = md5($pseudonym . $reference_id . $shuft_status);
-				$profile->casper_association_kyc_hash = $hash;
+			if ($profile && $json) {
+				if ($blockchain_name) {
+					$profile->blockchain_name = $blockchain_name;
+				}
+
+				if ($blockchain_desc) {
+					$profile->blockchain_desc = $blockchain_desc;
+				}
+
+				if ($blockchain_logo && $user->avatar == null) {
+					$user->avatar = $blockchain_logo;
+					$user->save();
+				}
+
 				$profile->save();
+				$shufti_profile = Shuftipro::where('user_id', $uid)->first();
+
+				if (
+					$shufti_profile && 
+					$shufti_profile->status == 'approved' && 
+					$pseudonym
+				) {
+					$shuft_status = $shufti_profile->status;
+					$reference_id = $shufti_profile->reference_id;
+					$hash = md5($pseudonym . $reference_id . $shuft_status);
+					$profile->casper_association_kyc_hash = $hash;
+					$profile->save();
+				}
 			}
+		} catch (\Exception $ex) {
+			//
 		}
 	}
 

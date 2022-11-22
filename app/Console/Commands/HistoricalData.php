@@ -128,7 +128,7 @@ class HistoricalData extends Command
                     $decoded_response       = json_decode($auction_info);
                     $auction_state          = $decoded_response->result->auction_state ?? array();
                     $bids                   = $auction_state->bids ?? array();
-
+                    
                     // get era ID
                     $era_validators         = $auction_state->era_validators ?? array();
                     $current_era_validators = $era_validators[0] ?? array();
