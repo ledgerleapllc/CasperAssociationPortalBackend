@@ -24,7 +24,6 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
         /*
         $schedule->command('shuftipro:check')
             ->everyFiveMinutes()
@@ -33,9 +32,12 @@ class Kernel extends ConsoleKernel
         */
         
         $schedule->command('ballot:check')
-            ->everyMinute()
+            ->everyTwoMinutes()
             ->runInBackground();
         $schedule->command('ballot:check2')
+            ->hourly()
+            ->runInBackground();
+        $schedule->command('upgrade:check')
             ->hourly()
             ->runInBackground();
         $schedule->command('perk:check')
@@ -62,12 +64,6 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->everyFiveMinutes()
             ->runInBackground();
-		
-        /*
-        $schedule->command('refresh:address')
-            ->everyFiveMinutes()
-            ->runInBackground();
-        */
         $schedule->command('kyc:report')
             ->dailyAt('10:02')
             ->runInBackground();

@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\EmailerHelper;
 
 use App\Jobs\BallotNotification;
+use App\Jobs\NewUpgradeNotification;
 
 use App\Mail\AdminAlert;
 use App\Mail\ResetKYC;
@@ -46,6 +47,7 @@ use App\Models\VoteResult;
 use App\Models\ContactRecipient;
 use App\Models\AllNodeData2;
 use App\Models\ReinstatementHistory;
+use App\Models\Upgrade;
 
 use App\Services\NodeHelper;
 
@@ -66,6 +68,64 @@ use Aws\S3\S3Client;
 
 class AdminController extends Controller
 {
+	public function getUpgrades(Request $request) {
+		$upgrades = Upgrade::orderBy('id', 'asc')->get();
+		return $this->successResponse($upgrades);
+	}
+
+	public function createUpgrade(Request $request) {
+		$validator = Validator::make($request->all(), [
+            'version' => 'required|string|max:70',
+            'activation_era' => 'required|integer',
+            'activation_date' => 'required|date_format:Y-m-d',
+            'link' => 'required|url|max:255',
+            'notes' => 'required',
+        ]);
+        if ($validator->fails()) {
+            return $this->validateResponse($validator->errors());
+        }
+
+        $version = $request->version;
+        $link = $request->link;
+        $notes = $request->notes;
+        $activation_era = (int) $request->activation_era;
+        $activation_date = $request->activation_date;
+        $activation_datetime = $activation_date . ' 00:00:00';
+
+        if ($activation_era < 1) {
+        	return $this->errorResponse('Activation ERA must be greater than 1', Response::HTTP_BAD_REQUEST);
+        }
+
+        $temp = DB::select("
+            SELECT 
+            MAX(activation_era) as era 
+            FROM upgrades
+        ");
+        $maxERA = (int) ($temp[0]->era ?? 0);
+      	
+      	if ($activation_era <= $maxERA) {
+      		return $this->errorResponse('Activation ERA must be greater than ' . $maxERA, Response::HTTP_BAD_REQUEST);
+      	}
+
+      	$upgradeRecord = Upgrade::where('version', $version)->first();
+      	if ($upgradeRecord) {
+      		return $this->errorResponse('The Version No is already used', Response::HTTP_BAD_REQUEST);
+      	}
+
+      	$upgradeRecord = new Upgrade;
+      	$upgradeRecord->version = $version;
+      	$upgradeRecord->activation_era = $activation_era;
+      	$upgradeRecord->activation_date = $activation_date;
+      	$upgradeRecord->activation_datetime = $activation_datetime;
+      	$upgradeRecord->link = $link;
+      	$upgradeRecord->notes = $notes;
+      	$upgradeRecord->save();
+      	
+      	NewUpgradeNotification::dispatch($upgradeRecord)->onQueue('default_long');
+
+		return $this->successResponse($upgradeRecord);
+	}
+
     public function allErasUser($id) {
         $user = User::where('id', $id)->first();
         $user_id = $id;

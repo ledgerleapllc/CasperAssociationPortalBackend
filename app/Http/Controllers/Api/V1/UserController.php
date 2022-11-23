@@ -41,6 +41,8 @@ use App\Models\Vote;
 use App\Models\VoteResult;
 use App\Models\Setting;
 use App\Models\AllNodeData2;
+use App\Models\Upgrade;
+use App\Models\UpgradeUser;
 
 use App\Repositories\OwnerNodeRepository;
 use App\Repositories\ProfileRepository;
@@ -575,9 +577,63 @@ class UserController extends Controller
     {
         $user = auth()->user()->load(['profile', 'pagePermissions', 'permissions', 'shuftipro', 'shuftiproTemp']);
         Helper::getAccountInfoStandard($user);
-        // $user->metric = Helper::getNodeInfo($user);
         $user->globalSettings = Helper::getSettings();
+        $lastUpgrade = Upgrade::orderBy('id', 'desc')->limit(1)->first();
+        $now = Carbon::now('UTC');
+        if ($lastUpgrade) {
+        	$lastUpgrade->time_passed = !!($now >= $lastUpgrade->activation_datetime);
+        	$user->lastUpgrade = $lastUpgrade;
+        	$reply = UpgradeUser::where('upgrade_id', $lastUpgrade->id)
+    							->where('user_id', $user->id)
+    							->first();
+        	if ($reply) {
+        		$user->lastUpgradeReply = $reply;
+        	}
+        }
+        $ownReply = UpgradeUser::where('user_id', $user->id)
+        						->orderBy('created_at', 'desc')
+        						->orderBy('upgrade_id', 'desc')
+        						->limit(1)
+        						->first();
+        if ($ownReply) {
+        	$lastOwnUpgrade = Upgrade::find($ownReply->upgrade_id);
+        	if ($lastOwnUpgrade) {
+        		$user->lastOwnUpgrade = $lastOwnUpgrade;
+        		$user->lastOwnUpgradeReply = $ownReply;
+        	}
+        }
         return $this->successResponse($user);
+    }
+
+    public function completeUpgrade(Request $request) {
+    	$user_id = auth()->user()->id;
+    	$validator = Validator::make($request->all(), [
+            'upgrade_id' => 'required|integer'
+        ]);
+        if ($validator->fails()) {
+            return $this->validateResponse($validator->errors());
+        }
+        $upgrade_id = (int) $request->upgrade_id;
+
+        $upgrade = Upgrade::find($upgrade_id);
+        $now = Carbon::now('UTC');
+        if (!$upgrade || $upgrade->activation_datetime <= $now) {
+        	return $this->errorResponse(__('The Upgrade is invalid'), Response::HTTP_BAD_REQUEST);
+        }
+
+        $upgradeReply = UpgradeUser::where('upgrade_id', $upgrade_id)
+        							->where('user_id', $user_id)
+        							->first();
+        if ($upgradeReply) {
+        	return $this->errorResponse(__('The Upgrade is invalid'), Response::HTTP_BAD_REQUEST);
+        }
+
+        $upgradeReply = new UpgradeUser;
+        $upgradeReply->upgrade_id = $upgrade_id;
+        $upgradeReply->user_id = $user_id;
+        $upgradeReply->save();
+
+    	return $this->metaSuccess();
     }
 
     public function uploadLetter(Request $request)
@@ -732,16 +788,6 @@ class UserController extends Controller
         }
 
         // Pool Check
-        /*
-        $nodeHelper = new NodeHelper();
-        $addresses = $nodeHelper->getValidAddresses();
-        if (!in_array($public_address, $addresses)) {
-            return $this->errorResponse(
-                __('The validator ID specified could not be found in the Casper validator pool'), 
-                Response::HTTP_BAD_REQUEST
-            );
-        }
-        */
         if (!Helper::checkAddressValidity($public_address)) {
         	return $this->errorResponse(
                 __('The validator ID specified could not be found in the Casper validator pool'), 
@@ -750,8 +796,14 @@ class UserController extends Controller
         }
         
         // Remove Other User's Same Address
-        UserAddress::where('public_address_node', $public_address)->where('user_id', '!=', $user->id)->whereNull('node_verified_at')->delete();
-        User::where('public_address_node', $public_address)->where('id', '!=', $user->id)->whereNull('node_verified_at')->update(['public_address_node' => null]);
+        UserAddress::where('public_address_node', $public_address)
+        			->where('user_id', '!=', $user->id)
+        			->whereNull('node_verified_at')
+        			->delete();
+        User::where('public_address_node', $public_address)
+        	->where('id', '!=', $user->id)
+        	->whereNull('node_verified_at')
+        	->update(['public_address_node' => null]);
         
         if (
             !$tempUserAddress || 
@@ -809,15 +861,6 @@ class UserController extends Controller
             );
         }
 
-        /*
-        $nodeHelper = new NodeHelper();
-        $addresses = $nodeHelper->getValidAddresses();
-        if (!in_array($public_address, $addresses)) {
-            return $this->successResponse(
-                ['message' => __('The validator ID specified could not be found in the Casper validator pool')]
-            );
-        }
-        */
         if (!Helper::checkAddressValidity($public_address)) {
         	return $this->successResponse(
                 ['message' => __('The validator ID specified could not be found in the Casper validator pool')]
@@ -870,16 +913,6 @@ class UserController extends Controller
         }
 
         // Pool Check
-        /*
-        $nodeHelper = new NodeHelper();
-        $addresses = $nodeHelper->getValidAddresses();
-        if (!in_array($public_address, $addresses)) {
-            return $this->errorResponse(
-                __('The validator ID specified could not be found in the Casper validator pool'), 
-                Response::HTTP_BAD_REQUEST
-            );
-        }
-        */
         if (!Helper::checkAddressValidity($public_address)) {
         	return $this->errorResponse(
                 __('The validator ID specified could not be found in the Casper validator pool'), 
