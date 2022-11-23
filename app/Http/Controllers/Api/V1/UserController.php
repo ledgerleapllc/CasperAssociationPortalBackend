@@ -553,7 +553,7 @@ class UserController extends Controller
             DB::beginTransaction();
             $user = auth()->user();
             $user->update(['email' => $request->email, 'email_verified_at' => null]);
-            $code = generateString(7);
+            $code = Helper::generateString(7);
             $userVerify = $this->verifyUserRepo->updateOrCreate(
                 [
                     'email' => $request->email,
@@ -2270,92 +2270,6 @@ class UserController extends Controller
 
         return $this->successResponse($response);
     }
-
-    /*
-    public function getEarningByNode($node)
-    {
-        $node     = strtolower($node);
-        $user     = User::where('public_address_node', $node)->first();
-
-        $nodeInfo = DB::select("
-            SELECT *
-            FROM all_node_data2
-            WHERE public_key = '$node'
-            ORDER BY era_id DESC
-            LIMIT 1
-        ");
-        $nodeInfo = $nodeInfo[0] ?? null;
-		
-        // Calc earning
-        $one_day_ago   = Carbon::now('UTC')->subHours(24);
-        $daily_earningObject = DB::select("
-            SELECT bid_self_staked_amount
-            FROM all_node_data2
-            WHERE public_key = '$node'
-            AND created_at < '$one_day_ago'
-            ORDER BY era_id DESC
-            LIMIT 1
-        ");
-        $daily_earning = 0;
-
-        if ($daily_earningObject && count($daily_earningObject) > 0) {
-            $daily_earning = $daily_earningObject[0]->bid_self_staked_amount ?? 0;
-        }
-
-        if ($nodeInfo) {
-            $daily_earning = $nodeInfo->bid_self_staked_amount - $daily_earning;
-        } else {
-            $daily_earning = -$daily_earning;
-        }
-
-        $daily_earning = $daily_earning < 0 ? 0 : $daily_earning;
-        
-        $mbs      = DB::select("
-            SELECT mbs
-            FROM mbs
-            ORDER BY era_id DESC
-            LIMIT 1
-        ");
-        $mbs      = (int)($mbs[0]->mbs ?? 0);
-
-        if ($user && $nodeInfo) {
-            return $this->successResponse([
-                'daily_earning' => $daily_earning,
-                'total_earning' => $daily_earning,
-                'mbs'           => $mbs,
-            ]);
-        } else {
-            return $this->successResponse([
-                'mbs'           => $mbs,
-            ]);
-        }
-    }
-    */
-
-    /*
-    public function getChartEarningByNode($node)
-    {
-        $node = strtolower($node);
-        $user = User::where('public_address_node', $node)->first();
-
-        if ($user) {
-            $nodeHelper   = new NodeHelper();
-            $result_day   = $nodeHelper->getValidatorRewards($node, 'day');
-            $result_week  = $nodeHelper->getValidatorRewards($node, 'week');
-            $result_month = $nodeHelper->getValidatorRewards($node, 'month');
-            $result_year  = $nodeHelper->getValidatorRewards($node, 'year');
-
-            return $this->successResponse([
-                'day'     => $result_day,
-                'week'    => $result_week,
-                'month'   => $result_month,
-                'year'    => $result_year,
-            ]);
-        } else {
-            return $this->successResponse(null);
-        }
-    }
-    */
 
     public function getMembershipFile()
     {

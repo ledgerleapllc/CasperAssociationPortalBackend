@@ -80,7 +80,7 @@ class AddDataToEmailer extends Migration
                 'title' => 'KYC or AML need review',
                 'subject' => 'KYC or AML for [name] needs review',
                 'content' => 'Please log in to the portal and go to the lower "Verifications" table in the Admin\'s "Intake" tab. You must click the review button next to user [name] to review this users information and select a further action based on the organization\'s guidelines'
-            ],
+            ]
         ];
 
         foreach ($adminData as $item) {

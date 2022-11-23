@@ -78,29 +78,29 @@ class AuthController extends Controller
             WHERE a.public_address_node = '$address'
         ");
 
-        $query   = $query[0] ?? array();
+        $query   = $query[0] ?? [];
         $user_id = $query->user_id ?? 0;
 
         if ($user_id) {
             $update = DB::table('user_addresses')
             ->where('public_address_node',    $address)
             ->update(
-                array(
+                [
                     'node_verified_at' => '2022-03-18 19:26:51',
                     'signed_file'      => 'https://casper-assoc-portal-dev.s3.us-east-2.amazonaws.com/signatures/db49744f7535b218c20a48cb833da6a1',
                     'node_status'      => 'Online'
-                )
+                ]
             );
 
             $update = DB::table('users')
             ->where('id',    $user_id)
             ->update(
-                array(
+                [
                     'node_verified_at'     => '2022-03-18 19:26:51',
                     'signed_file'          => 'https://casper-assoc-portal-dev.s3.us-east-2.amazonaws.com/signatures/db49744f7535b218c20a48cb833da6a1',
                     'node_status'          => 'Online',
                     'has_verified_address' => 1
-                )
+                ]
             );
         }
 
@@ -166,7 +166,7 @@ class AuthController extends Controller
             $data['last_login_at'] = Carbon::now('UTC');
             $data['type'] = User::TYPE_ENTITY;
             $user = $this->userRepo->create($data);
-            $code = generateString(7);
+            $code = Helper::generateString(7);
             $userVerify = $this->verifyUserRepo->updateOrCreate(
                 [
                     'email' => $request->email,
@@ -212,7 +212,7 @@ class AuthController extends Controller
             $data['last_login_at'] = Carbon::now('UTC');
             $data['type'] = User::TYPE_INDIVIDUAL;
             $user = $this->userRepo->create($data);
-            $code = generateString(7);
+            $code = Helper::generateString(7);
             $userVerify = $this->verifyUserRepo->updateOrCreate(
                 [
                     'email' => $request->email,
@@ -351,7 +351,7 @@ class AuthController extends Controller
     {
         try {
             $user = auth()->user();
-            $code = generateString(7);
+            $code = Helper::generateString(7);
             $userVerify = $this->verifyUserRepo->updateOrCreate(
                 [
                     'email' => $user->email,

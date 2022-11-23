@@ -131,10 +131,7 @@ class AdminController extends Controller
         $user_id = $id;
 
         if (!$user || $user->role == 'admin') {
-            return $this->errorResponse(
-                __('api.error.not_found'),
-                Response::HTTP_NOT_FOUND
-            );
+            return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $settings = Helper::getSettings();
@@ -554,30 +551,6 @@ class AdminController extends Controller
 
     public function getUsers(Request $request)
     {
-        /*
-        SELECT 
-            a.id, a.first_name, a.last_name, a.email,
-            a.pseudonym, a.telegram, a.email_verified_at,
-            a.entity_name, a.last_login_at, a.created_at,
-            a.signature_request_id, a.node_verified_at,
-            a.member_status, a.kyc_verified_at,
-            b.dob, b.country_citizenship, b.country_residence,
-            b.status AS profile_status, b.extra_status,
-            b.type, b.casper_association_kyc_hash,
-            b.blockchain_name, b.blockchain_desc,
-            c.bid_delegators_count,
-            c.bid_delegation_rate,
-            c.bid_self_staked_amount,
-            c.bid_total_staked_amount
-            FROM users AS a
-            JOIN profile AS b
-            ON a.id = b.user_id
-            JOIN user_addresses
-            ON user_addresses.user_id = a.id
-            JOIN all_node_data AS c
-            ON c.public_key = user_addresses.public_address_node
-        */
-
         $current_era_id = Helper::getCurrentERAId();
 
         $query = "
@@ -801,20 +774,6 @@ class AdminController extends Controller
 
         $avg_responsiveness = 100;
         
-        /*
-        // get max peers
-        $max_peers          = DB::select("
-            SELECT MAX(a.port8888_peers) AS max_peers
-            FROM all_node_data2 AS a
-            LEFT JOIN user_addresses AS b
-            ON a.public_key = b.public_address_node
-            WHERE era_id    = $current_era_id
-            AND b.user_id IS NOT NULL
-        ");
-        $max_peers          = (array)($max_peers[0] ?? array());
-        $max_peers          = $max_peers['max_peers'] ?? 0;
-		*/
-
         // get new users ready for admin review
         $new_users_ready = User::where('banned', 0)
             ->where('role', 'member')
@@ -833,23 +792,6 @@ class AdminController extends Controller
             })
             ->join('shuftipro', 'shuftipro.user_id', '=', 'users.id')
             ->count();
-
-        /*
-        // get failing member nodes
-        $failing_nodes = DB::select("
-            SELECT 
-            a.bid_inactive, a.in_current_era
-            FROM all_node_data2 AS a
-            JOIN user_addresses AS b
-            ON a.public_key = b.public_address_node
-            WHERE a.era_id  = $current_era_id
-            AND b.user_id IS NOT NULL
-            AND (
-                a.bid_inactive   = 1 OR
-                a.in_current_era = 0
-            )
-        ");
-        */
 
         $timeframe_perk = $request->timeframe_perk ?? 'last_7days';
         $timeframe_comments = $request->timeframe_comments ?? 'last_7days';
@@ -1874,83 +1816,6 @@ class AdminController extends Controller
             Response::HTTP_BAD_REQUEST
         );
     }
-
-    /*
-    public function refreshLinks($id)
-    {
-        $url       = 'https://api.shuftipro.com/status';
-        $user      = User::with('shuftipro')->find($id);
-        $shuftipro = $user->shuftipro;
-
-        if ($shuftipro) {
-            $client_id  = config('services.shufti.client_id');
-            $secret_key = config('services.shufti.client_secret');
-
-            $response   = Http::withBasicAuth(
-                $client_id, 
-                $secret_key
-            )->post($url, [
-                'reference' => $shuftipro->reference_id
-            ]);
-
-            $data = $response->json();
-
-            if (!$data || !is_array($data)) {
-                return;
-            }
-
-            if (
-                !isset($data['reference']) || 
-                !isset($data['event'])
-            ) {
-                return $this->successResponse([
-                    'success' => false,
-                ]);
-            }
-
-            $events = [
-                'verification.accepted', 
-                'verification.declined',
-                'request.timeout'
-            ];
-
-            if (!in_array($data['event'], $events)) {
-                return $this->successResponse([
-                    'success' => false,
-                ]);
-            }
-
-            $proofs = isset($data['proofs']) ? $data['proofs'] : null;
-
-            if (
-                $proofs && 
-                isset($proofs['document']) && 
-                isset($proofs['document']['proof'])
-            ) {
-                $shuftipro->document_proof = $proofs['document']['proof'];
-            }
-
-            // Address Proof
-            if (
-                $proofs && 
-                isset($proofs['address']) && 
-                isset($proofs['address']['proof'])
-            ) {
-                $shuftipro->address_proof = $proofs['address']['proof'];
-            }
-
-            $shuftipro->save();
-
-            return $this->successResponse([
-                'success' => true,
-            ]);
-        }
-
-        return $this->successResponse([
-            'success' => false,
-        ]);
-    }
-    */
 
     public function getVerificationDetail($id)
     {

@@ -573,46 +573,6 @@ class UserFunctionsTest extends TestCase
                 ]);
     }
 
-    /*
-    public function testGetEarningByNode() {
-        $node = '011117189c666f81c5160cd610ee383dc9b2d0361f004934754d39752eedc64957';
-        $token = $this->getUserToken();
-
-        $response = $this->withHeaders([
-            'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $token,
-        ])->json('get', '/api/v1/nodes/' . $node . '/earning');
-
-        // $apiResponse = $response->baseResponse->getData();
-
-        $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'message',
-                    'data',
-                ]);
-    }
-    */
-
-    /*
-    public function testGetChartEarningByNode() {
-        $node = '011117189c666f81c5160cd610ee383dc9b2d0361f004934754d39752eedc64957';
-        $token = $this->getUserToken();
-
-        $response = $this->withHeaders([
-            'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $token,
-        ])->json('get', '/api/v1/nodes/' . $node . '/chart');
-
-        // $apiResponse = $response->baseResponse->getData();
-
-        $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'message',
-                    'data',
-                ]);
-    }
-    */
-
     public function testMembershipAgreement() {
         $token = $this->getUserToken();
 

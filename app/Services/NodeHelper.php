@@ -38,7 +38,7 @@ class NodeHelper
 
     public function retrieveGlobalUptime($this_era_id)
     {
-        $total_data      = array();
+        $total_data = [];
         $event_store_url = 'https://event-store-api-clarity-mainnet.make.services/relative-average-validator-performances?limit=100&page=1&era_id='.(string)($this_era_id - 1);
 
         // make initial request, get response
@@ -48,7 +48,7 @@ class NodeHelper
         $json = curl_exec($ch);
 
         if (curl_errno($ch)) {
-            return array();
+            return [];
         }
 
         try {
@@ -58,10 +58,10 @@ class NodeHelper
         }
 
         // get total pages
-        $page_count = (int)($object->pageCount ?? 0);
+        $page_count = (int) ($object->pageCount ?? 0);
 
         // update total data object
-        $data       = $object->data ?? array();
+        $data = $object->data ?? [];
         $total_data = array_merge($total_data, $data);
 
         // iterate through remaining pages
@@ -82,9 +82,8 @@ class NodeHelper
                     $object = (object)[];
                 }
 
-
                 // update total data object
-                $data       = $object->data ?? array();
+                $data = $object->data ?? [];
                 $total_data = array_merge($total_data, $data);
             }
             sleep(1);

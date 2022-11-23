@@ -24,46 +24,39 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        /*
-        $schedule->command('shuftipro:check')
-            ->everyFiveMinutes()
-            ->runInBackground();
-        // ->withoutOverlapping();
-        */
-        
         $schedule->command('ballot:check')
             ->everyTwoMinutes()
             ->runInBackground();
+
         $schedule->command('ballot:check2')
             ->hourly()
             ->runInBackground();
+
         $schedule->command('upgrade:check')
             ->hourly()
             ->runInBackground();
+
         $schedule->command('perk:check')
             ->everyThirtyMinutes()
             ->runInBackground();
+
         $schedule->command('notif:check')
             ->dailyAt('00:01')
             ->runInBackground();
+
         $schedule->command('node-status:check')
             ->everyFiveMinutes()
             ->runInBackground();
+
         $schedule->command('token-price:check')
             ->everyThirtyMinutes()
             ->runInBackground();
-        
-        /*
-        $schedule->command('node-info')
-            ->everyFifteenMinutes()
-            ->runInBackground();
-        */
 
-        // New historical data getter
         $schedule->command('historical-data')
             ->withoutOverlapping()
             ->everyFiveMinutes()
             ->runInBackground();
+            
         $schedule->command('kyc:report')
             ->dailyAt('10:02')
             ->runInBackground();
