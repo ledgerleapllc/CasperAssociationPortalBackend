@@ -1,43 +1,21 @@
 <?php
 
-namespace App\Http\Controllers\Api\V1;
-
-use App\Http\Controllers\Controller;
-use App\Http\EmailerHelper;
-
-use App\Mail\AdminAlert;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 use App\Models\EmailerTriggerAdmin;
 use App\Models\EmailerTriggerUser;
-use App\Models\Setting;
-use App\Models\User;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
-
-class InstallController extends Controller
+class AddDataToEmailer extends Migration
 {
-    public function install()
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
     {
-        /* Setting */
-        $names = [
-            'quorum_rate_ballot' => '50',    
-        ];
-        foreach ($names as $name => $value) {
-            $setting = Setting::where('name', $name)->first();
-            if (!$setting) {
-                $setting = new Setting;
-                $setting->name = $name;
-                $setting->value = $value;
-                $setting->save();
-            }
-        }
-        echo "Setting created<br/>";
-    }
-
-    public function installEmailer() {
-
-        // Setup User
         $userData = [
             [
                 'title' => 'Welcome to the Casper Association portal',
@@ -81,22 +59,17 @@ class InstallController extends Controller
             ]
         ];
 
-        EmailerTriggerUser::where('id', '>', 0)->delete();
-
-        if (count($userData)) {
-            foreach ($userData as $item) {
-                $record = EmailerTriggerUser::where('title', $item['title'])->first();
-                if ($record) $record->delete();
-                
-                $record = new EmailerTriggerUser;
-                $record->title = $item['title'];
-                $record->subject = $item['subject'];
-                $record->content = $item['content'];
-                $record->save();
-            }
+        foreach ($userData as $item) {
+            $record = EmailerTriggerUser::where('title', $item['title'])->first();
+            if (!$record) {
+	            $record = new EmailerTriggerUser;
+	            $record->title = $item['title'];
+	            $record->subject = $item['subject'];
+	            $record->content = $item['content'];
+	            $record->save();
+        	}
         }
-
-        // Setup Admin
+        
         $adminData = [
             [
                 'title' => 'User uploads a letter',
@@ -110,19 +83,25 @@ class InstallController extends Controller
             ],
         ];
 
-        EmailerTriggerAdmin::where('id', '>', 0)->delete();
-
-        if (count($adminData)) {
-            foreach ($adminData as $item) {
-                $record = EmailerTriggerAdmin::where('title', $item['title'])->first();
-                if ($record) $record->delete();
-
-                $record = new EmailerTriggerAdmin;
-                $record->title = $item['title'];
-                $record->subject = $item['subject'];
-                $record->content = $item['content'];
-                $record->save();
-            }
+        foreach ($adminData as $item) {
+            $record = EmailerTriggerAdmin::where('title', $item['title'])->first();
+            if (!$record) {
+	            $record = new EmailerTriggerAdmin;
+	            $record->title = $item['title'];
+	            $record->subject = $item['subject'];
+	            $record->content = $item['content'];
+	            $record->save();
+        	}
         }
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        //
     }
 }

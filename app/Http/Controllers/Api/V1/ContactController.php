@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\ContactUsMail;
 use App\Models\ContactRecipient;
 use App\Models\ContactUs;
+use App\Models\UpgradeList;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Mail;
@@ -13,6 +14,28 @@ use Illuminate\Support\Facades\Validator;
 
 class ContactController extends Controller
 {
+	public function submitUpgradeList(Request $request)
+	{
+		$validator = Validator::make($request->all(), [
+            'email' => 'required|email'
+        ]);
+        if ($validator->fails()) {
+            return $this->validateResponse($validator->errors());
+        }
+
+        $email = $request->email;
+        $record = UpgradeList::where('email', $email)->first();
+        if ($record) {
+        	return $this->errorResponse('This email already exists', Response::HTTP_BAD_REQUEST);
+        }
+
+        $record = new UpgradeList;
+        $record->email = $email;
+        $record->save();
+        
+        return $this->metaSuccess();
+	}
+
     public function submitContact(Request $request)
     {
         $user_id = null;

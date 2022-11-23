@@ -64,10 +64,6 @@ class AuthController extends Controller
     	TestJob::dispatch();
     	return 'Test Job!';
     }
-
-    public function testHash() {
-        exit(Hash::make('ledgerleapllc'));
-    }
     
     public function devVerifyNode($address)
     {

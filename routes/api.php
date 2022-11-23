@@ -54,6 +54,7 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
     Route::post('/donation', [UserController::class, 'submitDonation']);
     Route::post('/contact-us',  [ContactController::class, 'submitContact']);
     Route::post('/users/check-validator-address', [UserController::class, 'checkValidatorAddress']);
+    Route::post('/upgrade-list', [ContactController::class, 'submitUpgradeList']);
     Route::middleware(['auth:api'])->group(function () {
         Route::middleware(['user_banned'])->group(function () {
             // New dashboard endpoint
