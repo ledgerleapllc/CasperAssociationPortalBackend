@@ -57,9 +57,16 @@ class NewUpgradeNotification implements ShouldQueue
         }
 
         // Fetch Valid Users
-        $users = User::select('email')
+		$users = User::select('email')
+        			->has('addresses')
         			->where('banned', 0)
         			->where('role', 'member')
+        			->whereNotNull('public_address_node')
+        			->whereNotNull('signature_request_id')
+        			->whereNotNull('signed_file')
+        			->whereNotNull('node_verified_at')
+        			->whereNotNull('letter_file')
+        			->whereNotNull('letter_verified_at')
         			->where(function ($query) {
         				$query->doesntHave('profile')
         					->orWhereHas('profile', function ($query2) {

@@ -81,8 +81,9 @@ class Helper
 		$temp = DB::select("
             SELECT
             a.public_key,
+            b.extra_status,
             c.id, c.email, c.pseudonym, c.node_status,
-            d.status, d.extra_status
+            d.status, d.extra_status as profile_extra_status
             FROM all_node_data2 AS a
             JOIN user_addresses AS b
             ON a.public_key = b.public_address_node
@@ -475,11 +476,5 @@ class Helper
 		]);
 
 		return $response->json();
-	}
-
-	public static function paginate($items, $perPage = 5, $page = null, $options = []) {
-		$page = $page ?: (Paginator::resolveCurrentPage() ?: 1);
-		$items = $items instanceof Collection ? $items : Collection::make($items);
-		return new LengthAwarePaginator($items->forPage($page, $perPage), $items->count(), $perPage, $page, $options);
 	}
 }

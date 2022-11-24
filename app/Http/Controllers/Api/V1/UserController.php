@@ -96,7 +96,7 @@ class UserController extends Controller
     }
 
     public function getUserDashboard() {
-        $user    = auth()->user();
+        $user = auth()->user();
         $user_id = $user->id ?? 0;
 
         $settings = Helper::getSettings();
@@ -744,10 +744,7 @@ class UserController extends Controller
         $public_address_temp = (new ChecksumValidator())->do($address);
 
         if (!$public_address_temp) {
-            return $this->errorResponse(
-                __('The validator ID is invalid'), 
-                Response::HTTP_BAD_REQUEST
-            );
+            return $this->errorResponse(__('The validator ID is invalid'), Response::HTTP_BAD_REQUEST);
         }
 
         $correct_checksum = (int) (new ChecksumValidator($public_address_temp))->do();
@@ -1237,54 +1234,6 @@ class UserController extends Controller
         return $this->metaSuccess();
     }
 
-    // Update Shuftipro Temp Status
-    /*
-    public function updateShuftiProTemp(Request $request)
-    {
-        $user = auth()->user();
-
-        // Validator
-        $validator = Validator::make($request->all(), [
-            'reference_id' => 'required'
-        ]);
-
-        if ($validator->fails()) {
-            return $this->validateResponse($validator->errors());
-        }
-
-        $user_id      = $user->id;
-        $reference_id = $request->reference_id;
-        $profile      = Profile::where('user_id', $user_id)->first();
-
-        if ($profile) {
-            $profile->status = 'pending';
-            $profile->save();
-        }
-
-        $record = ShuftiproTemp::where('user_id', $user_id)
-            ->where('reference_id', $reference_id)
-            ->first();
-
-        if ($record) {
-            $record->status = 'booked';
-            $record->save();
-            $emailerData    = EmailerHelper::getEmailerData();
-
-            EmailerHelper::triggerAdminEmail(
-                'KYC or AML need review', 
-                $emailerData, 
-                $user
-            );
-
-            return $this->metaSuccess();
-        }
-        return $this->errorResponse(
-            'Fail submit AML', 
-            Response::HTTP_BAD_REQUEST
-        );
-    }
-    */
-
     // get vote list
     public function getVotes(Request $request)
     {
@@ -1644,9 +1593,7 @@ class UserController extends Controller
         $ballotFileView->save();
         return $this->metaSuccess();
     }
-    /**
-     * verify file casper singer
-     */
+
     public function uploadAvatar(Request $request)
     {
         try {
@@ -2161,10 +2108,7 @@ class UserController extends Controller
             return $this->metaSuccess();
         }
 
-        return $this->errorResponse(
-            __('Please enable 2Fa setting'), 
-            Response::HTTP_BAD_REQUEST
-        );
+        return $this->errorResponse(__('Please enable 2Fa setting'), Response::HTTP_BAD_REQUEST);
     }
 
     public function getLockRules()
@@ -2241,9 +2185,9 @@ class UserController extends Controller
 
     public function infoDashboard()
     {
-        $user          = auth()->user();
-        $delegators    = 0;
-        $stake_amount  = 0;
+        $user = auth()->user();
+        $delegators = 0;
+        $stake_amount = 0;
         $lower_address = strtolower($user->public_address_node);
 
         $nodeInfo = DB::select("
@@ -2256,7 +2200,7 @@ class UserController extends Controller
         $nodeInfo = $nodeInfo[0] ?? null;
 
         if ($nodeInfo) {
-            $delegators   = $nodeInfo->bid_delegators_count;
+            $delegators = $nodeInfo->bid_delegators_count;
             $stake_amount = $nodeInfo->bid_total_staked_amount;
         }
 
@@ -2264,9 +2208,9 @@ class UserController extends Controller
 
         $response['totalNewDiscusstion'] = $user->new_threads;
         $response['totalPinDiscusstion'] = $totalPin;
-        $response['rank']                = $user->rank;
-        $response['delegators']          = $delegators;
-        $response['stake_amount']        = $stake_amount;
+        $response['rank'] = $user->rank;
+        $response['delegators'] = $delegators;
+        $response['stake_amount'] = $stake_amount;
 
         return $this->successResponse($response);
     }

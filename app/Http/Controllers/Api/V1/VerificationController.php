@@ -77,7 +77,6 @@ class VerificationController extends Controller
             // 'page_number' => 'required|integer',
             'dob' => 'required',
         ]);
-        
         if ($validator1->fails()) {
             return $this->validateResponse($validator1->errors());
         }
@@ -152,22 +151,6 @@ class VerificationController extends Controller
                         $documentFile->url = $ObjectURL;
                         $documentFile->save();
                     }
-
-                    /* old
-                    $name = $file->getClientOriginalName();
-                    $folder = 'document/' . $user->id;
-                    $path = $file->storeAs($folder, $name);
-                    $url = Storage::url($path);
-                    $documentFile = DocumentFile::where('user_id', $user->id)->where('name', $name)->first();
-                    if (!$documentFile) {
-                        $documentFile = new DocumentFile();
-                        $documentFile->user_id = $user->id;
-                        $documentFile->name = $name;
-                        $documentFile->path = $path;
-                        $documentFile->url = $url;
-                        $documentFile->save();
-                    }
-                    */
                 }
             }
             $response = DocumentFile::where('user_id', $user->id)->get();

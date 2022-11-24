@@ -459,28 +459,6 @@ class UserFunctionsTest extends TestCase
                 ]);
     }
 
-    /*
-    public function testUpdateShuftiproTemp() {
-        $token = $this->getUserToken();
-
-        $params = [
-            'reference_id' => 'TestReferenceId'
-        ];
-
-        $response = $this->withHeaders([
-            'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $token,
-        ])->json('put', '/api/v1/users/shuftipro-temp', $params);
-
-        // $apiResponse = $response->baseResponse->getData();
-
-        $response->assertJsonStructure([
-                    'message',
-                    'data',
-                ]);
-    }
-    */
-
     public function testDeleteShuftiproTemp() {
         $token = $this->getUserToken();
 
