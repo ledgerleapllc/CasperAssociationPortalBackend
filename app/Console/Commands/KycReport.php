@@ -52,19 +52,19 @@ class KycReport extends Command
             ->limit(10)
             ->get();
 
-        $persons_stuck_in_pending = array();
-        $known_reference_ids = array();
+        $persons_stuck_in_pending = [];
+        $known_reference_ids = [];
 
         if($records_temp) {
             foreach($records_temp as $record) {
                 $user_id = $record->user_id ?? 0;
                 $person = User::where('id', $user_id)->first();
-                $persons_stuck_in_pending[] = array(
-                    "name" => $person->first_name.' '.$person->last_name,
-                    "email" => $person->email,
-                    "shufti_reference_id" => $record->reference_id,
-                    "shufti_timestamp" => $record->created_at
-                );
+                $persons_stuck_in_pending[] = [
+                    'name' => $person->first_name.' '.$person->last_name,
+                    'email' => $person->email,
+                    'shufti_reference_id' => $record->reference_id,
+                    'shufti_timestamp' => $record->created_at
+                ];
 
                 $known_reference_ids[] = $record->reference_id;
             }
@@ -76,33 +76,33 @@ class KycReport extends Command
             ->limit(10)
             ->get();
 
-        $persons_stuck_denied = array();
+        $persons_stuck_denied = [];
 
         if($records_pro) {
             foreach($records_pro as $record) {
                 if(!in_array($record->reference_id, $known_reference_ids)) {
                     $user_id = $record->user_id ?? 0;
                     $person = User::where('id', $user_id)->first();
-                    $persons_stuck_denied[] = array(
-                        "name" => $person->first_name.' '.$person->last_name,
-                        "email" => $person->email,
-                        "shufti_reference_id" => $record->reference_id,
-                        "shufti_timestamp" => $record->created_at
-                    );
+                    $persons_stuck_denied[] = [
+                        'name' => $person->first_name.' '.$person->last_name,
+                        'email' => $person->email,
+                        'shufti_reference_id' => $record->reference_id,
+                        'shufti_timestamp' => $record->created_at
+                    ];
                 }
             }
         }
 
         // now make a text list from the matching records
-        $body = "";
+        $body = '';
         $index = 1;
 
         if($persons_stuck_in_pending) {
             $body .= "Members pending for over 24 hours:<br>";
 
             foreach($persons_stuck_in_pending as $p) {
-                $body .= '<b>'.(string)$index.'. </b>';
-                $body .= $p['name'].', '.$p['email'].'<br>';
+                $body .= '<b>' . (string) $index . '. </b>';
+                $body .= $p['name'] . ', ' . $p['email'] . '<br>';
                 $index += 1;
             }
         }
@@ -117,8 +117,8 @@ class KycReport extends Command
             $body .= "Members denied by Shufti. Not reviewed yet:<br>";
 
             foreach($persons_stuck_denied as $p) {
-                $body .= '<b>'.(string)$index.'. </b>';
-                $body .= $p['name'].', '.$p['email'].'<br>';
+                $body .= '<b>' . (string)$index . '. </b>';
+                $body .= $p['name'] . ', ' . $p['email'] . '<br>';
                 $index += 1;
             }
         }
@@ -126,7 +126,7 @@ class KycReport extends Command
         // compose email to admins
         if($persons_stuck_in_pending || $persons_stuck_denied) {
             $emailerData = EmailerHelper::getEmailerData();
-            $admins = $emailerData['admins'] ?? array();
+            $admins = $emailerData['admins'] ?? [];
 
             if($admins) {
                 Mail::to($admins)->send(new AdminAlert('Casper Association portal KYC issues require attention', $body));

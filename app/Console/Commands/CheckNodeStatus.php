@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\UserAddress;
 use App\Models\NodeInfo;
 use App\Models\AllNodeData2;
+use App\Jobs\EmailerUserJob;
 use Carbon\Carbon;
 
 use Illuminate\Support\Facades\DB;
@@ -161,6 +162,8 @@ class CheckNodeStatus extends Command
                     if ($hasOnProbation) {
                         $user->profile->extra_status = 'On Probation';
                         $user->profile->save();
+
+                        EmailerUserJob::dispatch($user, 'User goes on probation');
                     } else {
                         $user->profile->extra_status = null;
                         $user->profile->save();
@@ -173,6 +176,8 @@ class CheckNodeStatus extends Command
                             $user->profile->revoke_reason = implode(', ', $revokeReason);
                         }
                         $user->profile->save();
+
+                        EmailerUserJob::dispatch($user, 'User membership is revoked');
                     }
                 }
             } else {

@@ -14,11 +14,11 @@ class ChecksumValidator {
 			$this->validator_id = $vid;
 		}
 
-		$this->HEX_CHARS = array(
+		$this->HEX_CHARS = [
 			'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 			'a', 'b', 'c', 'd', 'e', 'f',
 			'A', 'B', 'C', 'D', 'E', 'F'
-		);
+		];
 
 		$this->SMALL_BYTES_COUNT = 75;
 	}
@@ -30,7 +30,7 @@ class ChecksumValidator {
 	}
 
 	function _bytes_to_nibbles($v) {
-		$output_nibbles = array();
+		$output_nibbles = [];
 
 		foreach(str_split($v) as $byte) {
 			$byte = ord($byte);
@@ -43,7 +43,7 @@ class ChecksumValidator {
 
 	function _bytes_to_bits_cycle($v) {
 		$_blake_hash = $this->_blake_hash($v);
-		$ret = array();
+		$ret = [];
 
 		foreach(str_split($_blake_hash) as $b) {
 			$b = ord($b);
@@ -59,7 +59,7 @@ class ChecksumValidator {
 	function _encode($public_key) {
 		$nibbles = $this->_bytes_to_nibbles($public_key);
 		$hash_bits = $this->_bytes_to_bits_cycle($public_key);
-		$ret = array();
+		$ret = [];
 		$k = 0;
 
 		foreach($nibbles as $nibble) {

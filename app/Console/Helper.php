@@ -24,6 +24,19 @@ use App\Services\Blake2b;
 
 class Helper
 {
+	public static function generateString($strength = 16) {
+		$seed = str_split('ABCDEFGHJKLMNPQRSTUVWXYZ' . '2345678923456789');
+        
+        shuffle($seed);
+        $hash = '';
+
+        foreach(array_rand($seed, $strength) as $k) {
+            $hash .= $seed[$k];
+        }
+
+        return $hash;
+	}
+
 	public static function checkAddressValidity($public_address_node) {
 		$current_era_id = self::getCurrentERAId();
 
@@ -68,8 +81,9 @@ class Helper
 		$temp = DB::select("
             SELECT
             a.public_key,
+            b.extra_status,
             c.id, c.email, c.pseudonym, c.node_status,
-            d.status, d.extra_status
+            d.status, d.extra_status as profile_extra_status
             FROM all_node_data2 AS a
             JOIN user_addresses AS b
             ON a.public_key = b.public_address_node
@@ -376,10 +390,10 @@ class Helper
 			curl_setopt($curl, CURLOPT_POST, true);
 			curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 			curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($json_data));
-			curl_setopt($curl, CURLOPT_HTTPHEADER, array(
+			curl_setopt($curl, CURLOPT_HTTPHEADER, [
 				'Accept: application/json',
 				'Content-type: application/json',
-			));
+			]);
 
 			$response = curl_exec($curl);
 			$decodedResponse = [];
@@ -389,7 +403,7 @@ class Helper
 			}
 
 			$parsed = $decodedResponse['result']['stored_value']['CLValue']['parsed'] ?? '';
-			$json = array();
+			$json = [];
 
 			if($parsed) {
 				curl_setopt(
@@ -403,7 +417,7 @@ class Helper
 				try {
 					$json = json_decode($response, true);
 				} catch (\Exception $e) {
-					$json = array();
+					$json = [];
 				}
 			}
 
@@ -462,109 +476,5 @@ class Helper
 		]);
 
 		return $response->json();
-	}
-
-	/*
-	public static function getNodeInfo($user, $public_address_node = null)
-	{
-		if (!$public_address_node) $public_address_node = $user->public_address_node;
-
-		$max_update_responsiveness = DB::select("SELECT max(update_responsiveness) as max_update_responsiveness FROM
-			(
-			SELECT MAX(update_responsiveness) as update_responsiveness FROM metric
-			UNION
-			SELECT MAX(update_responsiveness) as update_responsiveness FROM node_info
-			) AS results
-			;");
-		$max_update_responsiveness =  $max_update_responsiveness[0]->max_update_responsiveness ?? 0;
-
-		$max_peers = DB::select("SELECT max(peers) as max_peers FROM
-		(
-		SELECT MAX(peers) as peers FROM metric
-		UNION
-		SELECT MAX(peers) as peers FROM node_info
-		) AS results
-		;");
-		$max_peers =  $max_peers[0]->max_peers ?? 0;
-		$max_block_height = Node::max('block_height');
-		$max_uptime = DB::select("SELECT max(uptime) as max_uptime FROM
-			(
-			SELECT MAX(uptime) as uptime FROM metric
-			UNION
-			SELECT MAX(uptime) as uptime FROM node_info
-			) AS results
-			;");
-		$max_uptime = $max_uptime[0]->max_uptime ?? 0;
-
-		$latest = Node::where('node_address', strtolower($public_address_node))
-			->whereNotnull('protocol_version')
-			->orderBy('created_at', 'desc')
-			->first();
-
-		if (!$latest) {
-			$latest = new Node();
-		}
-
-		$metric = Metric::where('user_id', $user->id)->first();
-
-		if (!$metric) {
-			$metric = new Metric();
-		}
-
-		$metric_block_height = $metric->block_height_average ? ($max_block_height - $metric->block_height_average)  : null;
-
-		$nodeInfo = NodeInfo::where('node_address', strtolower($public_address_node))->first();
-
-		if (!$nodeInfo) {
-			$nodeInfo = new NodeInfo();
-		}
-
-		$metric->avg_uptime = $nodeInfo->uptime ?? $metric->uptime ?? null;
-		$metric->avg_block_height_average = $nodeInfo->block_height ?? $metric_block_height;
-		$metric->avg_update_responsiveness = $nodeInfo->update_responsiveness ?? $metric->update_responsiveness ?? null;
-		$metric->avg_peers = $nodeInfo->peers ?? $metric->peers ?? null;
-
-		$metric->max_peers = $max_peers;
-		$metric->max_update_responsiveness = $max_update_responsiveness;
-		$metric->max_block_height_average = $max_block_height;
-		$metric->max_uptime = $max_uptime;
-
-		$metric->peers = $latest->peers ?? $metric->peers ?? null;
-		$metric->update_responsiveness = $latest->update_responsiveness ?? $metric->update_responsiveness ?? null;
-		$metric->block_height_average = $latest->block_height ?? $metric_block_height;
-		$metric->uptime = $nodeInfo->uptime ?? $metric->uptime ?? null;
-
-		$monitoringCriteria = MonitoringCriteria::get();
-		$nodeInfo = NodeInfo::where('node_address', strtolower($public_address_node))->first();
-		$rank = $user->rank;
-		$delegators = 0;
-		$stake_amount = 0;
-		$self_staked_amount = 0;
-		$is_open_port = 0;
-
-		if ($nodeInfo) {
-			$delegators = $nodeInfo->delegators_count;
-			$stake_amount = $nodeInfo->total_staked_amount;
-			$self_staked_amount = $nodeInfo->self_staked_amount;
-			$is_open_port = $nodeInfo->is_open_port;
-		}
-
-		$mbs = NodeInfo::max('mbs');
-		$metric->mbs = $mbs;
-		$metric->rank = $rank;
-		$metric->is_open_port = $is_open_port;
-		$metric->delegators = $delegators;
-		$metric->stake_amount = $stake_amount;
-		$metric->self_staked_amount = $self_staked_amount;
-		$metric['node_status'] = $user->node_status;
-		$metric['monitoring_criteria'] = $monitoringCriteria;
-		return $metric;
-	}
-	*/
-
-	public static function paginate($items, $perPage = 5, $page = null, $options = []) {
-		$page = $page ?: (Paginator::resolveCurrentPage() ?: 1);
-		$items = $items instanceof Collection ? $items : Collection::make($items);
-		return new LengthAwarePaginator($items->forPage($page, $perPage), $items->count(), $perPage, $page, $options);
 	}
 }

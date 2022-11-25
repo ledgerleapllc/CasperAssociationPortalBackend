@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-/// REMOVE 
+/// REMOVE
 Route::get('/dev-verify-node/{address}', [AuthController::class, 'devVerifyNode'])->where('address', '[0-9a-zA-Z]+');
 Route::get('/test-job', [AuthController::class, 'testJob']);
 
@@ -109,11 +109,9 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::get('users/list-node-by', [UserController::class, 'getListNodesBy']);
             Route::get('users/dashboard', [UserController::class, 'infoDashboard']);
             
-            // Route::get('/nodes/{node}/earning', [UserController::class, 'getEarningByNode']);
-            // Route::get('/nodes/{node}/chart', [UserController::class, 'getChartEarningByNode']);
-            
             Route::post('/users/contact-us',  [ContactController::class, 'submitContact']);
-            
+            Route::post('/users/complete-upgrade', [UserController::class, 'completeUpgrade']);
+
             Route::get('/users/membership-file',  [UserController::class, 'getMembershipFile']);
             Route::post('/users/membership-agreement',  [UserController::class, 'membershipAgreement']);
         });
@@ -180,6 +178,9 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
                 Route::delete('/perks/{id}',  [PerkController::class, 'deletePerk']);
                 Route::post('/perks',  [PerkController::class, 'createPerk']);
             });
+
+            Route::get('/upgrades', [AdminController::class, 'getUpgrades']);
+            Route::post('/upgrades', [AdminController::class, 'createUpgrade']);
             
             Route::get('/global-settings', [AdminController::class, 'getGlobalSettings']);
             Route::put('/global-settings', [AdminController::class, 'updateGlobalSettings']);

@@ -1,13 +1,10 @@
 <?php
 
-
 namespace App\Repositories\Base;
 use Exception;
 
-
 abstract class BaseRepository
 {
-
     protected $model;
 
     public function __construct()
@@ -98,7 +95,7 @@ abstract class BaseRepository
      *
      * @return static
      */
-    public function updateOrCreate(array $attributes, array $values = array())
+    public function updateOrCreate(array $attributes, array $values = [])
     {
         try {
             return $this->model->updateOrCreate($attributes, $values);
@@ -128,7 +125,7 @@ abstract class BaseRepository
      *
      * @return static
      */
-    public function updateOrCreateWithTrashed(array $attributes, array $values = array())
+    public function updateOrCreateWithTrashed(array $attributes, array $values = [])
     {
         try {
             return $this->model->withTrashed()->updateOrCreate($attributes, $values);
@@ -172,7 +169,7 @@ abstract class BaseRepository
         }
     }
 
-    public function firstOrCreate(array $attributes, array $values = array())
+    public function firstOrCreate(array $attributes, array $values = [])
     {
         try {
             return $this->model->firstOrCreate($attributes, $values);
