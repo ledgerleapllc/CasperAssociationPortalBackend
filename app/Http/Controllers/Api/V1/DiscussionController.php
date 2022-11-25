@@ -58,8 +58,15 @@ class DiscussionController extends Controller
         if (Helper::isAccessBlocked($user, 'discussions'))
             return $this->successResponse(['data' => []]);
 
-        $trendings = Discussion::where('likes', '!=', 0)->where('is_draft', 0)->take(9)->orderBy('likes', 'desc')->get();
-        $count = Discussion::where('likes', '!=', 0)->where('is_draft', 0)->orderBy('likes', 'desc')->count();
+        $trendings = Discussion::where('likes', '!=', 0)
+        						->where('is_draft', 0)
+        						->take(9)
+        						->orderBy('likes', 'desc')
+        						->get();
+        $count = Discussion::where('likes', '!=', 0)
+        					->where('is_draft', 0)
+        					->orderBy('likes', 'desc')
+        					->count();
         if ($count >= 9) {
             return $this->successResponse($trendings);
         } else {

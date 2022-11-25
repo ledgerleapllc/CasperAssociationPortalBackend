@@ -241,9 +241,6 @@ class AdminFunctionsTest extends TestCase
     public function testRemoveUser() {
     
     }
-    public function testRefreshLinks() {
-    
-    }
     */
     
     public function testGetBallots() {

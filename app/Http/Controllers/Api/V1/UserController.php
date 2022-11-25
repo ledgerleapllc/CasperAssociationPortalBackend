@@ -41,6 +41,8 @@ use App\Models\Vote;
 use App\Models\VoteResult;
 use App\Models\Setting;
 use App\Models\AllNodeData2;
+use App\Models\Upgrade;
+use App\Models\UpgradeUser;
 
 use App\Repositories\OwnerNodeRepository;
 use App\Repositories\ProfileRepository;
@@ -94,7 +96,7 @@ class UserController extends Controller
     }
 
     public function getUserDashboard() {
-        $user    = auth()->user();
+        $user = auth()->user();
         $user_id = $user->id ?? 0;
 
         $settings = Helper::getSettings();
@@ -551,7 +553,7 @@ class UserController extends Controller
             DB::beginTransaction();
             $user = auth()->user();
             $user->update(['email' => $request->email, 'email_verified_at' => null]);
-            $code = generateString(7);
+            $code = Helper::generateString(7);
             $userVerify = $this->verifyUserRepo->updateOrCreate(
                 [
                     'email' => $request->email,
@@ -575,9 +577,63 @@ class UserController extends Controller
     {
         $user = auth()->user()->load(['profile', 'pagePermissions', 'permissions', 'shuftipro', 'shuftiproTemp']);
         Helper::getAccountInfoStandard($user);
-        // $user->metric = Helper::getNodeInfo($user);
         $user->globalSettings = Helper::getSettings();
+        $lastUpgrade = Upgrade::orderBy('id', 'desc')->limit(1)->first();
+        $now = Carbon::now('UTC');
+        if ($lastUpgrade) {
+        	$lastUpgrade->time_passed = !!($now >= $lastUpgrade->activation_datetime);
+        	$user->lastUpgrade = $lastUpgrade;
+        	$reply = UpgradeUser::where('upgrade_id', $lastUpgrade->id)
+    							->where('user_id', $user->id)
+    							->first();
+        	if ($reply) {
+        		$user->lastUpgradeReply = $reply;
+        	}
+        }
+        $ownReply = UpgradeUser::where('user_id', $user->id)
+        						->orderBy('created_at', 'desc')
+        						->orderBy('upgrade_id', 'desc')
+        						->limit(1)
+        						->first();
+        if ($ownReply) {
+        	$lastOwnUpgrade = Upgrade::find($ownReply->upgrade_id);
+        	if ($lastOwnUpgrade) {
+        		$user->lastOwnUpgrade = $lastOwnUpgrade;
+        		$user->lastOwnUpgradeReply = $ownReply;
+        	}
+        }
         return $this->successResponse($user);
+    }
+
+    public function completeUpgrade(Request $request) {
+    	$user_id = auth()->user()->id;
+    	$validator = Validator::make($request->all(), [
+            'upgrade_id' => 'required|integer'
+        ]);
+        if ($validator->fails()) {
+            return $this->validateResponse($validator->errors());
+        }
+        $upgrade_id = (int) $request->upgrade_id;
+
+        $upgrade = Upgrade::find($upgrade_id);
+        $now = Carbon::now('UTC');
+        if (!$upgrade || $upgrade->activation_datetime <= $now) {
+        	return $this->errorResponse(__('The Upgrade is invalid'), Response::HTTP_BAD_REQUEST);
+        }
+
+        $upgradeReply = UpgradeUser::where('upgrade_id', $upgrade_id)
+        							->where('user_id', $user_id)
+        							->first();
+        if ($upgradeReply) {
+        	return $this->errorResponse(__('The Upgrade is invalid'), Response::HTTP_BAD_REQUEST);
+        }
+
+        $upgradeReply = new UpgradeUser;
+        $upgradeReply->upgrade_id = $upgrade_id;
+        $upgradeReply->user_id = $user_id;
+        $upgradeReply->save();
+
+    	return $this->metaSuccess();
     }
 
     public function uploadLetter(Request $request)
@@ -688,10 +744,7 @@ class UserController extends Controller
         $public_address_temp = (new ChecksumValidator())->do($address);
 
         if (!$public_address_temp) {
-            return $this->errorResponse(
-                __('The validator ID is invalid'), 
-                Response::HTTP_BAD_REQUEST
-            );
+            return $this->errorResponse(__('The validator ID is invalid'), Response::HTTP_BAD_REQUEST);
         }
 
         $correct_checksum = (int) (new ChecksumValidator($public_address_temp))->do();
@@ -732,16 +785,6 @@ class UserController extends Controller
         }
 
         // Pool Check
-        /*
-        $nodeHelper = new NodeHelper();
-        $addresses = $nodeHelper->getValidAddresses();
-        if (!in_array($public_address, $addresses)) {
-            return $this->errorResponse(
-                __('The validator ID specified could not be found in the Casper validator pool'), 
-                Response::HTTP_BAD_REQUEST
-            );
-        }
-        */
         if (!Helper::checkAddressValidity($public_address)) {
         	return $this->errorResponse(
                 __('The validator ID specified could not be found in the Casper validator pool'), 
@@ -750,8 +793,14 @@ class UserController extends Controller
         }
         
         // Remove Other User's Same Address
-        UserAddress::where('public_address_node', $public_address)->where('user_id', '!=', $user->id)->whereNull('node_verified_at')->delete();
-        User::where('public_address_node', $public_address)->where('id', '!=', $user->id)->whereNull('node_verified_at')->update(['public_address_node' => null]);
+        UserAddress::where('public_address_node', $public_address)
+        			->where('user_id', '!=', $user->id)
+        			->whereNull('node_verified_at')
+        			->delete();
+        User::where('public_address_node', $public_address)
+        	->where('id', '!=', $user->id)
+        	->whereNull('node_verified_at')
+        	->update(['public_address_node' => null]);
         
         if (
             !$tempUserAddress || 
@@ -809,15 +858,6 @@ class UserController extends Controller
             );
         }
 
-        /*
-        $nodeHelper = new NodeHelper();
-        $addresses = $nodeHelper->getValidAddresses();
-        if (!in_array($public_address, $addresses)) {
-            return $this->successResponse(
-                ['message' => __('The validator ID specified could not be found in the Casper validator pool')]
-            );
-        }
-        */
         if (!Helper::checkAddressValidity($public_address)) {
         	return $this->successResponse(
                 ['message' => __('The validator ID specified could not be found in the Casper validator pool')]
@@ -870,16 +910,6 @@ class UserController extends Controller
         }
 
         // Pool Check
-        /*
-        $nodeHelper = new NodeHelper();
-        $addresses = $nodeHelper->getValidAddresses();
-        if (!in_array($public_address, $addresses)) {
-            return $this->errorResponse(
-                __('The validator ID specified could not be found in the Casper validator pool'), 
-                Response::HTTP_BAD_REQUEST
-            );
-        }
-        */
         if (!Helper::checkAddressValidity($public_address)) {
         	return $this->errorResponse(
                 __('The validator ID specified could not be found in the Casper validator pool'), 
@@ -1203,54 +1233,6 @@ class UserController extends Controller
         
         return $this->metaSuccess();
     }
-
-    // Update Shuftipro Temp Status
-    /*
-    public function updateShuftiProTemp(Request $request)
-    {
-        $user = auth()->user();
-
-        // Validator
-        $validator = Validator::make($request->all(), [
-            'reference_id' => 'required'
-        ]);
-
-        if ($validator->fails()) {
-            return $this->validateResponse($validator->errors());
-        }
-
-        $user_id      = $user->id;
-        $reference_id = $request->reference_id;
-        $profile      = Profile::where('user_id', $user_id)->first();
-
-        if ($profile) {
-            $profile->status = 'pending';
-            $profile->save();
-        }
-
-        $record = ShuftiproTemp::where('user_id', $user_id)
-            ->where('reference_id', $reference_id)
-            ->first();
-
-        if ($record) {
-            $record->status = 'booked';
-            $record->save();
-            $emailerData    = EmailerHelper::getEmailerData();
-
-            EmailerHelper::triggerAdminEmail(
-                'KYC or AML need review', 
-                $emailerData, 
-                $user
-            );
-
-            return $this->metaSuccess();
-        }
-        return $this->errorResponse(
-            'Fail submit AML', 
-            Response::HTTP_BAD_REQUEST
-        );
-    }
-    */
 
     // get vote list
     public function getVotes(Request $request)
@@ -1611,9 +1593,7 @@ class UserController extends Controller
         $ballotFileView->save();
         return $this->metaSuccess();
     }
-    /**
-     * verify file casper singer
-     */
+
     public function uploadAvatar(Request $request)
     {
         try {
@@ -2128,10 +2108,7 @@ class UserController extends Controller
             return $this->metaSuccess();
         }
 
-        return $this->errorResponse(
-            __('Please enable 2Fa setting'), 
-            Response::HTTP_BAD_REQUEST
-        );
+        return $this->errorResponse(__('Please enable 2Fa setting'), Response::HTTP_BAD_REQUEST);
     }
 
     public function getLockRules()
@@ -2208,9 +2185,9 @@ class UserController extends Controller
 
     public function infoDashboard()
     {
-        $user          = auth()->user();
-        $delegators    = 0;
-        $stake_amount  = 0;
+        $user = auth()->user();
+        $delegators = 0;
+        $stake_amount = 0;
         $lower_address = strtolower($user->public_address_node);
 
         $nodeInfo = DB::select("
@@ -2223,7 +2200,7 @@ class UserController extends Controller
         $nodeInfo = $nodeInfo[0] ?? null;
 
         if ($nodeInfo) {
-            $delegators   = $nodeInfo->bid_delegators_count;
+            $delegators = $nodeInfo->bid_delegators_count;
             $stake_amount = $nodeInfo->bid_total_staked_amount;
         }
 
@@ -2231,98 +2208,12 @@ class UserController extends Controller
 
         $response['totalNewDiscusstion'] = $user->new_threads;
         $response['totalPinDiscusstion'] = $totalPin;
-        $response['rank']                = $user->rank;
-        $response['delegators']          = $delegators;
-        $response['stake_amount']        = $stake_amount;
+        $response['rank'] = $user->rank;
+        $response['delegators'] = $delegators;
+        $response['stake_amount'] = $stake_amount;
 
         return $this->successResponse($response);
     }
-
-    /*
-    public function getEarningByNode($node)
-    {
-        $node     = strtolower($node);
-        $user     = User::where('public_address_node', $node)->first();
-
-        $nodeInfo = DB::select("
-            SELECT *
-            FROM all_node_data2
-            WHERE public_key = '$node'
-            ORDER BY era_id DESC
-            LIMIT 1
-        ");
-        $nodeInfo = $nodeInfo[0] ?? null;
-		
-        // Calc earning
-        $one_day_ago   = Carbon::now('UTC')->subHours(24);
-        $daily_earningObject = DB::select("
-            SELECT bid_self_staked_amount
-            FROM all_node_data2
-            WHERE public_key = '$node'
-            AND created_at < '$one_day_ago'
-            ORDER BY era_id DESC
-            LIMIT 1
-        ");
-        $daily_earning = 0;
-
-        if ($daily_earningObject && count($daily_earningObject) > 0) {
-            $daily_earning = $daily_earningObject[0]->bid_self_staked_amount ?? 0;
-        }
-
-        if ($nodeInfo) {
-            $daily_earning = $nodeInfo->bid_self_staked_amount - $daily_earning;
-        } else {
-            $daily_earning = -$daily_earning;
-        }
-
-        $daily_earning = $daily_earning < 0 ? 0 : $daily_earning;
-        
-        $mbs      = DB::select("
-            SELECT mbs
-            FROM mbs
-            ORDER BY era_id DESC
-            LIMIT 1
-        ");
-        $mbs      = (int)($mbs[0]->mbs ?? 0);
-
-        if ($user && $nodeInfo) {
-            return $this->successResponse([
-                'daily_earning' => $daily_earning,
-                'total_earning' => $daily_earning,
-                'mbs'           => $mbs,
-            ]);
-        } else {
-            return $this->successResponse([
-                'mbs'           => $mbs,
-            ]);
-        }
-    }
-    */
-
-    /*
-    public function getChartEarningByNode($node)
-    {
-        $node = strtolower($node);
-        $user = User::where('public_address_node', $node)->first();
-
-        if ($user) {
-            $nodeHelper   = new NodeHelper();
-            $result_day   = $nodeHelper->getValidatorRewards($node, 'day');
-            $result_week  = $nodeHelper->getValidatorRewards($node, 'week');
-            $result_month = $nodeHelper->getValidatorRewards($node, 'month');
-            $result_year  = $nodeHelper->getValidatorRewards($node, 'year');
-
-            return $this->successResponse([
-                'day'     => $result_day,
-                'week'    => $result_week,
-                'month'   => $result_month,
-                'year'    => $result_year,
-            ]);
-        } else {
-            return $this->successResponse(null);
-        }
-    }
-    */
 
     public function getMembershipFile()
     {
