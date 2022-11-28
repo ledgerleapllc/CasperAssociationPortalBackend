@@ -21,6 +21,7 @@ use App\Models\IpHistory;
 use App\Models\User;
 use App\Models\UserAddress;
 use App\Models\VerifyUser;
+use App\Models\UpgradeList;
 
 use App\Repositories\UserRepository;
 use App\Repositories\VerifyUserRepository;
@@ -65,6 +66,15 @@ class AuthController extends Controller
     	return 'Test Job!';
     }
     
+    public function devUpgradeList() {
+    	$items = UpgradeList::orderBy('created_at', 'asc')->get();
+    	if ($items && count($items) > 0) {
+    		foreach ($items as $item) {
+    			echo $item->email . '<br/>';
+    		}
+    	}
+    }
+
     public function devVerifyNode($address)
     {
         $query = DB::select("

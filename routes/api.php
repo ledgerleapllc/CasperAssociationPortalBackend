@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Route;
 /// REMOVE
 Route::get('/dev-verify-node/{address}', [AuthController::class, 'devVerifyNode'])->where('address', '[0-9a-zA-Z]+');
 Route::get('/test-job', [AuthController::class, 'testJob']);
+Route::get('/dev-upgrade-list', [AuthController::class, 'devUpgradeList']);
 
 Route::namespace('Api')->middleware([])->group(function () {
     Route::post('hellosign', [HelloSignController::class, 'hellosignHook']);
@@ -180,8 +181,11 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             });
 
             Route::get('/upgrades', [AdminController::class, 'getUpgrades']);
+            Route::get('/upgrades/{id}', [AdminController::class, 'getSingleUpgrade']);
             Route::post('/upgrades', [AdminController::class, 'createUpgrade']);
-            
+            Route::put('/upgrades/{id}', [AdminController::class, 'updateUpgrade']);
+            Route::delete('/upgrades/{id}', [AdminController::class, 'deleteUpgrade']);
+
             Route::get('/global-settings', [AdminController::class, 'getGlobalSettings']);
             Route::put('/global-settings', [AdminController::class, 'updateGlobalSettings']);
             
