@@ -42,13 +42,13 @@ class HistoricalData extends Command
         casper-client get-auction-info --node-address http://18.219.70.138:7777/rpc -b e549a8703cb3bdf2c8e11a7cc72592c3043fe4490737064c6fd9da30cc0d4f36 | jq .result.auction_state.era_validators | jq .[0].era_id
         */
 
-        $get_block = 'casper-client get-block ';
-        $get_auction = 'casper-client get-auction-info ';
-        $node_arg = '--node-address http://18.219.70.138:7777/rpc ';
+        $get_block    = 'casper-client get-block ';
+        $get_auction  = 'casper-client get-auction-info ';
+        $node_arg     = '--node-address http://18.219.70.138:7777/rpc ';
 
-        $json = shell_exec($get_block . $node_arg);
-        $json = json_decode($json);
-        $current_era = (int) ($json->result->block->header->era_id ?? 0);
+        $json         = shell_exec($get_block . $node_arg);
+        $json         = json_decode($json);
+        $current_era  = (int) ($json->result->block->header->era_id ?? 0);
 
         $historic_era = DB::select("
             SELECT era_id
@@ -56,31 +56,52 @@ class HistoricalData extends Command
             ORDER BY era_id DESC
             LIMIT 1
         ");
-        $historic_era = (int) ($historic_era[0]->era_id ?? 6000) + 1;
-        info('historic_era: ' . $historic_era);
-        $blocks_per_era = 100;
-        $historic_block = $blocks_per_era * $historic_era;
-        info('historic_block: ' . $historic_block);
-        $test_era = 0;
-        $timestamp = '';
 
-        while ($test_era < $historic_era) {
-            $json = shell_exec($get_block . $node_arg . '-b ' . $historic_block);
-            $json = json_decode($json);
-            $test_era = (int) ($json->result->block->header->era_id ?? 0);
-            $timestamp = $json->result->block->header->timestamp ?? '';
+        $historic_era   = (int)($historic_era[0]->era_id ?? 6000);
+        $historic_block = 1;
+        $test_era       = 0;
+        $timestamp      = '1';
 
-            if (!$timestamp || $timestamp == '') {
-                info('Historical block overflow - reset');
-                $blocks_per_era = 101;
-                $historic_block = $blocks_per_era * $historic_era;
-                break;
+        // reductive binary search algorithm
+        // $m = 1073741824;
+        $m = 1;
+
+        // find max in range first
+        while ($timestamp != '') {
+            $m         *= 2;
+            $json       = shell_exec($get_block.$node_arg.'-b '.$m);
+            $json       = json_decode($json);
+            $test_era   = (int)($json->result->block->header->era_id ?? 0);
+            info('finding max block ... '.$m);
+            $timestamp  = $json->result->block->header->timestamp ?? '';
+        }
+
+        // run search algo
+        $historic_block = $m;
+
+        while ($test_era != $historic_era) {
+            $json       = shell_exec($get_block.$node_arg.'-b '.$historic_block);
+            $json       = json_decode($json);
+            $test_era   = (int)($json->result->block->header->era_id ?? 0);
+            info('trying historic_block '.$historic_block.' ... got era: '.$test_era);
+            $timestamp  = $json->result->block->header->timestamp ?? '';
+
+            if (
+                !$timestamp || $timestamp == '' ||
+                $test_era > $historic_era
+            ) {
+                info('historic_block too high');
+                $historic_block -= $m;
+                if ($historic_block < 1) $historic_block = 1;
+                $m = (int)($m / 2);
+                continue;
             }
 
             if ($test_era < $historic_era) {
-                $era_diff = $historic_era - $test_era;
-                $historic_block += ($blocks_per_era * $era_diff);
-                info('Using historic_block: ' . $historic_block . ' - ' . $timestamp);
+                info('historic_block too low');
+                $historic_block += $m;
+                $m = (int)($m / 2);
+                continue;
             }
         }
 
@@ -93,7 +114,7 @@ class HistoricalData extends Command
             ");
             $node_data = (int) ($node_data[0]->era_id ?? 0);
 
-            if ($node_data) {
+            if ($node_data > 0) {
                 // era's auction info exists. do not need to fetch.
                 info('Already have era ' . $historic_era . ' data. skipping');
                 $historic_era += 1;
