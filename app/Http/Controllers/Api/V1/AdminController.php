@@ -48,6 +48,7 @@ use App\Models\ContactRecipient;
 use App\Models\AllNodeData2;
 use App\Models\ReinstatementHistory;
 use App\Models\Upgrade;
+use App\Models\UpgradeUser;
 
 use App\Services\NodeHelper;
 
@@ -71,6 +72,14 @@ class AdminController extends Controller
 	public function getUpgrades(Request $request) {
 		$upgrades = Upgrade::orderBy('id', 'asc')->get();
 		return $this->successResponse($upgrades);
+	}
+
+	public function getSingleUpgrade($id) {
+		$upgrade = Upgrade::find($id);
+		if ($upgrade) {
+			return $this->successResponse($upgrade);
+		}
+		return $this->errorResponse('The Upgrade does not exist', Response::HTTP_BAD_REQUEST);
 	}
 
 	public function createUpgrade(Request $request) {
@@ -124,6 +133,76 @@ class AdminController extends Controller
       	NewUpgradeNotification::dispatch($upgradeRecord)->onQueue('default_long');
 
 		return $this->successResponse($upgradeRecord);
+	}
+
+	public function updateUpgrade($id, Request $request) {
+		$validator = Validator::make($request->all(), [
+            'version' => 'required|string|max:70',
+            'activation_era' => 'required|integer',
+            'activation_date' => 'required|date_format:Y-m-d',
+            'link' => 'required|url|max:255',
+            'notes' => 'required',
+        ]);
+        if ($validator->fails()) {
+            return $this->validateResponse($validator->errors());
+        }
+
+    	$upgradeRecord = Upgrade::find($id);
+    	if (!$upgradeRecord) {
+    		return $this->errorResponse('The Upgrade does not exist', Response::HTTP_BAD_REQUEST);
+    	}
+
+    	$version = $request->version;
+    	$link = $request->link;
+    	$notes = $request->notes;
+    	$activation_era = (int) $request->activation_era;
+    	$activation_date = $request->activation_date;
+    	$activation_datetime = $activation_date . ' 00:00:00';
+
+    	if ($activation_era < 1) {
+        	return $this->errorResponse('Activation ERA must be greater than 1', Response::HTTP_BAD_REQUEST);
+        }
+
+        $temp = DB::select("
+            SELECT 
+            MAX(activation_era) as era 
+            FROM upgrades
+            where id != $id
+        ");
+        $maxERA = (int) ($temp[0]->era ?? 0);
+
+        if ($activation_era <= $maxERA) {
+      		return $this->errorResponse('Activation ERA must be greater than ' . $maxERA, Response::HTTP_BAD_REQUEST);
+      	}
+
+      	$upgradeRecordTemp = Upgrade::where('version', $version)
+      								->where('id', '!=', $id)
+      								->first();
+      	if ($upgradeRecordTemp) {
+      		return $this->errorResponse('The Version No is already used', Response::HTTP_BAD_REQUEST);
+      	}
+
+      	$upgradeRecord->version = $version;
+      	$upgradeRecord->activation_era = $activation_era;
+      	$upgradeRecord->activation_date = $activation_date;
+      	$upgradeRecord->activation_datetime = $activation_datetime;
+      	$upgradeRecord->link = $link;
+      	$upgradeRecord->notes = $notes;
+      	$upgradeRecord->save();
+
+    	return $this->successResponse($upgradeRecord);
+	}
+
+	public function deleteUpgrade($id) {
+		$user = auth()->user();
+		if (!$user || $user->role != 'admin') {
+            return $this->errorResponse(__('api.error.not_found'), Response::HTTP_NOT_FOUND);
+        }
+
+        UpgradeUser::where('upgrade_id', $id)->delete();
+        Upgrade::where('id', $id)->delete();
+        
+		return $this->metaSuccess();
 	}
 
     public function allErasUser($id) {
