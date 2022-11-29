@@ -160,16 +160,24 @@ class CheckNodeStatus extends Command
                     }
 
                     if ($hasOnProbation) {
+                    	$orgStatus = $user->profile->extra_status;
+
                         $user->profile->extra_status = 'On Probation';
                         $user->profile->save();
 
-                        EmailerUserJob::dispatch($user, 'User goes on probation');
+                        if ($orgStatus && $orgStatus == 'On Probation') {
+                        	//
+                        } else {
+                        	EmailerUserJob::dispatch($user, 'User goes on probation');
+                    	}
                     } else {
                         $user->profile->extra_status = null;
                         $user->profile->save();
                     }
 
                     if ($hasOnline && $hasSuspended) {
+                    	$orgStatus = $user->profile->extra_status;
+
                         $user->profile->extra_status = 'Suspended';
                         $user->profile->revoke_at = Carbon::now('UTC');
                         if (count($revokeReason) > 0) {
@@ -177,7 +185,11 @@ class CheckNodeStatus extends Command
                         }
                         $user->profile->save();
 
-                        EmailerUserJob::dispatch($user, 'User membership is revoked');
+                        if ($orgStatus && $orgStatus == 'Suspended') {
+                        	//
+                        } else {
+                        	EmailerUserJob::dispatch($user, 'User membership is revoked');
+                    	}
                     }
                 }
             } else {
