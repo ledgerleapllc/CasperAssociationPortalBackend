@@ -120,14 +120,18 @@ class HistoricalData extends Command
                 $historic_era += 1;
             } else {
                 // decrease block height and check for new switch block
-                info('Checking block ' . $historic_block . ' for era ' . $historic_era);
                 $command = $get_block . $node_arg . '-b ' . $historic_block;
                 $switch_block = shell_exec($command);
                 $json = json_decode($switch_block);
-                $era_id = $json->result->block->header->era_id ?? 0;
+                $era_id = (int)($json->result->block->header->era_id ?? 0);
+                info('Checking block '.$historic_block.' for era '.$historic_era.'. Found era '.$era_id);
                 $block_hash = $json->result->block->hash ?? '';
                 $timestamp = $json->result->block->header->timestamp ?? '';
                 $timestamp = Carbon::parse($timestamp)->format('Y-m-d H:i:s');
+
+                if ($era_id == 0) {
+                    break;
+                }
 
                 if ($era_id == $historic_era) {
                     // start timer
