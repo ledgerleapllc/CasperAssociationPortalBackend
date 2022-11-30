@@ -294,7 +294,11 @@ class AuthController extends Controller
                 ]
             );
             if (!$user) {
-                return $this->errorResponse(__('api.error.email_not_found'), Response::HTTP_BAD_REQUEST);
+                // return $this->errorResponse(__('api.error.email_not_found'), Response::HTTP_BAD_REQUEST);
+            	return $this->successResponse([
+            		'success' => false,
+            		'message' => 'We can\'t find an account associated with that email address. Please check the address and try again.'
+            	]);
             }
             $code = Str::random(60);
             // $url = $request->header('origin') ?? $request->root();
@@ -313,7 +317,11 @@ class AuthController extends Controller
             if ($passwordReset) {
                 Mail::to($request->email)->send(new ResetPasswordMail($resetUrl));
             }
-            return $this->metaSuccess();
+            // return $this->metaSuccess();
+            return $this->successResponse([
+        		'success' => true,
+	        	'message' => 'A password reset link has been sent to your email.'
+	        ]);
         } catch (\Exception $ex) {
             return $this->errorResponse(__('api.error.internal_error'), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
