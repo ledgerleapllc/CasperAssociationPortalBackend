@@ -2148,7 +2148,6 @@ class AdminController extends Controller
         try {
             // Validator
             $validator = Validator::make($request->all(), [
-                // 'file' => 'required|mimes:pdf,docx,doc,txt,rtf|max:5000',
                 'file' => 'required|mimes:pdf,docx,doc,txt,rtf|max:2048',
             ]);
 
