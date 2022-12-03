@@ -232,7 +232,7 @@
   cron:
     name: "{{ app.name }}"
     user: "{{ security.app_user }}"
-    job: "cd /var/www/server && php artisan schedule:run 2>&1"
+    job: "cd /var/www/server && sudo php artisan schedule:run 2>&1"
     minute: "*"
     hour: "*"
     day: "*"

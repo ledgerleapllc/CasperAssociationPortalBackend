@@ -549,6 +549,11 @@ class UserController extends Controller
 
     public function changeEmail(ChangeEmailRequest $request)
     {
+        return $this->errorResponse(
+            __('Email changes are disabled'), 
+            Response::HTTP_BAD_REQUEST
+        );
+
         try {
             DB::beginTransaction();
             $user = auth()->user();
@@ -641,7 +646,6 @@ class UserController extends Controller
         try {
             // Validator
             $validator = Validator::make($request->all(), [
-                // 'file' => 'required|mimes:pdf,jpeg,jpg,png,txt,rtf|max:200000'
                 'file' => 'required|mimes:pdf,jpeg,jpg,png,txt,rtf|max:2048'
             ]);
 
@@ -1599,7 +1603,6 @@ class UserController extends Controller
         try {
             // Validator
             $validator = Validator::make($request->all(), [
-                // 'avatar' => 'sometimes|mimes:jpeg,jpg,png,gif,webp|max:100000',
                 'avatar' => 'sometimes|mimes:jpeg,jpg,png,gif,webp|max:2048',
             ]);
 
@@ -1752,7 +1755,7 @@ class UserController extends Controller
             'entity_type' => $user->entity_type,
             'entity_register_number' => $user->entity_register_number,
             'entity_register_country' => $user->entity_register_country,
-            'entity_tax' => $user->entity_tax,
+            // 'entity_tax' => $user->entity_tax,
             'public_address_node' => $user->public_address_node,
             'node_verified_at' => $user->node_verified_at,
             'member_status' => $user->member_status,
@@ -2024,13 +2027,15 @@ class UserController extends Controller
 
                 return $this->successResponse($user);
             }
+
             return $this->errorResponse(
-                __('Fail cancel change email'), 
+                __('User email not found'), 
                 Response::HTTP_BAD_REQUEST
             );
         }
+
         return $this->errorResponse(
-            __('Fail cancel change email'), 
+            __('Failed to cancel email change'), 
             Response::HTTP_BAD_REQUEST
         );
     }
@@ -2056,13 +2061,14 @@ class UserController extends Controller
                 $verify->delete();
                 return $this->successResponse($user);
             }
+
             return $this->errorResponse(
-                __('Fail confirm change email'), 
+                __('User email not found'), 
                 Response::HTTP_BAD_REQUEST
             );
         }
         return $this->errorResponse(
-            __('Fail confirm change email'), 
+            __('Failed to confirm email change'), 
             Response::HTTP_BAD_REQUEST
         );
     }
