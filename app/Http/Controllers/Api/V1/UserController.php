@@ -549,9 +549,8 @@ class UserController extends Controller
 
     public function changeEmail(ChangeEmailRequest $request)
     {
-        return $this->errorResponse(
-            __('Email changes are disabled'), 
-            Response::HTTP_BAD_REQUEST
+        return $this->successResponse(
+            ['message' => __('Email changes are disabled')]
         );
 
         try {
