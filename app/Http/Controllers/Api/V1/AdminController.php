@@ -1503,6 +1503,23 @@ class AdminController extends Controller
             );
         }
 
+        if (isset($request->globalsettings)) {
+        	$permisstion = Permission::where('user_id', $id)
+                ->where('name', 'globalsettings')
+                ->first();
+
+            if ($permisstion) {
+                $permisstion->is_permission = $request->globalsettings;
+                $permisstion->save();
+            } else {
+            	$permisstion                = new Permission();
+                $permisstion->is_permission = $request->globalsettings;
+                $permisstion->user_id       = $id;
+                $permisstion->name          = 'globalsettings';
+                $permisstion->save();
+            }
+        }
+
         if (isset($request->intake)) {
             $permisstion = Permission::where('user_id', $id)
                 ->where('name', 'intake')
