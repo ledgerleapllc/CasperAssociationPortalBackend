@@ -24,8 +24,10 @@ class RegisterIndividualRequest extends FormRequest
     public function rules()
     {
         return [
-            'first_name' =>'required|regex:/^[A-Za-z. ]{2,255}$/',
-            'last_name' =>'required|regex:/^[A-Za-z. ]{2,255}$/',
+            // 'first_name' =>'required|regex:/^[A-Za-z. ]{2,255}$/',
+            'first_name' =>'required',
+            // 'last_name' =>'required|regex:/^[A-Za-z. ]{2,255}$/',
+            'last_name' =>'required',
             'email' => 'required|email|max:256|unique:users',
             'password' => 'required|min:8|max:80',
             'pseudonym' => 'required|alpha_num|max:200|unique:users',

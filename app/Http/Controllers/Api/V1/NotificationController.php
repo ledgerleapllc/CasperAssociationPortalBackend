@@ -62,15 +62,15 @@ class NotificationController extends Controller
             $notificationView = new notificationView();
             $notificationView->user_id = $user->id;
             $notificationView->notification_id = $id;
-            $notificationView->first_view_at = now();
-            $notificationView->dismissed_at = now();
+            $notificationView->first_view_at = Carbon::now('UTC');
+            $notificationView->dismissed_at = Carbon::now('UTC');
             $notificationView->save();
 
             $notification->total_views = $notification->total_views + 1;
             $notification->save();
         } else {
             if (!$notificationView->dismissed_at) {
-                $notificationView->dismissed_at = now();
+                $notificationView->dismissed_at = Carbon::now('UTC');
                 $notificationView->save();
             }
         }
@@ -90,8 +90,8 @@ class NotificationController extends Controller
             $notificationView = new notificationView();
             $notificationView->user_id = $user->id;
             $notificationView->notification_id = $id;
-            $notificationView->first_view_at = now();
-            $notificationView->cta_click_at = now();
+            $notificationView->first_view_at = Carbon::now('UTC');
+            $notificationView->cta_click_at = Carbon::now('UTC');
             $notificationView->cta_click_count = $notificationView->cta_click_count + 1;
             $notificationView->save();
 
@@ -99,7 +99,7 @@ class NotificationController extends Controller
             $notification->save();
         } else {
             if (!$notificationView->cta_click_at) {
-                $notificationView->cta_click_at = now();
+                $notificationView->cta_click_at = Carbon::now('UTC');
             }
             $notificationView->cta_click_count = $notificationView->cta_click_count + 1;
             $notificationView->save();
@@ -120,7 +120,7 @@ class NotificationController extends Controller
             $notificationView = new notificationView();
             $notificationView->user_id = $user->id;
             $notificationView->notification_id = $id;
-            $notificationView->first_view_at = now();
+            $notificationView->first_view_at = Carbon::now('UTC');
             $notificationView->save();
             
             $notification->total_views = $notification->total_views + 1;
@@ -203,7 +203,7 @@ class NotificationController extends Controller
             return $this->validateResponse($validator->errors());
         }
 
-        $now = Carbon::now()->format('Y-m-d');
+        $now = Carbon::now('UTC')->format('Y-m-d');
         $notification = new Notification();
         $startDate = $request->start_date;
         $endDate = $request->end_date;
@@ -295,7 +295,7 @@ class NotificationController extends Controller
             return $this->validateResponse($validator->errors());
         }
 
-        $now = Carbon::now()->format('Y-m-d');
+        $now = Carbon::now('UTC')->format('Y-m-d');
         $notification = Notification::where('id', $id)->first();
         if (!$notification) {
             return $this->errorResponse('Not found notification', Response::HTTP_BAD_REQUEST);
@@ -364,7 +364,6 @@ class NotificationController extends Controller
         if (!$notification) {
             return $this->errorResponse('Not found notification', Response::HTTP_BAD_REQUEST);
         }
-
         return $this->successResponse($notification); 
     }
 }

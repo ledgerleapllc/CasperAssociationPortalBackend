@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\ContactUsMail;
 use App\Models\ContactRecipient;
 use App\Models\ContactUs;
+use App\Models\UpgradeList;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Mail;
@@ -13,42 +14,67 @@ use Illuminate\Support\Facades\Validator;
 
 class ContactController extends Controller
 {
-    public function submitContact(Request $request)
-    {
-        $user_id = null;
-        if(auth()->user()) {
-            $user_id = auth()->user()->id;
-        }
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|email',
-            'message' => 'required',
+	public function submitUpgradeList(Request $request)
+	{
+		$validator = Validator::make($request->all(), [
+            'email' => 'required|email'
         ]);
+
         if ($validator->fails()) {
             return $this->validateResponse($validator->errors());
         }
+
+        $email  = $request->email;
+        $record = UpgradeList::where('email', $email)->first();
+
+        if ($record) {
+        	return $this->errorResponse(
+                'This email already exists', 
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        $record = new UpgradeList;
+        $record->email = $email;
+        $record->save();
+        
+        return $this->metaSuccess();
+	}
+
+    public function submitContact(Request $request)
+    {
+        $user_id = null;
+
+        if (auth()->user()) {
+            $user_id = auth()->user()->id;
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name'    => 'required|string|max:255',
+            'email'   => 'required|email',
+            'message' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->validateResponse($validator->errors());
+        }
+
         $contactUs = new ContactUs();
         $contactUs->user_id = $user_id;
-        $contactUs->name = $request->name;
-        $contactUs->email = $request->email;
+        $contactUs->name    = $request->name;
+        $contactUs->email   = $request->email;
         $contactUs->message = $request->message;
         $contactUs->save();
-        $contactRecipients = ContactRecipient::get();
+
+        $contactRecipients  = ContactRecipient::get();
+
         if (count($contactRecipients) > 0) {
             foreach ($contactRecipients as $item) {
                 Mail::to($item->email)->send(new ContactUsMail($contactUs));
             }
         }
-        return $this->metaSuccess();
-    }
 
-    public function getContactRecipients(Request $request)
-    {
-        $limit = $request->limit ?? 50;
-        $sort_key = $request->sort_key ?? 'created_at';
-        $sort_direction = $request->sort_direction ?? 'desc';
-        $contactRecipients = ContactRecipient::orderBy($sort_key, $sort_direction)->paginate($limit);
-        return $this->successResponse($contactRecipients);
+        return $this->metaSuccess();
     }
 
     public function addContactRecipients(Request $request)
@@ -56,12 +82,18 @@ class ContactController extends Controller
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
         ]);
+
         if ($validator->fails()) {
             return $this->validateResponse($validator->errors());
         }
+
         $contactRecipient = ContactRecipient::where('email', $request->email)->first();
+
         if ($contactRecipient) {
-            return $this->errorResponse('This email has already exist', Response::HTTP_BAD_REQUEST);
+            return $this->errorResponse(
+                'This email has already exist', 
+                Response::HTTP_BAD_REQUEST
+            );
         } else {
             $contactRecipient = new ContactRecipient();
             $contactRecipient->email = $request->email;

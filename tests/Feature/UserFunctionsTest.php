@@ -31,7 +31,7 @@ class UserFunctionsTest extends TestCase
         ])->json('get', '/api/v1/members/ca-kyc-hash/AB10BC99');
 
         // $apiResponse = $response->baseResponse->getData();
-
+        
         $response->assertStatus(200)
                 ->assertJsonStructure([
                     'message',
@@ -133,6 +133,91 @@ class UserFunctionsTest extends TestCase
                 ]);
     }
 
+    public function testGetUserDashboard() {
+        $token = $this->getUserToken();
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('get', '/api/v1/users/get-dashboard');
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
+    public function testGetMembershipPage() {
+        $token = $this->getUserToken();
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('get', '/api/v1/users/get-membership-page');
+
+        // $apiResponse = $response->baseResponse->getData();
+
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
+    public function testGetNodesPage() {
+        $token = $this->getUserToken();
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('get', '/api/v1/users/get-nodes-page');
+        
+        // $apiResponse = $response->baseResponse->getData();
+        
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
+    public function testGetMyEras() {
+        $token = $this->getUserToken();
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('get', '/api/v1/users/get-my-eras');
+        
+        // $apiResponse = $response->baseResponse->getData();
+        
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
+    public function testCanVote() {
+        $token = $this->getUserToken();
+
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->json('get', '/api/v1/users/can-vote');
+        
+        // $apiResponse = $response->baseResponse->getData();
+        
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'data',
+                ]);
+    }
+
     public function testChangeEmail() {
         $token = $this->getUserToken();
 
@@ -153,27 +238,6 @@ class UserFunctionsTest extends TestCase
                     'data',
                 ]);
     }
-
-    public function testChangePassword() {
-        $token = $this->getUserToken();
-
-        $params = [
-            'new_password' => 'TestIndividual111New@',
-        ];
-
-        $response = $this->withHeaders([
-            'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $token,
-        ])->json('post', '/api/v1/users/change-password', $params);
-
-        // $apiResponse = $response->baseResponse->getData();
-
-        $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'message',
-                    'data',
-                ]);
-    }
     
     public function testGetProfile() {
         $token = $this->getUserToken();
@@ -182,23 +246,6 @@ class UserFunctionsTest extends TestCase
             'Accept' => 'application/json',
             'Authorization' => 'Bearer ' . $token,
         ])->json('get', '/api/v1/users/profile');
-
-        // $apiResponse = $response->baseResponse->getData();
-
-        $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'message',
-                    'data',
-                ]);
-    }
-
-    public function testLogout() {
-        $token = $this->getUserToken();
-
-        $response = $this->withHeaders([
-            'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $token,
-        ])->json('post', '/api/v1/users/logout');
 
         // $apiResponse = $response->baseResponse->getData();
 
@@ -321,6 +368,7 @@ class UserFunctionsTest extends TestCase
                 ]);
     }
 
+    /*
     public function testVerifyOwnerNode() {
         $token = $this->getUserToken();
 
@@ -336,7 +384,9 @@ class UserFunctionsTest extends TestCase
                     'data',
                 ]);
     }
+    */
 
+    /*
     public function testGetOwnerNodes() {
         $token = $this->getUserToken();
 
@@ -352,7 +402,9 @@ class UserFunctionsTest extends TestCase
                     'data',
                 ]);
     }
+    */
 
+    /*
     public function testResendInviteOwner() {
         $token = $this->getUserToken();
 
@@ -372,6 +424,7 @@ class UserFunctionsTest extends TestCase
                     'data',
                 ]);
     }
+    */
 
     public function testGetMessageContent() {
         $token = $this->getUserToken();
@@ -397,26 +450,6 @@ class UserFunctionsTest extends TestCase
             'Accept' => 'application/json',
             'Authorization' => 'Bearer ' . $token,
         ])->json('post', '/api/v1/users/shuftipro-temp', $params);
-
-        // $apiResponse = $response->baseResponse->getData();
-
-        $response->assertJsonStructure([
-                    'message',
-                    'data',
-                ]);
-    }
-
-    public function testUpdateShuftiproTemp() {
-        $token = $this->getUserToken();
-
-        $params = [
-            'reference_id' => 'TestReferenceId'
-        ];
-
-        $response = $this->withHeaders([
-            'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $token,
-        ])->json('put', '/api/v1/users/shuftipro-temp', $params);
 
         // $apiResponse = $response->baseResponse->getData();
 
@@ -467,23 +500,6 @@ class UserFunctionsTest extends TestCase
                 ]);
     }
 
-    public function testListNodes() {
-        $token = $this->getUserToken();
-
-        $response = $this->withHeaders([
-            'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $token,
-        ])->json('get', '/api/v1/users/list-node');
-        
-        // $apiResponse = $response->baseResponse->getData();
-        
-        $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'message',
-                    'data',
-                ]);
-    }
-
     public function testListNodesBy() {
         $token = $this->getUserToken();
 
@@ -528,93 +544,6 @@ class UserFunctionsTest extends TestCase
         
         // $apiResponse = $response->baseResponse->getData();
         
-        $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'message',
-                    'data',
-                ]);
-    }
-
-    public function testGetEarningByNode() {
-        $node = '011117189c666f81c5160cd610ee383dc9b2d0361f004934754d39752eedc64957';
-        $token = $this->getUserToken($node);
-
-        $response = $this->withHeaders([
-            'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $token,
-        ])->json('get', '/api/v1/nodes/' . $node . '/earning');
-
-        // $apiResponse = $response->baseResponse->getData();
-
-        $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'message',
-                    'data',
-                ]);
-    }
-
-    public function testGetChartEarningByNode() {
-        $node = '011117189c666f81c5160cd610ee383dc9b2d0361f004934754d39752eedc64957';
-        $token = $this->getUserToken($node);
-
-        $response = $this->withHeaders([
-            'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $token,
-        ])->json('get', '/api/v1/nodes/' . $node . '/chart');
-
-        // $apiResponse = $response->baseResponse->getData();
-
-        $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'message',
-                    'data',
-                ]);
-    }
-
-    public function testGetMemberCountInfo() {
-        $token = $this->getUserToken();
-
-        $response = $this->withHeaders([
-            'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $token,
-        ])->json('get', '/api/v1/member-count-info');
-
-        // $apiResponse = $response->baseResponse->getData();
-
-        $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'message',
-                    'data',
-                ]);
-    }
-
-    public function testGetVerifiedMembers() {
-        $token = $this->getUserToken();
-
-        $response = $this->withHeaders([
-            'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $token,
-        ])->json('get', '/api/v1/verified-members/all');
-
-        // $apiResponse = $response->baseResponse->getData();
-
-        $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'message',
-                    'data',
-                ]);
-    }
-
-    public function testCheckResetKYC() {
-        $token = $this->getUserToken();
-
-        $response = $this->withHeaders([
-            'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $token,
-        ])->json('post', '/api/v1/users/check-reset-kyc');
-
-        // $apiResponse = $response->baseResponse->getData();
-
         $response->assertStatus(200)
                 ->assertJsonStructure([
                     'message',

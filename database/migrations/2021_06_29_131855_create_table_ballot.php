@@ -22,6 +22,13 @@ class CreateTableBallot extends Migration
             $table->string('time_unit')->nullable();
             $table->timestamp('time_end')->nullable();
             $table->string('status')->default('active');
+            $table->string('start_date')->nullable();
+            $table->string('start_time')->nullable();
+            $table->string('end_date')->nullable();
+            $table->string('end_time')->nullable();
+            $table->string('timezone')->nullable();
+            $table->timestamp('time_begin')->nullable();
+            $table->boolean('reminder_24_sent')->default(false);
             $table->timestamps();
         });
     }

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Helper;
 use App\Models\Ballot;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -39,10 +40,11 @@ class CheckBallot extends Command
      */
     public function handle()
     {
-        $settings = getSettings();
+        $settings = Helper::getSettings();
         $quorumRate = $settings['quorum_rate_ballot'] ?? 50;
-        $now = Carbon::now('UTC');
-        $ballots = Ballot::with(['vote'])->where('status', 'active')->where('time_end', '<=', $now)->get();
+        $ballots = Ballot::with(['vote'])->where('status', 'active')
+        								->where('time_end', '<=', Carbon::now('UTC'))
+        								->get();
         foreach ($ballots as $ballot) {
             $vote = $ballot->vote;
             if ($vote->result_count == 0) {

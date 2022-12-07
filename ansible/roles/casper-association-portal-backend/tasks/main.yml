@@ -232,7 +232,7 @@
   cron:
     name: "{{ app.name }}"
     user: "{{ security.app_user }}"
-    job: "cd /var/www/server && php artisan schedule:run 2>&1"
+    job: "cd /var/www/server && sudo php artisan schedule:run 2>&1"
     minute: "*"
     hour: "*"
     day: "*"
@@ -265,4 +265,14 @@
   - apache
   - config
   - first_setup
+  when: clone_repo.changed
+
+- name: Horizon
+  shell: sudo supervisorctl reread && sudo supervisorctl update && sudo service supervisor restart
+  args:
+    chdir: "{{ app.home }}"
+  tags:
+  - php
+  - update
+  - horizon
   when: clone_repo.changed

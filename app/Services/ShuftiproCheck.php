@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use Carbon\Carbon;
+
 use App\Models\Profile;
 use App\Models\Shuftipro;
 use App\Models\ShuftiproTemp;
@@ -153,7 +155,7 @@ class ShuftiproCheck
         $record->reviewed = $is_successful ? 1 : 0; // No need to review successful ones
 
         if ($status == 'approved') {
-            $record->manual_approved_at = now();
+            $record->manual_approved_at = Carbon::now('UTC');
         }
         if ($document_proof) {
             $record->document_proof = $document_proof;
@@ -173,8 +175,8 @@ class ShuftiproCheck
             
             $user = User::find($user_id);
             if ($user) {    
-                $user->kyc_verified_at = now();
-                $user->approve_at = now();
+                $user->kyc_verified_at = Carbon::now('UTC');
+                $user->approve_at = Carbon::now('UTC');
                 $user->save();
 
                 Mail::to($user->email)->send(new KYCApproved);
@@ -354,8 +356,8 @@ class ShuftiproCheck
 
             $user = User::find($user_id);
             if ($user) {
-                $user->kyc_verified_at = now();
-                $user->approve_at = now();
+                $user->kyc_verified_at = Carbon::now('UTC');
+                $user->approve_at = Carbon::now('UTC');
                 $user->save();
 
                 Mail::to($user->email)->send(new KYCApproved);
