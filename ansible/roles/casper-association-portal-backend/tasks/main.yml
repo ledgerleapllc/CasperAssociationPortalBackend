@@ -228,6 +228,9 @@
     recurse: true
   become: true
 
+- name: do it again seeing as how ansible never does what its supposed to do.
+  shell: sudo chown -R www-data:www-data storage/
+
 - name: Set up the artisan cron job
   cron:
     name: "{{ app.name }}"
