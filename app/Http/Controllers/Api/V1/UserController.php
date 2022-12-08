@@ -704,7 +704,8 @@ class UserController extends Controller
                 'https://members-backend-staging.casper.network/',
             ];
 
-            if (in_array(env('APP_URL'), $whitelist)) $request->enableTestMode();
+            // if (in_array(env('APP_URL'), $whitelist)) $request->enableTestMode();
+            $request->enableTestMode();
 
             $request->setTemplateId($template_id);
             $request->setSubject('Member Agreement');
