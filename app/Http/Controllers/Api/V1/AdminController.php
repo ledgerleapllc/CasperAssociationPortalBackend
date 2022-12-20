@@ -634,7 +634,7 @@ class AdminController extends Controller
 
         $query = "
             SELECT 
-            a.id, a.first_name, a.last_name, a.email,
+            a.id, a.cmp_check, a.first_name, a.last_name, a.email,
             a.pseudonym, a.telegram, a.email_verified_at,
             a.entity_name, a.last_login_at, a.created_at,
             a.signature_request_id, a.node_status, a.node_verified_at,
@@ -674,6 +674,9 @@ class AdminController extends Controller
                 break;
                 case 'created_at':
                     $sort_key = 'a.created_at';
+                break;
+                case 'cmp_check':
+                	$sort_key = 'a.cmp_check';
                 break;
                 default:
                     $sort_key = 'a.id';
@@ -2211,5 +2214,25 @@ class AdminController extends Controller
                 $ex->getMessage()
             );
         }
+    }
+
+    public function updateCMPStatus(Request $request) {
+    	$params = $request->all();
+    	$userId = (int) data_get($params, 'userId', 0);
+    	$value = (int) data_get($params, 'value', 0);
+
+    	if (!$userId) {
+    		return $this->errorResponse('Invalid user', Response::HTTP_BAD_REQUEST);
+    	}
+		
+		$user = User::find($userId);
+		if (!$user) {
+			return $this->errorResponse('Invalid user', Response::HTTP_BAD_REQUEST);
+		}
+    	
+    	$user->cmp_check = $value;
+    	$user->save();	
+    	
+    	return $this->metaSuccess();
     }
 }
