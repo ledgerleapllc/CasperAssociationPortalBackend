@@ -222,6 +222,9 @@ Route::prefix('v1')->namespace('Api')->middleware([])->group(function () {
             Route::delete('/contact-recipients/{id}',  [ContactController::class, 'deleteContactRecipients'])->where('id', '[0-9]+');
             Route::post('/membership-file',  [AdminController::class, 'uploadMembershipFile']);
             
+            // CMP Status
+            Route::post('/cmp-status', [AdminController::class, 'updateCMPStatus']);
+
             // Block Access
             Route::post('/block-access', [BlockAccessController::class, 'updateBlockAccess']);
         });
