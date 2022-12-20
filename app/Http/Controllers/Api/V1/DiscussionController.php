@@ -56,7 +56,7 @@ class DiscussionController extends Controller
     {
         $user = auth()->user()->load(['pagePermissions']);
         if (Helper::isAccessBlocked($user, 'discussions'))
-            return $this->successResponse(['data' => []]);
+            return $this->successResponse([]);
 
         $trendings = Discussion::where('likes', '!=', 0)
         						->where('is_draft', 0)
