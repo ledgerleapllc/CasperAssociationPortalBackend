@@ -980,10 +980,6 @@ class UserController extends Controller
                     $message
                 );
 
-                //// remove
-                $verified = true;
-                ////
-
                 if ($verified) {
                     $filenamehash = md5(Str::random(10) . '_' . (string)time());
 
