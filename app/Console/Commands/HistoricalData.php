@@ -72,25 +72,25 @@ class HistoricalData extends Command
             $json       = shell_exec($get_block.$node_arg.'-b '.$m);
             $json       = json_decode($json);
             $test_era   = (int)($json->result->block->header->era_id ?? 0);
-            info('finding max block ... '.$m);
             $timestamp  = $json->result->block->header->timestamp ?? '';
         }
 
         // run search algo
         $historic_block = $m;
+        info('finding max block ... '.$historic_block);
 
         while ($test_era != $historic_era) {
             $json       = shell_exec($get_block.$node_arg.'-b '.$historic_block);
             $json       = json_decode($json);
             $test_era   = (int)($json->result->block->header->era_id ?? 0);
-            info('trying historic_block '.$historic_block.' ... got era: '.$test_era);
+            // info('trying historic_block '.$historic_block.' ... got era: '.$test_era);
             $timestamp  = $json->result->block->header->timestamp ?? '';
 
             if (
                 !$timestamp || $timestamp == '' ||
                 $test_era > $historic_era
             ) {
-                info('historic_block too high');
+                // info('historic_block too high');
                 $historic_block -= $m;
                 if ($historic_block < 1) $historic_block = 1;
                 $m = (int)($m / 2);
@@ -98,12 +98,14 @@ class HistoricalData extends Command
             }
 
             if ($test_era < $historic_era) {
-                info('historic_block too low');
+                // info('historic_block too low');
                 $historic_block += $m;
                 $m = (int)($m / 2);
                 continue;
             }
         }
+
+        info('found era: '.$test_era);
 
         while ($current_era >= $historic_era) {
             // first see if we have this era's auction info
