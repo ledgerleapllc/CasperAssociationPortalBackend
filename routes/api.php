@@ -25,8 +25,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-/// REMOVE
-Route::get('/dev-verify-node/{address}', [AuthController::class, 'devVerifyNode'])->where('address', '[0-9a-zA-Z]+');
+// Route::get('/dev-verify-node/{address}', [AuthController::class, 'devVerifyNode'])->where('address', '[0-9a-zA-Z]+');
 Route::get('/test-job', [AuthController::class, 'testJob']);
 Route::get('/dev-upgrade-list', [AuthController::class, 'devUpgradeList']);
 
