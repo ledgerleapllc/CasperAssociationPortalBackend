@@ -1288,21 +1288,41 @@ class UserController extends Controller
     public function getVoteDetail($id)
     {
         $user = auth()->user()->load(['pagePermissions']);
-        if (Helper::isAccessBlocked($user, 'votes'))
-            return $this->errorResponse('Your access is blocked', Response::HTTP_BAD_REQUEST);
 
-        $ballot = Ballot::with(['vote', 'voteResults.user', 'files'])->where('id', $id)->first();
-        if (!$ballot)
-            return $this->errorResponse('Not found ballot', Response::HTTP_BAD_REQUEST);
+        if (Helper::isAccessBlocked($user, 'votes')) {
+            return $this->errorResponse(
+                'Your access is blocked', 
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        $ballot = Ballot::with(['vote', 'voteResults.user', 'files'])
+            ->where('id', $id)
+            ->first();
+
+        if (!$ballot) {
+            return $this->errorResponse(
+                'Not found ballot', 
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
         foreach ($ballot->files as $file) {
-            $ballotFileView = BallotFileView::where('ballot_file_id', $file->id)->where('user_id', $user->id)->first();
+            $ballotFileView = BallotFileView::where(
+                'ballot_file_id', 
+                $file->id
+            )->where('user_id', $user->id)->first();
+
             $file->is_viewed =  $ballotFileView  ? 1 : 0;
         }
 
         foreach ($ballot->files as $file) {
-            $ballotFileView  = BallotFileView::where('ballot_file_id', $file->id)
-                ->where('user_id', $user->id)
-                ->first();
+            $ballotFileView  = BallotFileView::where(
+                'ballot_file_id', 
+                $file->id
+            )
+            ->where('user_id', $user->id)
+            ->first();
 
             $file->is_viewed = $ballotFileView  ? 1 : 0;
         }
