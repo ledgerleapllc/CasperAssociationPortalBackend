@@ -973,7 +973,7 @@ class UserController extends Controller
             $name      = $file->getClientOriginalName();
             $hexstring = $file->get();
 
-            if ($hexstring && $name == 'signature') {
+            if ($hexstring) {
                 $verified = $casperSigVerify->verify(
                     trim($hexstring),
                     $public_validator_key,
@@ -1296,7 +1296,7 @@ class UserController extends Controller
             );
         }
 
-        $ballot = Ballot::with(['vote', 'voteResults.user', 'files'])
+        $ballot = Ballot::with(['vote', 'files'])
             ->where('id', $id)
             ->first();
 
