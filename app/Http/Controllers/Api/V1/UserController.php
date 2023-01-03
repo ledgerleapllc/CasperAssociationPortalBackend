@@ -695,17 +695,14 @@ class UserController extends Controller
             $client = new \HelloSign\Client($client_key);
             $request = new \HelloSign\TemplateSignatureRequest;
 
-            $whitelist = [
-                'http://casper.local',
-                'http://casper.local/',
-                'https://backend.caspermember.com',
-                'https://backend.caspermember.com/',
-                'https://members-backend-staging.casper.network',
-                'https://members-backend-staging.casper.network/',
+            $production_urls = [
+                'https://members-backend.casper.network',
+                'https://members-backend.casper.network/'
             ];
 
-            // if (in_array(env('APP_URL'), $whitelist)) $request->enableTestMode();
-            $request->enableTestMode();
+            if (!in_array(env('APP_URL'), $production_urls)) {
+                $request->enableTestMode();
+            }
 
             $request->setTemplateId($template_id);
             $request->setSubject('Member Agreement');
