@@ -94,6 +94,13 @@ Updated backend vhost
 </VirtualHost>
 ```
 
+### ENV
+```bash
+cp .env.example .env
+```
+
+Edit the variables inside .env to your specs.
+
 ## Build
 ```bash
 composer install
