@@ -5,9 +5,19 @@
  *
  * @group  integrationtests
  *
- * @static $test_user_guid        Standard GUID of test admin.
+ * @static $random_email  Random email used for testing
  *
- * @method void testContactWebhook()
+ * @method void testCaKycHash()
+ * @method void testContactUs()
+ * @method void testGetCountries()
+ * @method void testGetDevMode()
+ * @method void testGetEsignDoc()
+ * @method void testGetMerchantData()
+ * @method void testGetNodeData()
+ * @method void testGetProfile()
+ * @method void testGetValidators()
+ * @method void testGetYear()
+ * @method void testHellosignHook()
  * @method void testCleanUp()
  *
  */
@@ -17,14 +27,205 @@ include_once(__DIR__.'/../../core.php');
 
 final class PublicEndpointsTest extends TestCase
 {
-	private static $test_user_guid  = '00000000-0000-0000-4c4c-000000000000';
-	private static $test_user_email = '';
+	private static $random_email = 'thomas+testcontact@ledgerleap.com';
+
+	public function testCaKycHash()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/public/ca-kyc-hash/abc123',
+			array(),
+			array(
+				'Content-Type: application/json'
+			)
+		);
+
+		$detail = (array)($json['detail'] ?? array());
+
+		$this->assertArrayHasKey('proof_hash', $detail);
+	}
+
+	public function testContactUs()
+	{
+		$json = Helper::self_curl(
+			'post',
+			'/public/contact-us',
+			array(
+				'name'    => 'thomas',
+				'email'   => self::$random_email,
+				'message' => 'test message'
+			),
+			array(
+				'Content-Type: application/json'
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetCountries()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/public/get-countries',
+			array(),
+			array(
+				'Content-Type: application/json'
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetDevMode()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/public/get-dev-mode',
+			array(),
+			array(
+				'Content-Type: application/json'
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetEsignDoc()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/public/get-esign-doc',
+			array(),
+			array(
+				'Content-Type: application/json'
+			)
+		);
+
+		$detail = (array)($json['detail'] ?? array());
+
+		$this->assertArrayHasKey('url', $detail);
+	}
+
+	public function testGetMerchantData()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/public/get-merchant-data',
+			array(),
+			array(
+				'Content-Type: application/json'
+			)
+		);
+
+		$detail = (array)($json['detail'] ?? array());
+
+		$this->assertArrayHasKey('merchant_name', $detail);
+	}
+
+	public function testGetNodeData()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/public/get-node-data',
+			array(
+				'public_key' => '011117189c666f81c5160cd610ee383dc9b2d0361f004934754d39752eedc64957'
+			),
+			array(
+				'Content-Type: application/json'
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetProfile()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/public/get-profile',
+			array(
+				'pseudonym' => 'admin'
+			),
+			array(
+				'Content-Type: application/json'
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetValidators()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/public/get-validators',
+			array(
+				'uptime'     => 0,
+				'fee'        => 0,
+				'delegators' => 0,
+				'stake'      => 0
+			),
+			array(
+				'Content-Type: application/json'
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetYear()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/public/get-year',
+			array(),
+			array(
+				'Content-Type: application/json'
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testHellosignHook()
+	{
+		$payload = array(
+			'event' => array(
+				'event_type' => 'callback_test'
+			)
+		);
+
+		$json = Helper::self_curl(
+			'get',
+			'/public/hellosign-hook',
+			array(
+				'json' => json_encode($payload)
+			)
+		);
+
+		$this->assertEquals('Hello API Event Received', $json);
+	}
 
 	public function testCleanUp()
 	{
 		global $db;
 
-		$random_email = self::$test_user_email;
+		$random_email = self::$random_email;
 
 		// clean up users
 		$query = "
@@ -39,6 +240,12 @@ final class PublicEndpointsTest extends TestCase
 			WHERE email = '$random_email'
 		";
 		$db->do_query($query);
+
+		// clean up contact
+		$query = "
+			DELETE FROM schedule
+			WHERE email = '$random_email'
+		";
 
 		// verify clean up
 		$query = "

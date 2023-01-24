@@ -16,14 +16,16 @@ final class CoverageTest extends TestCase
 {
 	public static $verbose         = true;
 	public static $endpoint_groups = array(
-		// 'user',
-		'admin'
-		// 'public'
+		'user',
+		'admin',
+		'public'
 	);
 
 	public function testTestCoverage()
 	{
 		global $helper;
+
+		elog("Coverage analysis:\n");
 
 		foreach (self::$endpoint_groups as $group) {
 			elog(ucfirst($group).' endpoints:');

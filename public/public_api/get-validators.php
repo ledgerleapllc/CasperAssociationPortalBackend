@@ -5,10 +5,19 @@ include_once('../../core.php');
  * GET /public/get-validators
  *
  * @api
+ * @param int $uptime
+ * @param int $fee
+ * @param int $delegators
+ * @param int $stake
  *
  */
 class PublicGetValidators extends Endpoints {
-	function __construct() {
+	function __construct(
+		$uptime     = 0,
+		$fee        = 0,
+		$delegators = 0,
+		$stake      = 0
+	) {
 		global $db, $helper;
 
 		require_method('GET');

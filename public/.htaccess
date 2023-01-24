@@ -189,7 +189,6 @@ RewriteRule ^admin/reset-user-suspension/?$ /admin_api/reset-user-suspension.php
 # PUBLIC API
 RewriteRule ^public/contact-us/?$ /public_api/contact-us.php [NC]
 RewriteRule ^public/get-merchant-data/?$ /public_api/get-merchant-data.php [NC]
-RewriteRule ^public/stripe-payment/?$ /public_api/stripe-payment.php [NC]
 RewriteRule ^public/reset/?$ /public_api/reset.php [NC]
 RewriteRule ^public/ca-kyc-hash/([a-zA-Z0-9]+)?$ /public_api/ca-kyc-hash.php?hash=$1 [NC]
 RewriteRule ^public/get-year/?$ /public_api/get-year.php [NC]

@@ -163,9 +163,13 @@ class Helper {
 		);
 
 		$response = curl_exec($ch);
-		$response = json_decode($response, true);
+		$json     = json_decode($response, true);
 
 		curl_close($ch);
+
+		if ($json) {
+			$response = $json;
+		}
 
 		return $response;
 	}
