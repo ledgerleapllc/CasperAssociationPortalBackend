@@ -116,7 +116,6 @@
   register: clone_repo
 #  changed_when: "clone_repo.before != clone_repo.after"
 
-
 - name: Pause the cron service to prevent it from running during the setup
   service:
     name: cron
@@ -164,7 +163,6 @@
   register: gmp_ext_load
   changed_when: "'gmp extension already set to be loaded' not in gmp_ext_load.stdout"
 
-
 # Composer
 - name: Install Composer dependencies without user input
   shell: sudo -u {{ security.app_user }} composer install --no-interaction
@@ -189,61 +187,6 @@
   register: composer_update
   changed_when: "'Nothing to install, update or remove' not in composer_update.stderr"
 
-- name: Create .env file from .env.j2
-  template:
-    src: .env.j2
-    dest: "{{ app.home }}/.env"
-    owner: "{{ security.app_user }}"
-    group: "{{ security.app_user }}"
-    mode: 0644
-  become: true
-  tags:
-  - config
-  - php
-  - update
-  - first_setup
-  when: clone_repo.changed
-
-# PHP Artisan
-- name: Loop through php artisan commands and run them
-  shell: yes | php artisan {{ item }}
-  args:
-    chdir: "{{ app.home }}"
-  with_items:
-  - "{{ php.artisan.setup_commands }}"
-  tags:
-  - php
-  - artisan
-  - update
-  - first_setup
-  when: clone_repo.changed
-
-- name: Authorize Laravel to write to the storage directory
-  file:
-    dest: "{{ app.home }}/storage"
-    state: directory
-    owner: "www-data"
-    group: "www-data"
-    mode: 0775
-    recurse: true
-  become: true
-
-- name: Set up the artisan cron job
-  cron:
-    name: "{{ app.name }}"
-    user: "{{ security.app_user }}"
-    job: "cd /var/www/server && sudo php artisan schedule:run 2>&1"
-    minute: "*"
-    hour: "*"
-    day: "*"
-    month: "*"
-    weekday: "*"
-  become: true
-  tags:
-  - cron
-  - update
-  - first_setup
-
 - name: Clear config cache
   shell: php artisan config:clear
   args:
@@ -265,14 +208,4 @@
   - apache
   - config
   - first_setup
-  when: clone_repo.changed
-
-- name: Horizon
-  shell: sudo supervisorctl reread && sudo supervisorctl update && sudo service supervisor restart
-  args:
-    chdir: "{{ app.home }}"
-  tags:
-  - php
-  - update
-  - horizon
   when: clone_repo.changed

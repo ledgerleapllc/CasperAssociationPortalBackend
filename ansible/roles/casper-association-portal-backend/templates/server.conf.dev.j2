@@ -1,33 +1,51 @@
 <VirtualHost *:80>
     ServerName {{ apache_server_name.stdout }}
     DocumentRoot {{ app.home }}/public
+
+    ErrorDocument 404 /404.php
+    ErrorDocument 403 /403.php
+    ErrorDocument 500 /500.php
+
     <Directory {{ app.home }}/public>
-        Options Indexes FollowSymLinks MultiViews
+        Options -MultiViews
         AllowOverride All
         Require all granted
     </Directory>
+
     <IfModule mod_rewrite.c>
         RewriteEngine On
-        RewriteCond %{HTTPS}  !=on
+        RewriteCond %{HTTPS} !=on
         RewriteRule ^/?(.*) https://%{SERVER_NAME}/$1 [R,L]
     </IfModule>
+
     ErrorLog ${APACHE_LOG_DIR}/error.log
-    CustomLog ${APACHE_LOG_DIR}/access.log combineid
+    CustomLog ${APACHE_LOG_DIR}/access.log combined
 </VirtualHost>
 
 <VirtualHost *:443>
     ServerName {{ apache_server_name.stdout }}
     DocumentRoot {{ app.home }}/public
+
+    ErrorDocument 404 /404.php
+    ErrorDocument 403 /403.php
+    ErrorDocument 500 /500.php
+
     <Directory {{ app.home }}/public>
-        Options Indexes FollowSymLinks MultiViews
+        Options -MultiViews
         AllowOverride All
         Require all granted
+
+        Header set Access-Control-Allow-Origin "*"
+        Header set Access-Control-Allow-Headers "*"
+        Header set Access-Control-Allow-Methods "*"
     </Directory>
+
     SSLEngine on
-    # FIXME: Certificates need to be managed for the dev server to generate them if they aren't there on a fresh deploy
+
     SSLCertificateFile /home/{{ security.app_user }}/.acme.sh/{{ apache_server_name.stdout }}/{{ apache_server_name.stdout }}.cer
     SSLCertificateKeyFile /home/{{ security.app_user }}/.acme.sh/{{ apache_server_name.stdout }}/{{ apache_server_name.stdout }}.key
     SSLCertificateChainFile /home/{{ security.app_user }}/.acme.sh/{{ apache_server_name.stdout }}/fullchain.cer
+
     ErrorLog ${APACHE_LOG_DIR}/error.log
-    CustomLog ${APACHE_LOG_DIR}/access.log combineid
+    CustomLog ${APACHE_LOG_DIR}/access.log combined
 </VirtualHost>
