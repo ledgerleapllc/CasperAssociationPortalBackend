@@ -118,8 +118,6 @@ class Throttle {
 		'/admin/update-avatar' => 4,
 		'/admin/get-subscriptions' => 15,
 		'/admin/get-merchant-settings' => 15,
-		'/admin/verify-badge-partner' => 10,
-		'/admin/remove-site-badge' => 5,
 		'/admin/get-dashboard' => 20,
 		'/admin/get-nodes' => 20,
 		'/admin/get-node-data' => 20,

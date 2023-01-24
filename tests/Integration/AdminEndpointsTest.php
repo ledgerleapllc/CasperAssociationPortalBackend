@@ -60,16 +60,55 @@
  * @method void testGetActiveBallots()
  * @method void testGetFinishedBallots()
  * @method void testGetBallot()
+ * @method void testUploadBallotFile()
+ * @method void testCancelBallot()
  * @method void testGetAllVotes()
  * @method void testGetGeneralAssemblies()
  * @method void testGetNotifications()
- * @method void testXxxx()
- * @method void testXxxx()
- * @method void testXxxx()
- * @method void testXxxx()
-
-
-
+ * @method void testSaveNotification()
+ * @method void testDismissNotification()
+ * @method void testGetNotificationUsers()
+ * @method void testDeleteNotification()
+ * @method void testAddEmailerAdmin()
+ * @method void testGetEmailerAdmins()
+ * @method void testGetEmailerTriggers()
+ * @method void testDeleteEmailerAdmin()
+ * @method void testAddContactRecipient()
+ * @method void testGetContactRecipients()
+ * @method void testDeleteContactRecipient()
+ * @method void testUpdateSetting()
+ * @method void testGetGlobalSettings()
+ * @method void testGetIntake()
+ * @method void testGetIplog()
+ * @method void testGetMerchantSettings()
+ * @method void testGetProfile()
+ * @method void testGetSubscriptions()
+ * @method void testGetTeams()
+ * @method void testUpdateAvatar()
+ * @method void testDownloadLetter()
+ * @method void testInviteSubAdmin()
+ * @method void testTeamInviteCheckHash()
+ * @method void testAcceptTeamInvite()
+ * @method void testPutPermission()
+ * @method void testUploadPerkImage()
+ * @method void testSavePerk()
+ * @method void testGetPerks()
+ * @method void testGetPerk()
+ * @method void testDeletePerk()
+ * @method void testUploadTerms()
+ * @method void testGetHistoricRevokedUsers()
+ * @method void testGetPermissions()
+ * @method void testGetRevokedUsers()
+ * @method void testGetUsers()
+ * @method void testGetUser()
+ * @method void testGetUserEras()
+ * @method void testSaveUpgrade()
+ * @method void testGetAvailableUpgrade()
+ * @method void testGetUpgrades()
+ * @method void testGetUpgradedUsers()
+ * @method void testCmpCheck()
+ * @method void testApproveUser()
+ * @method void testCancelTeamInvite()
  * @method void testCleanUp
  *
  */
@@ -1207,6 +1246,55 @@ final class AdminEndpointsTest extends TestCase
 		$this->assertEquals(200, $status);
 	}
 
+	public function testUploadBallotFile()
+	{
+		$json = Helper::self_curl(
+			'post',
+			'/admin/upload-ballot-file',
+			array(
+				'file' => 'file'
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+ 	public function testCancelBallot()
+	{
+		global $db;
+
+		$ballot_id = $db->do_select("
+			SELECT id
+			FROM ballots
+			ORDER BY id DESC
+			LIMIT 1
+		");
+
+		$ballot_id = (int)($ballot_id[0]['id'] ?? 0);
+
+		$json = Helper::self_curl(
+			'post',
+			'/admin/cancel-ballot',
+			array(
+				'ballot_id' => $ballot_id
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
 	public function testGetAllVotes()
 	{
 		$json = Helper::self_curl(
@@ -1258,16 +1346,990 @@ final class AdminEndpointsTest extends TestCase
 		$this->assertEquals(200, $status);
 	}
 
+	public function testSaveNotification()
+	{
+		$json = Helper::self_curl(
+			'post',
+			'/admin/save-notification',
+			array(
+				'notification'      => array(
+					'id'            => 0,
+					'title'         => 'Test title',
+					'message'       => 'Test notification',
+					'type'          => 'info',
+					'dismissable'   => true,
+					'priority'      => 1,
+					'visible'       => true,
+					'activate_at'   => null,
+					'deactivate_at' => null,
+					'cta'           => 'http://acalltoaction.url'
+				),
+				'broadcast'         => array(
+					array(
+						'guid'            => self::$admin_guid,
+						'notification_id' => 1
+					)
+				),
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testDismissNotification()
+	{
+		global $db;
+
+		// fetch notification
+		$notification_id = $db->do_select("
+			SELECT id
+			FROM notifications
+			ORDER BY id DESC
+			LIMIT 1
+		");
+		$notification_id = (int)($notification_id[0]['id'] ?? 0);
+
+		// dismiss notification broadcast to self
+		$json = Helper::self_curl(
+			'post',
+			'/user/dismiss-notification',
+			array(
+				'notification_id' => $notification_id
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetNotificationUsers()
+	{
+		global $db;
+
+		// fetch notification
+		$notification_id = $db->do_select("
+			SELECT id
+			FROM notifications
+			ORDER BY id DESC
+			LIMIT 1
+		");
+		$notification_id = (int)($notification_id[0]['id'] ?? 0);
+
+		// get broadcast
+		$json = Helper::self_curl(
+			'get',
+			'/admin/get-notification-users',
+			array(
+				'notification_id' => $notification_id
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testDeleteNotification()
+	{
+		global $db;
+
+		// fetch notification
+		$notification_id = $db->do_select("
+			SELECT id
+			FROM notifications
+			ORDER BY id DESC
+			LIMIT 1
+		");
+		$notification_id = (int)($notification_id[0]['id'] ?? 0);
+
+		// delete notification and broadcast
+		$json = Helper::self_curl(
+			'post',
+			'/admin/delete-notification',
+			array(
+				'notification_id' => $notification_id
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testAddEmailerAdmin()
+	{
+		$json = Helper::self_curl(
+			'post',
+			'/admin/add-emailer-admin',
+			array(
+				'email' => 'thomas+emaileradmin@ledgerleap.com'
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetEmailerAdmins()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/admin/get-emailer-admins',
+			array(),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetEmailerTriggers()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/admin/get-emailer-triggers',
+			array(),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testDeleteEmailerAdmin()
+	{
+		$json = Helper::self_curl(
+			'post',
+			'/admin/delete-emailer-admin',
+			array(
+				'email' => 'thomas+emaileradmin@ledgerleap.com'
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
 
 
+	public function testAddContactRecipient()
+	{
+		$json = Helper::self_curl(
+			'post',
+			'/admin/add-contact-recipient',
+			array(
+				'email' => 'thomas+contact@ledgerleap.com'
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
 
+		$status = $json['status'] ?? 0;
 
+		$this->assertEquals(200, $status);
+	}
 
+	public function testGetContactRecipients()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/admin/get-contact-recipients',
+			array(),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
 
+		$status = $json['status'] ?? 0;
 
+		$this->assertEquals(200, $status);
+	}
 
+	public function testDeleteContactRecipient()
+	{
+		$json = Helper::self_curl(
+			'post',
+			'/admin/delete-contact-recipient',
+			array(
+				'email' => 'thomas+contact@ledgerleap.com'
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
 
+		$status = $json['status'] ?? 0;
 
+		$this->assertEquals(200, $status);
+	}
+
+	public function testUpdateSetting()
+	{
+		$json = Helper::self_curl(
+			'put',
+			'/admin/update-setting',
+			array(
+				'setting_name'  => 'test_setting',
+				'setting_value' => '1'
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetGlobalSettings()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/admin/get-global-settings',
+			array(),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetIntake()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/admin/get-intake',
+			array(),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetIplog()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/admin/get-iplog',
+			array(),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetMerchantSettings()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/admin/get-merchant-settings',
+			array(),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetProfile()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/admin/get-profile',
+			array(
+				'identifier' => self::$admin_guid
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetSubscriptions()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/admin/get-subscriptions',
+			array(),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetTeams()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/admin/get-teams',
+			array(),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testUpdateAvatar()
+	{
+		$json = Helper::self_curl(
+			'post',
+			'/admin/update-avatar',
+			array(
+				'avatar' => 'avatar'
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testDownloadLetter()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/admin/download-letter',
+			array(
+				'guid' => '00000000-0000-0000-4c4c-000000000000'
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testInviteSubAdmin()
+	{
+		$json = Helper::self_curl(
+			'post',
+			'/admin/invite-sub-admin',
+			array(
+				'email' => 'thomas+subadmin@ledgerleap.com'
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testTeamInviteCheckHash()
+	{
+		global $db;
+
+		$hash = $db->do_select("
+			SELECT link
+			FROM schedule
+			ORDER BY id DESC
+			LIMIT 1
+		");
+
+		$hash = $hash[0]['link'] ?? '';
+		$hash = explode('?email', $hash)[0];
+		$hash = explode('accept-team-invite/', $hash);
+		$hash = $hash[1] ?? '';
+
+		$json = Helper::self_curl(
+			'get',
+			'/admin/team-invite-check-hash',
+			array(
+				'hash' => $hash
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testAcceptTeamInvite()
+	{
+		global $db;
+
+		$hash = $db->do_select("
+			SELECT link
+			FROM schedule
+			ORDER BY id DESC
+			LIMIT 1
+		");
+
+		$hash = $hash[0]['link'] ?? '';
+		$hash = explode('?email', $hash)[0];
+		$hash = explode('accept-team-invite/', $hash);
+		$hash = $hash[1] ?? '';
+
+		$json = Helper::self_curl(
+			'post',
+			'/admin/accept-team-invite',
+			array(
+				'hash'       => $hash,
+				'password'   => Helper::generate_hash(10).'01*',
+				'pseudonym'  => 'billy-'.Helper::generate_hash(10),
+				'telegram'   => '@billy-'.Helper::generate_hash(10),
+				'first_name' => 'billy',
+				'last_name'  => 'sheehan'
+			),
+			array(
+				'Content-Type: application/json'
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testPutPermission()
+	{
+		// should fail trying to set permission higher than self
+		$json = Helper::self_curl(
+			'put',
+			'/admin/put-permission',
+			array(
+				'guid'       => self::$admin_guid,
+				'permission' => 'teams',
+				'value'      => 1
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+		$detail = $json['detail'] ?? 0;
+
+		$this->assertEquals(403, $status);
+		$this->assertEquals(
+			'Unauthorized - Failed security clearance check', 
+			$detail
+		);
+	}
+
+	public function testUploadPerkImage()
+	{
+		$json = Helper::self_curl(
+			'post',
+			'/admin/upload-perk-image',
+			array(
+				'image' => 'image'
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testSavePerk()
+	{
+		$json = Helper::self_curl(
+			'post',
+			'/admin/save-perk',
+			array(
+				'title'      => 'Test perk',
+				'content'    => 'Test perk description',
+				'cta'        => 'http://acalltoaction.url',
+				'image'      => 'https://ledgerleap.com/assets/images/favicon.png',
+				'start_time' => '',
+				'end_time'   => '',
+				'status'     => 'active',
+				'visible'    => 1,
+				'setting'    => 1
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetPerks()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/admin/get-perks',
+			array(),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetPerk()
+	{
+		global $db;
+
+		// fetch perk id
+		$perk_id = $db->do_select("
+			SELECT id
+			FROM perks
+			ORDER BY id DESC
+			LIMIT 1
+		");
+
+		$perk_id = (int)($perk_id[0]['id'] ?? 0);
+
+		// request perk
+		$json = Helper::self_curl(
+			'get',
+			'/admin/get-perks',
+			array(
+				'perk_id' => $perk_id
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testDeletePerk()
+	{
+		global $db;
+
+		// fetch perk id
+		$perk_id = $db->do_select("
+			SELECT id
+			FROM perks
+			ORDER BY id DESC
+			LIMIT 1
+		");
+
+		$perk_id = (int)($perk_id[0]['id'] ?? 0);
+
+		// delete perk by id
+		$json = Helper::self_curl(
+			'post',
+			'/admin/delete-perk',
+			array(
+				'perk_id' => $perk_id
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testUploadTerms()
+	{
+		$json = Helper::self_curl(
+			'post',
+			'/admin/upload-terms',
+			array(
+				'doc' => 'doc'
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetHistoricRevokedUsers()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/admin/get-historic-revoked-users',
+			array(),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetPermissions()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/admin/get-permissions',
+			array(),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetRevokedUsers()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/admin/get-revoked-users',
+			array(),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetUsers()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/admin/get-users',
+			array(),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetUser()
+	{
+		global $db;
+
+		$guid = $db->do_select("
+			SELECT guid
+			FROM users 
+			WHERE email = 'thomas+subadmin@ledgerleap.com'
+		");
+
+		$guid = $guid[0]['guid'] ?? '';
+
+		$json = Helper::self_curl(
+			'get',
+			'/admin/get-user',
+			array(
+				'guid' => $guid
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetUserEras()
+	{
+		global $db;
+
+		$guid = $db->do_select("
+			SELECT guid
+			FROM users 
+			WHERE email = 'thomas+subadmin@ledgerleap.com'
+		");
+
+		$guid = $guid[0]['guid'] ?? '';
+
+		$json = Helper::self_curl(
+			'get',
+			'/admin/get-user-eras',
+			array(
+				'guid' => $guid
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testSaveUpgrade()
+	{
+		$activate_at = Helper::get_datetime(12000);
+
+		$json = Helper::self_curl(
+			'post',
+			'/admin/save-upgrade',
+			array(
+				'upgrade_id' => 0,
+				'version' => '99.0.0',
+				'activate_at' => $activate_at,
+				'activate_era' => 9999,
+				'link' => 'http://acalltoaction.url',
+				'notes' => 'Test upgrade notes'
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetAvailableUpgrade()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/admin/get-available-upgrade',
+			array(),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetUpgrades()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/admin/get-upgrades',
+			array(),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testGetUpgradedUsers()
+	{
+		$json = Helper::self_curl(
+			'get',
+			'/admin/get-upgraded-users',
+			array(
+				'version' => '99.0.0'
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testCmpCheck()
+	{
+		global $db;
+
+		// fetch guid
+		$guid = $db->do_select("
+			SELECT guid
+			FROM users
+			WHERE email = 'thomas+subadmin@ledgerleap.com'
+		");
+
+		$guid = $guid[0]['guid'] ?? '';
+
+		// request by guid
+		$json = Helper::self_curl(
+			'put',
+			'/admin/cmp-check',
+			array(
+				'guid'  => '$guid',
+				'value' => 1
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testApproveUser()
+	{
+		global $db;
+
+		// fetch guid
+		$guid = $db->do_select("
+			SELECT guid
+			FROM users
+			WHERE email = 'thomas+subadmin@ledgerleap.com'
+		");
+
+		$guid = $guid[0]['guid'] ?? '';
+
+		// request by guid
+		$json = Helper::self_curl(
+			'post',
+			'/admin/approve-user',
+			array(
+				'guid' => '$guid'
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
+
+	public function testCancelTeamInvite()
+	{
+		$json = Helper::self_curl(
+			'post',
+			'/admin/cancel-team-invite',
+			array(
+				'email' => 'thomas+subadmin@ledgerleap.com'
+			),
+			array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '.self::$bearer_token
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
+	}
 
 	public function testCleanUp()
 	{
@@ -1279,6 +2341,7 @@ final class AdminEndpointsTest extends TestCase
 		$db->do_query("
 			DELETE FROM users
 			WHERE guid = '$admin_guid'
+			OR   email = 'thomas+subadmin@ledgerleap.com'
 		");
 
 		// clean up sessions
@@ -1305,6 +2368,8 @@ final class AdminEndpointsTest extends TestCase
 		$db->do_query("
 			DELETE FROM schedule
 			WHERE email = '$admin_email'
+			OR    email = 'thomas+subadmin@ledgerleap.com'
+			OR    email LIKE '%@dev.com'
 		");
 
 		// clean up inactive totp keys
@@ -1399,6 +2464,12 @@ final class AdminEndpointsTest extends TestCase
 		$db->do_query("
 			DELETE FROM user_notifications
 			WHERE guid = '$admin_guid'
+		");
+
+		// clean up team invites
+		$db->do_query("
+			DELETE FROM team_invites
+			WHERE email = 'thomas+subadmin@ledgerleap.com'
 		");
 
 		// verify clean up

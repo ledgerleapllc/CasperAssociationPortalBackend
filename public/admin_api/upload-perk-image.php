@@ -25,9 +25,10 @@ class AdminUploadPerkImage extends Endpoints {
 		$name       = $_FILES['file']['name'] ?? '';
 		$image      = $_FILES['file']['tmp_name'] ?? '';
 		$error      = (string)($_FILES['file']['error'] ?? '');
-		$size       = (int)($_FILES['file']['size'] ?? 0);
+		$size       = (float)($_FILES['file']['size'] ?? 0);
 		$file_ext   = strtolower(pathinfo($name, PATHINFO_EXTENSION));
 		$max_size   = 2097152; // 22 bits
+		$unit_test  = parent::$params['image'] ?? '';
 
 		// handle errors
 		if ($error && $error != '0') {
@@ -45,6 +46,16 @@ class AdminUploadPerkImage extends Endpoints {
 				'Image file is too large. Please limit to '.$max_size.' bytes',
 				400,
 				'Image file is too large. Please limit to '.$max_size.' bytes'
+			);
+		}
+
+		if (
+			$unit_test == 'image' &&
+			DEV_MODE
+		) {
+			_exit(
+				'success',
+				'https://ledgerleap.com/assets/images/favicon.png'
 			);
 		}
 

@@ -30,7 +30,7 @@ class AdminGetNotificationUsers extends Endpoints {
 			b.notification_id
 			FROM users AS a
 			LEFT JOIN user_notifications AS b
-			ON a.guid = b.guid
+			ON  a.guid            = b.guid
 			AND b.notification_id = $notification_id
 		");
 

@@ -26,9 +26,9 @@ class UserDismissNotification extends Endpoints {
 		// check
 		$check = $db->do_select("
 			SELECT dismissable
-			FROM notifications
-			WHERE id = $notification_id
-			AND dismissable = 1
+			FROM  notifications
+			WHERE id          = $notification_id
+			AND   dismissable = 1
 		");
 
 		if (!$check) {
@@ -42,9 +42,9 @@ class UserDismissNotification extends Endpoints {
 
 		$db->do_query("
 			UPDATE user_notifications
-			SET dismissed_at = '$now'
-			WHERE guid = '$user_guid'
-			AND notification_id = $notification_id
+			SET   dismissed_at    = '$now'
+			WHERE guid            = '$user_guid'
+			AND   notification_id = $notification_id
 		");
 
 		_exit(

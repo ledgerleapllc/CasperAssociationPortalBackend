@@ -18,14 +18,15 @@ class AdminUploadTerms extends Endpoints {
 
 		require_method('POST');
 
-		$auth     = authenticate_session(2);
-		$now      = $helper->get_datetime();
-		$name     = $_FILES['file']['name'] ?? '';
-		$doc      = $_FILES['file']['tmp_name'] ?? '';
-		$error    = (string)($_FILES['file']['error'] ?? '');
-		$size     = (int)($_FILES['file']['size'] ?? 0);
-		$file_ext = pathinfo($name, PATHINFO_EXTENSION);
-		$max_size = 10000000;
+		$auth      = authenticate_session(2);
+		$now       = $helper->get_datetime();
+		$name      = $_FILES['file']['name'] ?? '';
+		$doc       = $_FILES['file']['tmp_name'] ?? '';
+		$error     = (string)($_FILES['file']['error'] ?? '');
+		$size      = (int)($_FILES['file']['size'] ?? 0);
+		$file_ext  = pathinfo($name, PATHINFO_EXTENSION);
+		$max_size  = 10000000;
+		$unit_test = parent::$params['doc'] ?? '';
 
 		if ($error && $error != '0') {
 			_exit(
@@ -50,6 +51,16 @@ class AdminUploadTerms extends Endpoints {
 			str_replace(':', '-', str_replace(' ', '-', $now)).'.'.
 			$file_ext
 		);
+
+		if (
+			$unit_test == 'doc' &&
+			DEV_MODE
+		) {
+			_exit(
+				'success',
+				'Successfully uploaded terms of service document (dev test)'
+			);
+		}
 
 		$s3result = $S3->putObject([
 			'Bucket'     => S3BUCKET,

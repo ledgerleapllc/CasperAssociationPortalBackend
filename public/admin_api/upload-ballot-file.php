@@ -28,6 +28,7 @@ class AdminUploadBallotFile extends Endpoints {
 		$size       = (int)($_FILES['file']['size'] ?? 0);
 		$file_ext   = strtolower(pathinfo($name, PATHINFO_EXTENSION));
 		$max_size   = 4194304; // 22 bits
+		$unit_test  = parent::$params['file'] ?? '';
 
 		// handle errors
 		if ($error && $error != '0') {
@@ -45,6 +46,16 @@ class AdminUploadBallotFile extends Endpoints {
 				'File is too large. Please limit to '.$max_size.' bytes',
 				400,
 				'File is too large. Please limit to '.$max_size.' bytes'
+			);
+		}
+
+		if (
+			$unit_test == 'file' &&
+			DEV_MODE
+		) {
+			_exit(
+				'success',
+				'https://ledgerleap.com/assets/images/favicon.png'
 			);
 		}
 

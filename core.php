@@ -546,7 +546,7 @@ function authenticate_session($required_clearance = 1) {
 	if ($clearance < $required_clearance) {
 		_exit(
 			'error',
-			'Unauthorized',
+			'Unauthorized - Failed security clearance check',
 			403,
 			'Failed clearance check'
 		);

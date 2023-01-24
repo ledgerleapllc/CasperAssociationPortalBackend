@@ -29,7 +29,6 @@
         "test-unit": "echo ; echo '[+] Running Unit Tests' ; echo ; ./vendor/bin/phpunit --testdox tests/Unit",
         "test-integration": "echo ; echo '[+] Running Integration Tests' ; echo ; ./vendor/bin/phpunit --testdox tests/Integration",
         "test": "echo ; echo '[+] Running Full Unit/Integration Test Suite' ; echo ; ./vendor/bin/phpunit --testdox tests/",
-        "test-admin": "echo ; echo '[+] Running Admin Integration Tests' ; echo ; ./vendor/bin/phpunit --testdox tests/Integration/AdminEndpointsTest.php ; ./vendor/bin/phpunit --testdox tests/Unit",
         "generate-docs": "./phpdoc -d . --ignore docs/ --ignore vendor/ --ignore .git/ -t docs && echo 'Docs have been generated'"
     }
 }
