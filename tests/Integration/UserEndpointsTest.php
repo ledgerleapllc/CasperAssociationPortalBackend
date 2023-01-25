@@ -2249,6 +2249,7 @@ final class UserEndpointsTest extends TestCase
 		$db->do_query("
 			DELETE FROM schedule
 			WHERE email = '$user_email'
+			OR    email LIKE '%@dev.com'
 		");
 
 		// clean up inactive totp keys

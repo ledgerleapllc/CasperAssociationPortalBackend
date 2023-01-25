@@ -107,7 +107,6 @@ class UserResetPassword extends Endpoints {
 			}
 
 			if($confirmation_code != $fetched_confirmation_code) {
-				elog('dev1');
 				_exit(
 					'error',
 					'Error resetting password. Not authorized',
@@ -117,8 +116,6 @@ class UserResetPassword extends Endpoints {
 			}
 
 			if($email != $fetched_email) {
-				elog($email);
-				elog($fetched_email);
 				_exit(
 					'error',
 					'Error resetting password. Not authorized',

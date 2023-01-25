@@ -1707,13 +1707,13 @@ class Helper {
 		/*
 		Template IDs
 
-		 - welcome
-		 - approved
-		 - denied
 		 - twofa
-		 - register
-		 - register-admin
-		 - forgot-password
+		 - reset-password
+		 - contact-us
+		 - invitation
+		 - verify-registration
+		 - admin-alert
+		 - user-alert
 
 		*/
 
@@ -1742,8 +1742,8 @@ class Helper {
 			$sid = $item['id'] ?? 0;
 			$db->do_query("
 				UPDATE schedule
-				SET complete = 1
-				WHERE id = $sid
+				SET    complete = 1
+				WHERE  id       = $sid
 			");
 		}
 

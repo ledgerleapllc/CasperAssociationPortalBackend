@@ -54,7 +54,14 @@ class UserLogin extends Endpoints {
 		);
 
 		$query = "
-			SELECT guid, email, password, twofa, totp, role
+			SELECT 
+			guid, 
+			email, 
+			password, 
+			twofa, 
+			totp, 
+			role,
+			confirmation_code
 			FROM users
 			WHERE email = '$email'
 		";
@@ -70,6 +77,36 @@ class UserLogin extends Endpoints {
 		$created_at     = $helper->get_datetime();
 		$ip             = $helper->get_real_ip();
 		$user_agent     = filter($_SERVER['HTTP_USER_AGENT'] ?? '');
+
+		// set new password from v1 migration
+		if ($password_hash2 == '--reset--') {
+			$confirmation_code = $result['confirmation_code'] ?? '';
+
+			$hash = $helper->aes_encrypt(
+				$guid.'::'.
+				$confirmation_code.'::'.
+				(string)time().'::'.
+				'set-new-password'
+			);
+
+			$link = PROTOCOL.'://'.FRONTEND_URL.'/set-password?token='.$hash;
+
+			$helper->schedule_email(
+				'user-alert',
+				$email,
+				'Set your new password',
+				'Thank you for bearing with us. Our new platform requires members to reset their passwords upon first login to the new system. <br><br>Follow the link below to set your new password and activate your account',
+				$link
+			);
+
+			_exit(
+				'success',
+				array(
+					'redirect' => 'set-password',
+					'message'  => 'Multi-factor authentication requested'
+				)
+			);
+		}
 		
 		if (!hash_equals($password_hash2, $password_hash)) {
 			// log failed login

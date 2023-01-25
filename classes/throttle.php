@@ -22,6 +22,8 @@ class Throttle {
 		'/user/register' => 4,
 		'/user/resend-code' => 3,
 		'/user/reset-password' => 3,
+		'/user/set-password' => 3,
+		'/user/verify-set-password' => 10,
 		'/user/update-password' => 5,
 		'/user/login-mfa' => 8,
 		'/user/send-mfa' => 3,
