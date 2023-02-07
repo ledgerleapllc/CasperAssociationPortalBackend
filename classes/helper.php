@@ -3,8 +3,9 @@
  * Helper class contains vital methods for the functionality of the portal.
  * Made to be static for PHPUnit tests.
  *
- * @static cipher                           Crytographic algorithm choosen.
- * @static company_bytes                    Ledgerleap company bytes "LL"
+ * @static cipher            Crytographic algorithm choosen.
+ * @static company_bytes     Ledgerleap company bytes "LL"
+ * @static $countries        Valid countries and country codes
  *
  * @method array   self_curl()
  * @method string  kebab_case()
@@ -23,6 +24,7 @@
  * @method string  fetch_setting()
  * @method bool    apply_setting()
  * @method array   get_user()
+ * @method array   get_user_entities()
  * @method string  check_authorized_devices()
  * @method null    add_authorized_device()
  * @method null    log_login()
@@ -32,7 +34,6 @@
  * @method bool    guid_available()
  * @method string  generate_session_token()
  * @method string  generate_hash()
- * @method string  derive_hashed_id()
  * @method string  get_timedelta()
  * @method string  get_datetime()
  * @method string  get_filing_year()

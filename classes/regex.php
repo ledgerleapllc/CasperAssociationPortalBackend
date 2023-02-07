@@ -1,7 +1,7 @@
 <?php
 /**
  *
- * Data structure regex for TurboCTA encrypted PII objects
+ * Data structure regex for encrypted PII objects
  *
  * Defining various regex patterns and character limits for all kinds of variables.
  *
