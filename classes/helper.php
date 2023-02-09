@@ -819,6 +819,37 @@ class Helper {
 
 		curl_close($ch);
 
+		// validate uptime array by checking avg uptime.
+		$avg   = 0;
+		$count = count($uptime_array);
+		$count = $count == 0 ? 1 : $count;
+
+		foreach ($uptime_array as $node) {
+			$avg += (float)($node->average_score ?? 0);
+		}
+
+		elog('global uptime avg/count');
+		elog($avg.' / '.$count);
+		$avg = (float)($avg / $count);
+
+		/*
+		If uptime is SIGNIFICANTLY lower than what it should be,
+		(like zero) then we need to pass back an older object.
+		Otherwise everyone will get suspended simultaneously.
+		*/
+		if ($avg < 1) {
+			// BAD.. something has happened to MAKEs endpoint
+			$uptime_array = self::fetch_setting('global_uptime_object');
+		}
+
+		// write/overwrite trustworthy uptime object
+		else {
+			self::apply_setting(
+				'global_uptime_object',
+				$uptime_array
+			);
+		}
+
 		return $uptime_array;
 	}
 
