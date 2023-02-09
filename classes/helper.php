@@ -837,7 +837,7 @@ class Helper {
 		(like zero) then we need to pass back an older object.
 		Otherwise everyone will get suspended simultaneously.
 		*/
-		if ($avg < 1) {
+		if ($avg < 2) {
 			// BAD.. something has happened to MAKEs endpoint
 			$uptime_array = self::fetch_setting('global_uptime_object');
 		}

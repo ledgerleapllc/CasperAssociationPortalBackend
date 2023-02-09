@@ -13,6 +13,19 @@ class ResetDatabase {
 
 		require_method('GET');
 
+		if (!DEV_MODE) {
+			_exit(
+				'success',
+				'DB reset disabled'
+			);
+		}
+
+		// disabled
+		_exit(
+			'success',
+			'DB reset disabled'
+		);
+
 		$users = $db->do_select("
 			SELECT guid, email
 			FROM   users 

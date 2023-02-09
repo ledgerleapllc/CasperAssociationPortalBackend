@@ -5,9 +5,6 @@ global $db, $helper;
 
 $cmc_key = getenv('COINMARKETCAP_KEY');
 
-//// rm
-$cmc_key = '';
-
 if ($cmc_key) {
 	$url = 'https://pro-api.coinmarketcap.com/v1/tools/price-conversion';
 
