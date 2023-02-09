@@ -828,8 +828,6 @@ class Helper {
 			$avg += (float)($node->average_score ?? 0);
 		}
 
-		elog('global uptime avg/count');
-		elog($avg.' / '.$count);
 		$avg = (float)($avg / $count);
 
 		/*
@@ -839,11 +837,13 @@ class Helper {
 		*/
 		if ($avg < 2) {
 			// BAD.. something has happened to MAKEs endpoint
+			elog('Problem with MAKE services uptime endpoint...using last known uptime variables');
 			$uptime_array = self::fetch_setting('global_uptime_object');
 		}
 
 		// write/overwrite trustworthy uptime object
 		else {
+			elog('Stable global uptime object - Saving backup');
 			self::apply_setting(
 				'global_uptime_object',
 				$uptime_array
