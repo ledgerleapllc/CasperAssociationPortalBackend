@@ -25,7 +25,7 @@ class UserResetPassword extends Endpoints {
 		$new_password      = parent::$params['new_password'] ?? '';
 		$new_password_hash = hash('sha256', $new_password);
 
-		if(
+		if (
 			!$new_password ||
 			strlen($new_password) < 8 ||
 			!preg_match('/[\'\/~`\!@#\$%\^&\*\(\)_\-\+=\{\}\[\]\|;:"\<\>,\.\?\\\]/', $new_password) ||
@@ -55,7 +55,7 @@ class UserResetPassword extends Endpoints {
 		";
 		$auth_code_check = $db->do_select($query);
 
-		if(!$auth_code_check) {
+		if (!$auth_code_check) {
 			_exit(
 				'error',
 				'Password reset code is expired. Please try again',
@@ -67,15 +67,15 @@ class UserResetPassword extends Endpoints {
 		/* check for expired password reset token */
 		$expire_time = 600; // 10 minutes for user reset
 
-		if($from_admin && $from_admin == 'admin') {
+		if ($from_admin && $from_admin == 'admin') {
 			$expire_time = 86400;  // 24 hours for admin reset
 		}
 
-		if($from_admin && $from_admin == 'register-admin') {
+		if ($from_admin && $from_admin == 'register-admin') {
 			$expire_time = 2592000;  // 1 month for registering sub-admin
 		}
 
-		if($time < (int)time() - $expire_time) {
+		if ($time < (int)time() - $expire_time) {
 			_exit(
 				'error',
 				'Password reset token is expired. Please try again',
@@ -92,12 +92,12 @@ class UserResetPassword extends Endpoints {
 		";
 		$selection = $db->do_select($query);
 
-		if($selection) {
+		if ($selection) {
 			$fetched_password_hash = $selection[0]['password'] ?? '';
 			$fetched_confirmation_code = $selection[0]['confirmation_code'] ?? '';
 			$fetched_email = $selection[0]['email'] ?? '';
 
-			if($new_password_hash == $fetched_password_hash) {
+			if ($new_password_hash == $fetched_password_hash) {
 				_exit(
 					'error',
 					'Cannot use the same password as before',
@@ -106,16 +106,7 @@ class UserResetPassword extends Endpoints {
 				);
 			}
 
-			if($confirmation_code != $fetched_confirmation_code) {
-				_exit(
-					'error',
-					'Error resetting password. Not authorized',
-					403,
-					'Error resetting password. Not authorized'
-				);
-			}
-
-			if($email != $fetched_email) {
+			if ($confirmation_code != $fetched_confirmation_code) {
 				_exit(
 					'error',
 					'Error resetting password. Not authorized',
@@ -142,7 +133,7 @@ class UserResetPassword extends Endpoints {
 			";
 			$success = $db->do_query($query);
 
-			if($success) {
+			if ($success) {
 				_exit(
 					'success',
 					'Successfully reset your password',
