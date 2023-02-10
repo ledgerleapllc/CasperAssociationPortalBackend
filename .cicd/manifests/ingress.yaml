@@ -1,0 +1,29 @@
+{{- if .Values.ingressDomainName}}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: {{.Values.namespace}}
+  name: {{.Values.appName}}-{{.Values.envName}}-ingress
+  annotations:     
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-body-size: 256m
+spec:
+  tls:
+  - hosts:
+    - {{.Values.ingressDomainName}}
+    secretName: {{.Values.appName}}-{{.Values.envName}}-tls
+  rules:
+  - host: {{.Values.ingressDomainName}}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: {{.Values.appName}}-{{.Values.envName}}-svc
+            port:
+              number: {{.Values.servicePort}}
+  ingressClassName: nginx
+
+{{- end}}

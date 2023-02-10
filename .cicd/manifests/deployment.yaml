@@ -1,0 +1,34 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: {{.Values.namespace}}
+  name: {{.Values.appName}}-{{.Values.envName}}
+  labels:
+    app: {{.Values.appName}}-{{.Values.envName}}
+spec:
+  replicas: {{.Values.replicaCount}}
+  selector:
+    matchLabels:
+      app: {{.Values.appName}}-{{.Values.envName}}
+  template:
+    metadata:
+      labels:
+        app: {{.Values.appName}}-{{.Values.envName}}
+    spec:
+      containers:
+        - name: {{.Values.appName}}-{{.Values.envName}}
+          image: {{.Values.artifactImage}}
+          imagePullPolicy: Always
+          ports:
+        - containerPort: {{.Values.containerPort}}
+          resources:
+            requests:
+              memory: {{.Values.resourceMemoryRequest}}
+              cpu: {{.Values.resourceCpuRequest}}
+            limits:
+              memory: {{.Values.resourceMemoryLimit}}
+              cpu: {{.Values.resourceCpuLimit}}       
+          envFrom:
+            - configMapRef:
+                name: {{.Values.appName}}-{{.Values.envName}}-config

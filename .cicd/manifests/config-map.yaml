@@ -1,0 +1,10 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{.Values.appName}}-{{.Values.envName}}-config
+  namespace: {{.Values.namespace}}
+data:
+  VITE_API_URL: {{.Values.viteApiUrl}}
+  VITE_FRONTEND_URL: {{.Values.viteFrontendUrl}}
+  VITE_HELLOSIGN_CLIENT_ID: {{.Values.viteHelloSignClientId}}
