@@ -1,0 +1,43 @@
+---
+name: Run linters
+
+# yamllint disable-line rule:truthy
+on:
+  push:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  run-linters:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Lint Code Base (PR against development branch)
+        # yamllint disable-line rule:line-length
+        if: github.event_name == 'pull_request' && github.base_ref == 'development'
+        uses: github/super-linter/slim@v4
+        env:
+          VALIDATE_ALL_CODEBASE: true
+          DEFAULT_BRANCH: ${{ github.base_ref }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISABLE_ERRORS: true
+
+      - name: Lint Code Base (against PR base branch)
+        # yamllint disable-line rule:line-length
+        if: github.event_name == 'pull_request' && github.base_ref != 'development'
+        uses: github/super-linter/slim@v4
+        env:
+          VALIDATE_ALL_CODEBASE: false
+          DEFAULT_BRANCH: ${{ github.base_ref }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISABLE_ERRORS: true
+
+      - name: Lint Code Base (against current branch)
+        if: github.event_name == 'push'
+        uses: github/super-linter/slim@v4
+        env:
+          VALIDATE_ALL_CODEBASE: false
+          DEFAULT_BRANCH: ${{ github.head_ref }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISABLE_ERRORS: true
