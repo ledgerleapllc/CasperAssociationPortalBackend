@@ -5,6 +5,7 @@ composer.lock
 node-info.lock
 
 .phpunit.result.cache
+phpdoc
 
 vendor/
 
