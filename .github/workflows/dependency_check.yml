@@ -1,0 +1,21 @@
+---
+name: Check dependencies
+
+# yamllint disable-line rule:truthy
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  run-linters:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: 'Dependency Review'
+        if: github.event_name == 'pull_request'
+        uses: actions/dependency-review-action@v3
+        with:
+          fail-on-severity: 'high'
+          base-ref: ${{ github.base_ref }}
+          head-ref: ${{ github.head_ref }}
