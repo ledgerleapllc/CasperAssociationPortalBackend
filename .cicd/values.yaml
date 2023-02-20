@@ -2,7 +2,7 @@
 # K8S / Harness
 envName: <+env.name>
 appName: <+service.name>
-artifactImage: <+artifact.image>  # from Harness Service Primary Artifact
+artifactImage: <+artifact.image> # from Harness Service Primary Artifact
 containerPort: 80
 servicePort: 80
 namespace: <+service.name>-<+env.name>
