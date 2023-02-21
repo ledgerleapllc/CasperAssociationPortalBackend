@@ -11,21 +11,13 @@ header('Access-Control-Allow-Methods:  POST, PUT, GET, OPTIONS');
 date_default_timezone_set('UTC');
 
 /**
- * Load config
+ * Load config if .env exists
  */
-if (!file_exists(__DIR__ . '/.env')) {
-	header('Content-type:application/json;charset=utf-8');
-	http_response_code(500);
-
-	exit(json_encode(array(
-		'status' => 'error',
-		'detail' => 'Please configure API server. error code 1'
-	)));
+if (file_exists(__DIR__ . '/.env')) {
+	include_once('classes/dotenv.php');
+	$dotenv = new Dotenv(__DIR__ . '/.env');
+	$dotenv->load();
 }
-
-include_once('classes/dotenv.php');
-$dotenv = new Dotenv(__DIR__ . '/.env');
-$dotenv->load();
 
 /**
  * Get server request scheme (ssl)
