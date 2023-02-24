@@ -349,7 +349,7 @@ class DB {
 				"fields"          => array(
 					"guid"        => array(
 						"type"    => "varchar(36)",
-						"default" => "NOT NULL"
+						"default" => "DEFAULT NULL"
 					),
 					"email"       => array(
 						"type"    => "varchar(255)",
@@ -364,7 +364,6 @@ class DB {
 						"default" => "NULL DEFAULT NULL"
 					)
 				),
-				"primary"         => "guid",
 				"insert_records"  => array()
 			),
 			"authorized_devices"  => array(

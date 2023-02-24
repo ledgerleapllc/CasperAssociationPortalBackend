@@ -1,5 +1,4 @@
 <?php
-include_once('../../core.php');
 /**
  *
  * PUT /admin/edit-discussion

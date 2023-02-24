@@ -1,5 +1,4 @@
 <?php
-include_once('../../core.php');
 /**
  *
  * PUT /admin/update-totp
@@ -8,6 +7,7 @@ include_once('../../core.php');
  *
  * Activate/Deactivate TOTP mfa
  *
+ * @api
  * @param  bool   $active
  * @return array  $provisioning_uri  Returns provisioning_uri when TOTP is turned on for the first time
  *

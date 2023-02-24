@@ -3,6 +3,8 @@
  *
  * Page permissions controller
  *
+ * @static endpoints  Array of known endpoints
+ *
  */
 class Permissions {
 	/** 

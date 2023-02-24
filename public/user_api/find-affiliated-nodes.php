@@ -1,5 +1,4 @@
 <?php
-include_once('../../core.php');
 /**
  *
  * GET /user/find-affiliated-nodes

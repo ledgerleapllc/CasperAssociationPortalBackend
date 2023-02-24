@@ -1,5 +1,4 @@
 <?php
-include_once('../../core.php');
 /**
  *
  * GET /user/get-iplog
@@ -28,8 +27,8 @@ class UserGetIplog extends Endpoints {
 			a.user_agent, 
 			a.source,
 			b.role
-			FROM action_log AS a
-			LEFT JOIN users AS b
+			FROM login_attempts AS a
+			LEFT JOIN users     AS b
 			ON    a.guid = b.guid
 			WHERE a.guid = '$user_guid'
 		";

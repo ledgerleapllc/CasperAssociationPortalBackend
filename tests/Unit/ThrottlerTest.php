@@ -20,40 +20,45 @@ final class ThrottlerTest extends TestCase
 		$throttle_test      = new Throttle('unittest');
 		$throttle_endpoints = $throttle_test::get_endpoints();
 
-		// detect endpoints from router
-		$router_endpoints = array();
-		$router_file      = '';
+		// detect endpoints from directory structure
+		$endpoints = array();
 
-		if(is_file(__DIR__.'/../../public/.htaccess'))
-			$router_file = file_get_contents(__DIR__.'/../../public/.htaccess');
+		$categories = array(
+			'user',
+			'admin',
+			'public'
+		);
 
-		$lines = explode("\n", $router_file);
+		foreach ($categories as $category) {
+			if (is_dir(__DIR__.'/../../public/'.$category.'_api')) {
+				$user_endpoints = scandir(__DIR__.'/../../public/'.$category.'_api');
 
-		foreach ($lines as $line) {
-			if(strstr($line, 'RewriteRule')) {
-				if(
-					strstr($line, '^user/') ||
-					strstr($line, '^admin/')
-				) {
-					$split = explode(' ', $line);
-					$path  = $split[1] ?? '';
-					$path  = str_replace('^', '/', $path);
-					$path  = str_replace('/?$', '', $path);
-					$router_endpoints[] = $path;
+				foreach ($user_endpoints as $ep) {
+					if (strstr($ep, '.php')) {
+						if ($ep == 'index.php') {
+							continue;
+						}
+
+						$name = explode('.', $ep)[0] ?? '';
+
+						if ($name) {
+							$endpoints[] = '/'.$category.'/'.$name;
+						}
+					}
 				}
 			}
 		}
 
-		foreach($throttle_endpoints as $key => $val) {
-			if(!in_array($key, $router_endpoints)) {
+		foreach ($throttle_endpoints as $key => $val) {
+			if (!in_array($key, $endpoints)) {
 				echo('WARNING - Endpoint from Throttle class not found in Router: '.$key."\n");
 			}
 
-			// $this->assertTrue(in_array($key, $router_endpoints));
+			// $this->assertTrue(in_array($key, $endpoints));
 		}
 
-		foreach($router_endpoints as $endpoint) {
-			if(!isset($throttle_endpoints[$endpoint])) {
+		foreach ($endpoints as $endpoint) {
+			if (!isset($throttle_endpoints[$endpoint])) {
 				echo('WARNING - Endpoint from Router not found in Throttle class: '.$endpoint."\n");
 			}
 
@@ -61,7 +66,7 @@ final class ThrottlerTest extends TestCase
 		}
 
 		$this->assertFalse(empty($throttle_endpoints));
-		$this->assertFalse(empty($router_endpoints));
+		$this->assertFalse(empty($endpoints));
 	}
 }
 

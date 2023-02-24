@@ -1,11 +1,11 @@
 <?php
-include_once('../../core.php');
 /**
  *
  * PUT /admin/reinstate-user
  *
  * HEADER Authorization: Bearer
  *
+ * @api
  * @param string  $guid
  *
  */

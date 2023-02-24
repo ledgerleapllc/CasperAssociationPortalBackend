@@ -192,7 +192,22 @@ class Throttle {
 		'/admin/cmp-check' => 20,
 		'/admin/manually-update-user-kyc' => 6,
 		'/admin/reinstate-user' => 15,
-		'/admin/reset-user-suspension' => 15
+		'/admin/reset-user-suspension' => 15,
+
+		'/public/ca-kyc-hash' => 30,
+		'/public/contact-us' => 4,
+		'/public/get-countries' => 60,
+		'/public/get-dev-mode' => 60,
+		'/public/get-esign-doc' => 5,
+		'/public/get-merchant-data' => 15,
+		'/public/get-node-data' => 15,
+		'/public/get-profile' => 20,
+		'/public/get-validators' => 15,
+		'/public/get-year' => 60,
+		'/public/hellosign-hook' => 5,
+		'/public/shufti-status' => 15,
+		'/public/subscribe' => 15,
+		'/public/reset' => 15
 	);
 
 	function __construct(string $real_ip = '127.0.0.1') {
@@ -221,9 +236,9 @@ class Throttle {
 		// check hit, log hit
 		$query = "
 			SELECT hit, last_request
-			FROM throttle
-			WHERE ip = '$this->ip'
-			AND uri = '$this->uri'
+			FROM  throttle
+			WHERE ip  = '$this->ip'
+			AND   uri = '$this->uri'
 		";
 
 		$selection = $db->do_select($query);
@@ -261,13 +276,14 @@ class Throttle {
 			);
 		}
 
-		$query = "
+		$db->do_query("
 			UPDATE throttle
-			SET hit = $new_minute_throttle, last_request = $this->now
-			WHERE ip = '$this->ip'
-			AND uri = '$this->uri'
-		";
-		$db->do_query($query);
+			SET 
+			hit          = $new_minute_throttle, 
+			last_request = $this->now
+			WHERE ip     = '$this->ip'
+			AND   uri    = '$this->uri'
+		");
 	}
 
 	function __destruct() {

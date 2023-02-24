@@ -1,5 +1,4 @@
 <?php
-include_once('../../core.php');
 /**
  *
  * $hash is the only required parameter if user by email already exists.

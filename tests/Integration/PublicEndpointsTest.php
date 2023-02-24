@@ -18,6 +18,7 @@
  * @method void testGetValidators()
  * @method void testGetYear()
  * @method void testHellosignHook()
+ * @method void testSubscribe()
  * @method void testCleanUp()
  *
  */
@@ -219,6 +220,23 @@ final class PublicEndpointsTest extends TestCase
 		);
 
 		$this->assertEquals('Hello API Event Received', $json);
+	}
+
+	public function testSubscribe() {
+		$json = Helper::self_curl(
+			'post',
+			'/public/subscribe',
+			array(
+				'email' => self::$random_email
+			),
+			array(
+				'Content-Type: application/json'
+			)
+		);
+
+		$status = $json['status'] ?? 0;
+
+		$this->assertEquals(200, $status);
 	}
 
 	public function testCleanUp()

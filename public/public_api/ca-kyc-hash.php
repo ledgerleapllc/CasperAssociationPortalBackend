@@ -1,8 +1,7 @@
 <?php
-include_once('../../core.php');
 /**
  *
- * GET /public/ca-kyc-hash
+ * GET /public/ca-kyc-hash/<hash>
  *
  * @api
  * @param string $hash
@@ -16,7 +15,8 @@ class PublicCaKycHash extends Endpoints {
 
 		require_method('GET');
 
-		$hash = parent::$params['hash'] ?? '';
+		// $hash = parent::$params['hash'] ?? '';
+		$hash = Router::$hash_arg;
 
 		if (!ctype_xdigit($hash)) {
 			$hash = '';

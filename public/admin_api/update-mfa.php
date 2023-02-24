@@ -1,5 +1,4 @@
 <?php
-include_once('../../core.php');
 /**
  *
  * PUT /admin/update-mfa
@@ -9,6 +8,7 @@ include_once('../../core.php');
  * Requires MFA code to be sent and confirmed prior to requesting this endpoint.
  * After confirming MFA, admin will have 5 minutes to submit request.
  *
+ * @api
  * @param bool  $active
  *
  */
