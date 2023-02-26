@@ -3,15 +3,22 @@ name: Run linters
 
 # yamllint disable-line rule:truthy
 on:
-  push:
-  pull_request:
-    types: [opened, reopened, synchronize]
+  workflow_run:
+    workflows: ["Automated formatters"]
+    types:
+      - completed
 
 jobs:
   run-linters:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
+
+      - uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185
+        with:
+          image: yandex/gixy
+          # yamllint disable-line rule:line-length
+          options: -v ${{ github.workspace }}/config/nginx-server.conf:nginx-server.conf yandex/gixy nginx-server.conf
 
       - name: Lint Code Base (PR against development branch)
         # yamllint disable-line rule:line-length
@@ -21,7 +28,6 @@ jobs:
           VALIDATE_ALL_CODEBASE: true
           DEFAULT_BRANCH: ${{ github.base_ref }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DISABLE_ERRORS: true
 
       - name: Lint Code Base (against PR base branch)
         # yamllint disable-line rule:line-length
@@ -31,7 +37,6 @@ jobs:
           VALIDATE_ALL_CODEBASE: false
           DEFAULT_BRANCH: ${{ github.base_ref }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DISABLE_ERRORS: true
 
       - name: Lint Code Base (against current branch)
         if: github.event_name == 'push'
@@ -40,4 +45,3 @@ jobs:
           VALIDATE_ALL_CODEBASE: false
           DEFAULT_BRANCH: ${{ github.head_ref }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DISABLE_ERRORS: true
