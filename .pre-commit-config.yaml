@@ -1,0 +1,127 @@
+---
+repos:
+  # Docker
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.1-beta
+    hooks:
+      - id: hadolint
+        args:
+          - --ignore
+          - SC1091
+          - --ignore
+          - SC2086
+          - --ignore
+          - DL3059
+          - Dockerfile
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 9260cbc9c84c06022993bfbcc42fdbf0305c5b8e
+    hooks:
+      # Python - validate extras
+      - id: check-ast
+      - id: check-docstring-first
+      - id: debug-statements
+      - id: check-builtin-literals
+      - id: double-quote-string-fixer
+      - id: check-shebang-scripts-are-executable
+      - id: check-symlinks
+
+      # Python - requirements.txt
+      - id: requirements-txt-fixer
+
+      # Generic
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-merge-conflict
+        args: [--assume-in-merge]
+      - id: destroyed-symlinks
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+
+      # Security
+      - id: detect-aws-credentials
+        args: [--allow-missing-credentials]
+      - id: detect-private-key
+
+      # JSON - validate
+      - id: check-json
+
+      # YAML - validate
+      - id: check-yaml
+
+  # Markdown - Lint
+  - repo: https://github.com/jumanjihouse/pre-commit-hooks
+    rev: 38980559e3a605691d6579f96222c30778e5a69e
+    hooks:
+      - id: markdownlint
+
+    # Markdown - auto-format
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 0cbd2054dedf98ec8366001c8a16eacfa85cebc1
+    hooks:
+      - id: mdformat
+
+  # Python - Security and dependencies
+  - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
+    rev: v1.3.1
+    hooks:
+      - id: python-safety-dependencies-check
+
+  # Python - Lint
+  - repo: https://github.com/PyCQA/flake8
+    rev: 6.0.0
+    hooks:
+      - id: flake8
+
+  # Python - autoformat
+  - repo: https://github.com/psf/black
+    rev: 23.1.0
+    hooks:
+      - id: black
+
+  # GithubActions - Validate
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.21.0
+    hooks:
+      - id: check-github-workflows
+
+  # PHP - Validate and Lint
+  - repo: https://github.com/digitalpulp/pre-commit-php
+    rev: 1.4.0
+    hooks:
+      - id: php-lint-all
+      - id: php-unit
+      - id: php-cs
+      - id: php-stan
+
+  # Kubernetes - Validate and Lint
+  - repo: https://github.com/stackrox/kube-linter
+    rev: e319b0971a7121d2b21ea493059d97060d849068
+    hooks:
+      - id: kube-linter
+
+  # HTML - Validate
+  - repo: https://github.com/Lucas-C/pre-commit-hooks-java
+    rev: 9fa1d706666367df85bc4436392a56b070d7af2e
+    hooks:
+      - id: validate-html
+
+  # HTML - Validate
+  - repo: https://github.com/Lucas-C/pre-commit-hooks-lxml
+    rev: 525453db169e9f5fe31700a05d53e706bc41aa4c
+    hooks:
+      - id: forbid-html-img-without-alt-text
+      - id: forbid-non-std-html-attributes
+      - id: detect-missing-css-classes
+
+  # Various - autoformat
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: cafd5506f18eea191804850dacc0a4264772d59d
+    hooks:
+      - id: prettier
+        additional_dependencies:
+          - prettier
+          - prettier-plugin-nginx
+          - prettier-plugin-properties
+          - prettier-plugin-sh
