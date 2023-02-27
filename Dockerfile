@@ -1,4 +1,3 @@
-
 # TODO: Casper client install. Maybe not possible on Alpine. Do we really need it? Alternatives?
 #   Maybe I can build it on a Rust container aside and use the gcompat layer on the final image. WIP
 # TODO: Removing .env
@@ -26,35 +25,35 @@ COPY . ./
 
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/download/2.0.2/install-php-extensions /usr/local/bin/
 
-RUN chmod +x /usr/local/bin/install-php-extensions && \
-    install-php-extensions gd && \
-    composer install --optimize-autoloader --no-interaction --no-progress --no-ansi
+RUN chmod +x /usr/local/bin/install-php-extensions \
+  && install-php-extensions gd \
+  && composer install --optimize-autoloader --no-interaction --no-progress --no-ansi
 
 FROM rust:1.67.1-slim-bullseye as build-casper
 
-# apk add --no-cache curl=7.87.0-r2 build-base autoconf automake libtool openssl-dev musl-dev && \
-#    rm -rf /var/cache/apk/* && \
-
-RUN apt-get update &&\
-    apt-get install --no-install-recommends -y curl pkg-config libssl-dev build-essential libsodium-dev &&\
-    apt-get clean &&\
-    rm -rf /var/lib/apt/lists/* &&\
-    curl -L https://github.com/casper-ecosystem/casper-client-rs/archive/refs/tags/v1.5.0.tar.gz -o casper-client.tar.gz && \
-    tar -xvf casper-client.tar.gz -C /tmp && \
-    rm casper-client.tar.gz
+RUN apt-get update \
+  && apt-get install --no-install-recommends -y curl=7.74.0 pkg-config=0.29.2 libssl-dev=1.1.1n build-essential=12.9 libsodium-dev=1.0.18 \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* \
+  && curl -L https://github.com/casper-ecosystem/casper-client-rs/archive/refs/tags/v1.5.0.tar.gz -o casper-client.tar.gz \
+  && tar -xvf casper-client.tar.gz -C /tmp \
+  && rm casper-client.tar.gz
 
 WORKDIR /tmp/casper-client-rs-1.5.0
 
-# export RUSTFLAGS="-L /usr/lib" &&\
 RUN cargo build --release
 
 FROM trafex/php-nginx:3.0.0 AS serve
 
 USER root
 
-RUN apk add --no-cache gcompat &&\
-    mkdir -p /app && \
-    chown -R nginx:nginx /app &&\
+COPY --chown=nginx config/nginx-server.conf /etc/nginx/conf.d/nginx-server.conf
+
+RUN apk add --no-cache gcompat=1.1.0 php81-gd=php81-gd php81-zip=8.1.16 php81-mysqli=8.1.16 php81-sqlite3=3-8.1.16 php81-gmp=8.1.16 php81-bcmath=8.1.16 \
+  && rm -rf /var/www/html \
+  && rm -rf /var/cache/apk/* \
+  && mkdir -p /app \
+  && chown -R nginx:nginx /app
 
 COPY --chown=nginx --from=build-casper /tmp/casper-client-rs-1.5.0/target/release/casper-client /usr/local/bin
 RUN chmod +x /usr/local/bin/casper-client
