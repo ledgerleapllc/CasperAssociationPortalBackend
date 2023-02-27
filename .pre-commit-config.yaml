@@ -27,7 +27,7 @@ repos:
     hooks:
       - id: custom-nginx-validate-hook
         name: Test NGINX config
-        entry: scripts/validate_nginx.sh
+        entry: scripts/validate_and_format_nginx.sh
         language: system
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
