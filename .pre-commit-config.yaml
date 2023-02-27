@@ -14,6 +14,14 @@ repos:
           - DL3059
           - Dockerfile
 
+  # NGINX - validate config
+  - repo: local
+    hooks:
+      - id: custom-nginx-validate-hook
+        name: Test NGINX config
+        entry: scripts/validate_nginx.sh
+        language: system
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: 9260cbc9c84c06022993bfbcc42fdbf0305c5b8e
     hooks:
