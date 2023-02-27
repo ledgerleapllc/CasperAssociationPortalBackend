@@ -27,7 +27,7 @@ class ResetDatabase {
 
 		$users = $db->do_select("
 			SELECT guid, email
-			FROM   users 
+			FROM   users
 			WHERE  role LIKE '%user'
 			OR     role = 'sub-admin'
 		");

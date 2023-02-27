@@ -19,7 +19,7 @@ class AdminGetDraftDiscussions extends Endpoints {
 
 		// fetch drafts
 		$discussions = $db->do_select("
-			SELECT 
+			SELECT
 			a.id,
 			a.title,
 			a.description,

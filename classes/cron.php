@@ -131,7 +131,7 @@ class Cron {
 
 				// check interval
 				if (
-					$interval > 0 && 
+					$interval > 0 &&
 					$interval <= 60
 				) {
 					if ((int)$minute % $interval == 0) {

@@ -33,9 +33,9 @@ class AdminUpdateAvatar extends Endpoints {
 
 		if ($size > $max_size) {
 			_exit(
-				'error', 
-				'Avatar image too large. Cannot exceed 1 MB', 
-				413, 
+				'error',
+				'Avatar image too large. Cannot exceed 1 MB',
+				413,
 				'Avatar image too large. Cannot exceed 1 MB'
 			);
 		}
@@ -68,9 +68,9 @@ class AdminUpdateAvatar extends Endpoints {
 			$type != 'image/svg+xml'
 		) {
 			_exit(
-				'error', 
-				'Invalid avatar image type. Please use one of *.png, *.jpg, *.jpeg, *.svg', 
-				415, 
+				'error',
+				'Invalid avatar image type. Please use one of *.png, *.jpg, *.jpeg, *.svg',
+				415,
 				'Invalid avatar image type. Please use one of *.png, *.jpg, *.jpeg, *.svg'
 			);
 		}
@@ -120,9 +120,9 @@ class AdminUpdateAvatar extends Endpoints {
 		}
 
 		_exit(
-			'error', 
-			'There was a problem updating your avatar at this time. Please try again later', 
-			400, 
+			'error',
+			'There was a problem updating your avatar at this time. Please try again later',
+			400,
 			'There was a problem updating admins avatar'
 		);
 	}

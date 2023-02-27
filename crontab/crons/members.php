@@ -31,7 +31,7 @@ if ($correction_metric == 'minutes') {
 
 $nodes = $db->do_select("
 	SELECT
-	guid, 
+	guid,
 	public_key
 	FROM user_nodes
 	WHERE verified IS NOT NULL
@@ -46,8 +46,8 @@ foreach ($nodes as $node) {
 	$query      = null;
 
 	$h = $db->do_select("
-		SELECT 
-		historical_performance, 
+		SELECT
+		historical_performance,
 		status
 		FROM  all_node_data
 		WHERE public_key = '$public_key'
@@ -100,7 +100,7 @@ foreach ($nodes as $node) {
 		// all good
 		$query = "
 			UPDATE warnings
-			SET 
+			SET
 			type             = 'warning',
 			created_at       = '$now',
 			dismissed_at     = '$now',
@@ -116,7 +116,7 @@ foreach ($nodes as $node) {
 	) {
 		$query = "
 			UPDATE warnings
-			SET 
+			SET
 			type         = 'warning',
 			created_at   = '$now',
 			dismissed_at = NULL,
@@ -181,7 +181,7 @@ foreach ($nodes as $node) {
 				// DROP INTO SUSPENSION
 				$query = "
 					UPDATE warnings
-					SET 
+					SET
 					type             = 'suspension',
 					dismissed_at     = NULL,
 					message          = 'Your node $pk_short has fallen outside of acceptable Casper Association membership criteria. Uptime is $historical_performance%, less than the required $uptime_probation%. Your account is in suspension. Please check the health of your node and make adjustments to fix it.'
@@ -214,7 +214,7 @@ foreach ($nodes as $node) {
 				// Still counting down to probation
 				$query = "
 					UPDATE warnings
-					SET 
+					SET
 					type             = 'probation',
 					dismissed_at     = NULL,
 					message          = 'Your node $pk_short has fallen outside of acceptable Casper Association membership criteria. Uptime is $historical_performance%, less than the required $uptime_probation%. You have $time_left_ux to correct the issue to avoid suspension. Please check the health of your node and make adjustments to fix it.'
@@ -268,7 +268,7 @@ foreach ($nodes as $node) {
 		} else {
 			$query = "
 				UPDATE warnings
-				SET 
+				SET
 				type             = 'probation',
 				created_at       = '$now',
 				dismissed_at     = NULL,

@@ -24,7 +24,7 @@ class PublicCaKycHash extends Endpoints {
 
 		if ($hash) {
 			$verification_data = $db->do_select("
-				SELECT 
+				SELECT
 				a.pseudonym,
 				b.reference_id,
 				b.status

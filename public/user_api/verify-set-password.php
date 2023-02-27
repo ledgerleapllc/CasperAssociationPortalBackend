@@ -35,9 +35,9 @@ class UserVerifySetPassword extends Endpoints {
 		}
 
 		$check = $db->do_select("
-			SELECT 
-			guid, 
-			email, 
+			SELECT
+			guid,
+			email,
 			confirmation_code
 			FROM  users
 			WHERE guid              = '$guid'

@@ -108,8 +108,8 @@ class AdminGetDashboard extends Endpoints {
 
 		// node data
 		$nodes = $db->do_select("
-			SELECT 
-			a.public_key, 
+			SELECT
+			a.public_key,
 			a.historical_performance,
 			a.bid_delegators_count    AS delegators,
 			a.bid_total_staked_amount AS total_stake

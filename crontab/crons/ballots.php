@@ -13,7 +13,7 @@ $now = $helper->get_datetime();
 
 // get users that can vote on ballots, and admins
 $email_queue = $db->do_select("
-	SELECT 
+	SELECT
 	a.email,
 	a.role,
 	a.pseudonym,

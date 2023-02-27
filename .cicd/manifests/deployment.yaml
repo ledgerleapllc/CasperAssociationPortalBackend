@@ -28,7 +28,7 @@ spec:
               cpu: {{.Values.resourceCpuRequest}}
             limits:
               memory: {{.Values.resourceMemoryLimit}}
-              cpu: {{.Values.resourceCpuLimit}}       
+              cpu: {{.Values.resourceCpuLimit}}
           envFrom:
             - configMapRef:
                 name: {{.Values.appName}}-{{.Values.envName}}-config

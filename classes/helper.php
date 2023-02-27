@@ -89,8 +89,8 @@ class Helper {
 		$ch     = curl_init();
 
 		curl_setopt(
-			$ch, 
-			CURLOPT_RETURNTRANSFER, 
+			$ch,
+			CURLOPT_RETURNTRANSFER,
 			1
 		);
 
@@ -108,48 +108,48 @@ class Helper {
 			$arg_string = rtrim($arg_string, '&');
 
 			curl_setopt(
-				$ch, 
-				CURLOPT_URL, 
+				$ch,
+				CURLOPT_URL,
 				PROTOCOL.'://'.CORS_SITE.$endpoint.$arg_string
 			);
 		} else
 
 		if ($method == 'post') {
 			curl_setopt(
-				$ch, 
-				CURLOPT_URL, 
+				$ch,
+				CURLOPT_URL,
 				PROTOCOL.'://'.CORS_SITE.$endpoint
 			);
 
 			curl_setopt(
-				$ch, 
-				CURLOPT_POST, 
+				$ch,
+				CURLOPT_POST,
 				1
 			);
 
 			curl_setopt(
-				$ch, 
-				CURLOPT_POSTFIELDS, 
+				$ch,
+				CURLOPT_POSTFIELDS,
 				json_encode($fields)
 			);
 		} else
 
 		if ($method == 'put') {
 			curl_setopt(
-				$ch, 
-				CURLOPT_URL, 
+				$ch,
+				CURLOPT_URL,
 				PROTOCOL.'://'.CORS_SITE.$endpoint
 			);
 
 			curl_setopt(
-				$ch, 
-				CURLOPT_CUSTOMREQUEST, 
+				$ch,
+				CURLOPT_CUSTOMREQUEST,
 				"PUT"
 			);
 
 			curl_setopt(
-				$ch, 
-				CURLOPT_POSTFIELDS, 
+				$ch,
+				CURLOPT_POSTFIELDS,
 				json_encode($fields)
 			);
 		}
@@ -159,8 +159,8 @@ class Helper {
 		}
 
 		curl_setopt(
-			$ch, 
-			CURLOPT_HTTPHEADER, 
+			$ch,
+			CURLOPT_HTTPHEADER,
 			$headers
 		);
 
@@ -188,8 +188,8 @@ class Helper {
 		$string = lcfirst($string);
 		$string = strtolower(
 			preg_replace(
-				'/(?<!^)[A-Z]/', 
-				'-$0', 
+				'/(?<!^)[A-Z]/',
+				'-$0',
 				$string
 			)
 		);
@@ -226,7 +226,7 @@ class Helper {
 
 	/**
 	 *
-	 * Fetch all contact_recipients 
+	 * Fetch all contact_recipients
 	 *
 	 * @return array $recipients
 	 *
@@ -255,7 +255,7 @@ class Helper {
 
 	/**
 	 *
-	 * Fetch all emailer_admins 
+	 * Fetch all emailer_admins
 	 *
 	 * @return array $emailer_admins
 	 *
@@ -400,32 +400,32 @@ class Helper {
 		];
 
 		curl_setopt(
-			$curl, 
-			CURLOPT_URL, 
+			$curl,
+			CURLOPT_URL,
 			$node_ip.'/rpc'
 		);
 
 		curl_setopt(
-			$curl, 
-			CURLOPT_POST, 
+			$curl,
+			CURLOPT_POST,
 			true
 		);
 
 		curl_setopt(
-			$curl, 
-			CURLOPT_RETURNTRANSFER, 
+			$curl,
+			CURLOPT_RETURNTRANSFER,
 			true
 		);
 
 		curl_setopt(
-			$curl, 
-			CURLOPT_POSTFIELDS, 
+			$curl,
+			CURLOPT_POSTFIELDS,
 			json_encode($json_data)
 		);
 
 		curl_setopt(
-			$curl, 
-			CURLOPT_HTTPHEADER, 
+			$curl,
+			CURLOPT_HTTPHEADER,
 			array(
 				'Accept: application/json',
 				'Content-type: application/json',
@@ -475,32 +475,32 @@ class Helper {
 		];
 
 		curl_setopt(
-			$curl, 
-			CURLOPT_URL, 
+			$curl,
+			CURLOPT_URL,
 			$node_ip.'/rpc'
 		);
 
 		curl_setopt(
-			$curl, 
-			CURLOPT_POST, 
+			$curl,
+			CURLOPT_POST,
 			true
 		);
 
 		curl_setopt(
-			$curl, 
-			CURLOPT_RETURNTRANSFER, 
+			$curl,
+			CURLOPT_RETURNTRANSFER,
 			true
 		);
 
 		curl_setopt(
-			$curl, 
-			CURLOPT_POSTFIELDS, 
+			$curl,
+			CURLOPT_POSTFIELDS,
 			json_encode($json_data)
 		);
 
 		curl_setopt(
-			$curl, 
-			CURLOPT_HTTPHEADER, 
+			$curl,
+			CURLOPT_HTTPHEADER,
 			array(
 				'Accept: application/json',
 				'Content-type: application/json',
@@ -539,32 +539,32 @@ class Helper {
 		];
 
 		curl_setopt(
-			$curl, 
-			CURLOPT_URL, 
+			$curl,
+			CURLOPT_URL,
 			$node_ip.'/rpc'
 		);
 
 		curl_setopt(
-			$curl, 
-			CURLOPT_POST, 
+			$curl,
+			CURLOPT_POST,
 			true
 		);
 
 		curl_setopt(
-			$curl, 
-			CURLOPT_RETURNTRANSFER, 
+			$curl,
+			CURLOPT_RETURNTRANSFER,
 			true
 		);
 
 		curl_setopt(
-			$curl, 
-			CURLOPT_POSTFIELDS, 
+			$curl,
+			CURLOPT_POSTFIELDS,
 			json_encode($json_data)
 		);
 
 		curl_setopt(
-			$curl, 
-			CURLOPT_HTTPHEADER, 
+			$curl,
+			CURLOPT_HTTPHEADER,
 			array(
 				'Accept: application/json',
 				'Content-type: application/json',
@@ -600,7 +600,7 @@ class Helper {
 
 		$public_key = (string)$public_key;
 		$first_byte = substr($public_key, 0, 2);
-		
+
 		if ($first_byte === '01') {
 			$algo = unpack('H*', 'ed25519');
 		} else {
@@ -690,8 +690,8 @@ class Helper {
 
 		if($parsed) {
 			curl_setopt(
-				$curl, 
-				CURLOPT_URL, 
+				$curl,
+				CURLOPT_URL,
 				$parsed.'/.well-known/casper/account-info.casper.json'
 			);
 			curl_setopt($curl, CURLOPT_POST, false);
@@ -730,7 +730,7 @@ class Helper {
 
 		// Save contract logo on the fly
 		$u = $db->do_select("
-			SELECT 
+			SELECT
 			a.guid,
 			b.avatar_url
 			FROM user_nodes AS a
@@ -814,8 +814,8 @@ class Helper {
 		$eras_since_redmark = (int)($eras_since_redmark[0]['era_id'] ?? 0);
 		$eras_since_redmark = $current_era_id - $eras_since_redmark;
 		$eras_since_redmark = (
-			$eras_since_redmark > $total_eras ? 
-			$total_eras : 
+			$eras_since_redmark > $total_eras ?
+			$total_eras :
 			$eras_since_redmark
 		);
 
@@ -1218,20 +1218,20 @@ class Helper {
 		$query = "
 			SELECT
 			guid,
-			role, 
-			email, 
-			pseudonym, 
+			role,
+			email,
+			pseudonym,
 			telegram,
 			account_type,
-			pii_data, 
+			pii_data,
 			verified,
-			created_at, 
-			admin_approved, 
-			twofa, 
+			created_at,
+			admin_approved,
+			twofa,
 			totp,
-			badge_partner_link, 
-			avatar_url, 
-			letter, 
+			badge_partner_link,
+			avatar_url,
+			letter,
 			esigned
 			FROM users
 			WHERE guid = '$guid'
@@ -1285,8 +1285,8 @@ class Helper {
 		// attach special warning message
 		$query = "
 			SELECT
-			message, 
-			type, 
+			message,
+			type,
 			created_at
 			FROM warnings
 			WHERE guid = '$guid'
@@ -1368,7 +1368,7 @@ class Helper {
 
 		// add permissions
 		$permissions = $db->do_select("
-			SELECT 
+			SELECT
 			membership,
 			nodes,
 			eras,
@@ -1398,7 +1398,7 @@ class Helper {
 
 		// add kyc status
 		$kyc_status = $db->do_select("
-			SELECT 
+			SELECT
 			status          AS kyc_status,
 			declined_reason AS kyc_denied_reason
 			FROM shufti
@@ -1671,9 +1671,9 @@ class Helper {
 		if ($required) {
 			if (!$parameter) {
 				_exit(
-					'error', 
-					'Please provide required '.$extra_parameter.$name, 
-					400, 
+					'error',
+					'Please provide required '.$extra_parameter.$name,
+					400,
 					'Failed to provide required '.$extra_parameter.$name
 				);
 			}
@@ -2171,7 +2171,7 @@ class Helper {
 	 *
 	 * Happens when MFA is successfully verified.
 	 * Lasts 5 minutes.
-	 * Purposed for user ability to submit MFA and then submit authenticated request sequentially. 
+	 * Purposed for user ability to submit MFA and then submit authenticated request sequentially.
 	 *
 	 * @param  string  $guid
 	 * @return bool
@@ -2373,8 +2373,8 @@ class Helper {
 	 *
 	 */
 	public static function get_dir_contents(
-		$__dir, 
-		$dir, 
+		$__dir,
+		$dir,
 		&$result = array()
 	) {
 		$files = scandir($dir);
@@ -2432,7 +2432,7 @@ class Helper {
 	 *
 	 */
 	public static function in_CIDR_range(
-		string $ip, 
+		string $ip,
 		string $iprange
 	) {
 		if(!$iprange || $iprange == '') return true;

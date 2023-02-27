@@ -34,7 +34,7 @@ class UserValidateShuftiSignature extends Endpoints {
 
 		if (
 			hash_equals(
-				strtolower($hash), 
+				strtolower($hash),
 				strtolower($signature)
 			)
 		) {

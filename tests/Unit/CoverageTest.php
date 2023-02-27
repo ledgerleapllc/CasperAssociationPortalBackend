@@ -33,7 +33,7 @@ final class CoverageTest extends TestCase
 			// compile list of all available endpoint names
 			$total     = array();
 			$endpoints = Helper::get_dir_contents(
-				__DIR__.'/../../public/'.$group.'_api/', 
+				__DIR__.'/../../public/'.$group.'_api/',
 				__DIR__.'/../../public/'.$group.'_api/'
 			);
 

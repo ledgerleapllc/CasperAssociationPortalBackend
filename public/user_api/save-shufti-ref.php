@@ -203,7 +203,7 @@ class UserSaveShuftiRef extends Endpoints {
 
 		// shufti check
 		$check = $db->do_select("
-			SELECT 
+			SELECT
 			id,
 			guid,
 			reference_id,
@@ -286,7 +286,7 @@ class UserSaveShuftiRef extends Endpoints {
 			}
 
 			if (
-				$country && 
+				$country &&
 				$account_type == 'individual'
 			) {
 				$pii['country_of_citizenship'] = $country;
@@ -298,7 +298,7 @@ class UserSaveShuftiRef extends Endpoints {
 		// update main user table with pii and account type changes
 		$db->do_query("
 			UPDATE users
-			SET 
+			SET
 			pii_data     = '$enc_pii',
 			account_type = '$account_type'
 			WHERE guid   = '$user_guid'
@@ -333,7 +333,7 @@ class UserSaveShuftiRef extends Endpoints {
 				// entity exists, updating
 				$db->do_query("
 					UPDATE entities
-					SET 
+					SET
 					pii_data          = '$entity_enc',
 					updated_at        = '$created_at'
 					WHERE entity_guid = '$entity_guid'

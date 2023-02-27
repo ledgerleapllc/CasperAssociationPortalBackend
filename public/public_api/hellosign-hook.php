@@ -40,8 +40,8 @@ class PublicHellosignHook extends Endpoints {
 
 		$md5_header_check = base64_encode(
 			hash_hmac(
-				'md5', 
-				$json, 
+				'md5',
+				$json,
 				$api_key
 			)
 		);

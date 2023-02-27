@@ -17,7 +17,7 @@ class AdminGetAllVotes extends Endpoints {
 		$auth       = authenticate_session(2);
 		$admin_guid = $auth['guid'] ?? '';
 		$votes      = $db->do_select("
-			SELECT 
+			SELECT
 			a.id,
 			a.direction,
 			a.created_at,

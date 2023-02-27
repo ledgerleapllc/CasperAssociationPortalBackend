@@ -59,8 +59,8 @@ class AdminEditDiscussion extends Endpoints {
 
 		$result = $db->do_query("
 			UPDATE discussions
-			SET 
-			description = '$description', 
+			SET
+			description = '$description',
 			updated_at  = '$updated_at'
 			WHERE id    = $discussion_id
 		");

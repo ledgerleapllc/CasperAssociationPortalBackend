@@ -75,7 +75,7 @@ class DB {
 	/**
 	 * Check DB integrity
 	 */
-	public function check_integrity() {	
+	public function check_integrity() {
 		$query      = "SHOW TABLES";
 		$db_tables2 = $this->do_select($query);
 		$db_tables  = array();
@@ -1722,7 +1722,7 @@ class DB {
 						$type    = $my_tables[$table_name]['fields'][$array_key]['type']    ?? '';
 						$default = $my_tables[$table_name]['fields'][$array_key]['default'] ?? '';
 						$query   = "
-							ALTER TABLE $table_name 
+							ALTER TABLE $table_name
 							ADD COLUMN $array_key
 							$type $default
 						";

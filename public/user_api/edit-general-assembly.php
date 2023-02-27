@@ -93,7 +93,7 @@ class UserEditGeneralAssembly extends Endpoints {
 
 		$db->do_query("
 			UPDATE general_assemblies
-			SET 
+			SET
 			topic       = '$topic',
 			description = '$description',
 			updated_at  = '$updated_at',

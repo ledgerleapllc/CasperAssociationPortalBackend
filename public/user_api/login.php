@@ -10,7 +10,7 @@
  */
 class UserLogin extends Endpoints {
 	function __construct(
-		$email    = '', 
+		$email    = '',
 		$password = ''
 	) {
 		global $db, $helper, $authentication;
@@ -53,12 +53,12 @@ class UserLogin extends Endpoints {
 		);
 
 		$query = "
-			SELECT 
-			guid, 
-			email, 
-			password, 
-			twofa, 
-			totp, 
+			SELECT
+			guid,
+			email,
+			password,
+			twofa,
+			totp,
 			role,
 			confirmation_code
 			FROM users
@@ -106,7 +106,7 @@ class UserLogin extends Endpoints {
 				)
 			);
 		}
-		
+
 		if (!hash_equals($password_hash2, $password_hash)) {
 			// log failed login
 			if($guid) {
@@ -172,7 +172,7 @@ class UserLogin extends Endpoints {
 
 			// email mfa type
 			$code = $helper->generate_hash(6);
-			
+
 			$helper->schedule_email(
 				'twofa',
 				$email,
@@ -264,7 +264,7 @@ class UserLogin extends Endpoints {
 		// No MFA enabled, and browser/cookie/IP not recognized. Do 2fa check
 		else {
 			$code = $helper->generate_hash(6);
-			
+
 			$helper->schedule_email(
 				'twofa',
 				$email,

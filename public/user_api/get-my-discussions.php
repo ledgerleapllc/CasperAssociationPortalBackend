@@ -22,14 +22,14 @@ class UserGetMyDiscussions extends Endpoints {
 
 		// fetch discussions
 		$discussions = $db->do_select("
-			SELECT 
-			a.id, 
-			a.title, 
-			a.description, 
+			SELECT
+			a.id,
+			a.title,
+			a.description,
 			a.is_read,
 			a.locked,
 			a.for_upgrade,
-			a.created_at, 
+			a.created_at,
 			a.updated_at,
 			b.avatar_url,
 			b.pseudonym,

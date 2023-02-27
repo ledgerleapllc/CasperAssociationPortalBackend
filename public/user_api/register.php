@@ -64,33 +64,33 @@ class UserRegister extends Endpoints {
 		/* Pre-check string formats and lengths */
 		if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 			_exit(
-				'error', 
-				'Invalid email address', 
-				400, 
+				'error',
+				'Invalid email address',
+				400,
 				'Invalid email address'
 			);
 		}
 
 		if (
-			!$first_name || 
+			!$first_name ||
 			!trim($first_name)
 		) {
 			_exit(
-				'error', 
-				'Please provide first name', 
-				400, 
+				'error',
+				'Please provide first name',
+				400,
 				'Failed to provide first name'
 			);
 		}
 
 		if (
-			!$last_name || 
+			!$last_name ||
 			!trim($last_name)
 		) {
 			_exit(
-				'error', 
-				'Please provide last name', 
-				400, 
+				'error',
+				'Please provide last name',
+				400,
 				'Failed to provide last name'
 			);
 		}
@@ -136,7 +136,7 @@ class UserRegister extends Endpoints {
 		}
 
 		if (
-			$account_type != 'individual' && 
+			$account_type != 'individual' &&
 			$account_type != 'entity'
 		) {
 			_exit(
@@ -442,9 +442,9 @@ class UserRegister extends Endpoints {
 		}
 
 		_exit(
-			'error', 
-			'Failed to register user', 
-			500, 
+			'error',
+			'Failed to register user',
+			500,
 			'Failed to register user'
 		);
 	}

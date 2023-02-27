@@ -7,7 +7,7 @@
  *
  */
 class Permissions {
-	/** 
+	/**
 	 * Known endpoints array.
 	 */
 	public const endpoints = array(

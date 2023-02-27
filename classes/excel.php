@@ -50,7 +50,7 @@ class Excel {
 	 *
 	 */
 	public function readSpreadsheet(
-		$filepath, 
+		$filepath,
 		$readonly = true,
 		$extension = 'Xlsx'
 	) {
@@ -87,7 +87,7 @@ class Excel {
 	 *   // Row 1
 	 *   array(
 	 *     // Columns
-	 *     'row 1, column 1', 
+	 *     'row 1, column 1',
 	 *     'row 1, column 2'
 	 *   ),
 	 *

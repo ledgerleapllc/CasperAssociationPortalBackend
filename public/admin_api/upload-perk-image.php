@@ -91,15 +91,15 @@ class AdminUploadPerkImage extends Endpoints {
 		$thumb = imagecreatetruecolor($width, $height);
 
 		imagecopyresampled(
-			$thumb, 
-			$img, 
-			0, 
-			0, 
-			0, 
-			0, 
-			$width, 
-			$height, 
-			$width, 
+			$thumb,
+			$img,
+			0,
+			0,
+			0,
+			0,
+			$width,
+			$height,
+			$width,
 			$height
 		);
 

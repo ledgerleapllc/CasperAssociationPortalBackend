@@ -81,7 +81,7 @@ final class HelperTest extends TestCase
 	public function testInCidrRange()
 	{
 		$in_range = Helper::in_CIDR_range(
-			'192.168.15.255', 
+			'192.168.15.255',
 			'192.168.2.1/20'
 		);
 		$this->assertTrue($in_range);
@@ -90,7 +90,7 @@ final class HelperTest extends TestCase
 	public function testNotInCidrRange()
 	{
 		$in_range = Helper::in_CIDR_range(
-			'192.168.1.3', 
+			'192.168.1.3',
 			'192.168.1.1/31'
 		);
 		$this->assertFalse($in_range);

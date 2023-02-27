@@ -49,8 +49,8 @@ class UserGetMembership extends Endpoints {
 
 		$statuses = array_unique($statuses);
 		$return['node_status'] = (
-			!empty($statuses) ? 
-			implode(', ', $statuses) : 
+			!empty($statuses) ?
+			implode(', ', $statuses) :
 			$return['node_status']
 		);
 
@@ -63,7 +63,7 @@ class UserGetMembership extends Endpoints {
 		$return['kyc_status'] = ucfirst($kyc_status[0]['status'] ?? 'Not Verified');
 
 		$nodes = $db->do_select("
-			SELECT 
+			SELECT
 			a.public_key,
 			a.uptime,
 			a.historical_performance

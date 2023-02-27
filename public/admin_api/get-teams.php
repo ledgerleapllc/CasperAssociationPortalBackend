@@ -17,7 +17,7 @@ class AdminGetTeams extends Endpoints {
 		$auth       = authenticate_session(2);
 		$admin_guid = $auth['guid'] ?? '';
 		$teams_q    = "
-			SELECT 
+			SELECT
 			a.guid,
 			a.role,
 			a.created_at,

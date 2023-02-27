@@ -58,7 +58,7 @@ class Blake2b {
     private function xor64($x, $y) {
         return $this->new64($x[0] ^ $y[0], $x[1] ^ $y[1]);
     }
-    
+
     private function rs($x, $s) {
         if($s)
         	return ($x >> $s) & ~( 1 << ( 8 * PHP_INT_SIZE - 1 ) >> ( $s - 1 ));
@@ -115,7 +115,7 @@ class Blake2b {
     private function context() {
         $ctx    = [];
         $ctx[0] = []; // h
-        $ctx[1] = []; // t 
+        $ctx[1] = []; // t
         $ctx[2] = []; // f
         $ctx[3] = []; // buf
         $ctx[4] = 0;  // buflen
@@ -191,7 +191,7 @@ class Blake2b {
 
     private function update(&$ctx, $p, $plen) {
         $offset = 0; $left = 0; $fill = 0;
-        
+
         while($plen > 0) {
             $left = $ctx[4];
             $fill = 256 - $left;

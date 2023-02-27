@@ -106,8 +106,8 @@ class Regex {
 	);
 
 	/*
-	Intended format like: YYYY-mm-dd. 
-	Will pass <=> string comparison checks this way. 
+	Intended format like: YYYY-mm-dd.
+	Will pass <=> string comparison checks this way.
 	*/
 	public static $date = array(
 		"char_limit" => 10,
@@ -115,8 +115,8 @@ class Regex {
 	);
 
 	/*
-	Intended format like: YYYY-mm-dd hh:ii:ss. 
-	Will pass <=> string comparison checks this way. 
+	Intended format like: YYYY-mm-dd hh:ii:ss.
+	Will pass <=> string comparison checks this way.
 	*/
 	public static $date_extended = array(
 		"char_limit" => 19,

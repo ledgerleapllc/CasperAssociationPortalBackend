@@ -67,20 +67,20 @@ class UserPostHellosign extends Endpoints {
 		$request->setSubject('Member Agreement');
 
 		$request->setSigner(
-			'Member', 
-			$user['email'], 
+			'Member',
+			$user['email'],
 			$user['pii_data']['first_name'].' '.
 			$user['pii_data']['last_name']
 		);
 
 		$request->setCustomFieldValue(
-			'FullName', 
+			'FullName',
 			$user['pii_data']['first_name'].' '.
 			$user['pii_data']['last_name']
 		);
 
 		$request->setCustomFieldValue(
-			'FullName2', 
+			'FullName2',
 			$user['pii_data']['first_name'].' '.
 			$user['pii_data']['last_name']
 		);
@@ -95,7 +95,7 @@ class UserPostHellosign extends Endpoints {
 		$request->setCustomFieldValue('Initial', $initial);
 
 		$embedded_request = new \HelloSign\EmbeddedSignatureRequest(
-			$request, 
+			$request,
 			$client_id
 		);
 

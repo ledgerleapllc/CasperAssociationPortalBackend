@@ -5,7 +5,7 @@ kind: Ingress
 metadata:
   namespace: {{.Values.namespace}}
   name: {{.Values.appName}}-{{.Values.envName}}-ingress
-  annotations:     
+  annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
     nginx.ingress.kubernetes.io/proxy-body-size: 256m
 spec:

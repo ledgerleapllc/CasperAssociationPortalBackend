@@ -38,7 +38,7 @@ class UserResendCode extends Endpoints {
 			$recipient = $email;
 			$subject   = 'Welcome to '.APP_NAME;
 			$body      = 'Welcome to '.APP_NAME.'. Your registration code is below:<br><br>';
-			$link      = $fetched_code; 
+			$link      = $fetched_code;
 
 			$helper->schedule_email(
 				'verify-registration',

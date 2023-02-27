@@ -47,7 +47,7 @@ class AdminGetUsers extends Endpoints {
 			// entities
 			$user_guid = $user['guid'] ?? '';
 			$entity = $db->do_select("
-				SELECT 
+				SELECT
 				a.pii_data AS entity_pii
 				FROM  entities AS a
 				JOIN  user_entity_relations AS b
@@ -80,7 +80,7 @@ class AdminGetUsers extends Endpoints {
 			$membership_status = ucfirst($kyc_status);
 
 			$nodes = $db->do_select("
-				SELECT 
+				SELECT
 				a.public_key,
 				b.status AS node_status,
 				b.bid_total_staked_amount

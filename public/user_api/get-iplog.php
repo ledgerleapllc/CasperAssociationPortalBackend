@@ -18,13 +18,13 @@ class UserGetIplog extends Endpoints {
 		$user_guid = $auth['guid'] ?? '';
 
 		$query = "
-			SELECT 
-			a.logged_in_at, 
-			a.email, 
-			a.successful, 
-			a.detail, 
-			a.ip, 
-			a.user_agent, 
+			SELECT
+			a.logged_in_at,
+			a.email,
+			a.successful,
+			a.detail,
+			a.ip,
+			a.user_agent,
 			a.source,
 			b.role
 			FROM login_attempts AS a
