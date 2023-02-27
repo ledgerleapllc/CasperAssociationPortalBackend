@@ -1,8 +1,16 @@
 ---
 repos:
+  # Semantic commits:
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: b0808a81d4945c510f9baeaf2cff97dccdd55ed0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: [feat, fix, ci, chore, test, docs, revert]
+
   # Docker
   - repo: https://github.com/hadolint/hadolint
-    rev: v2.12.1-beta
+    rev: dc66e0996474b324f10649618f424fc76ca60e28
     hooks:
       - id: hadolint
         args:
@@ -72,31 +80,31 @@ repos:
 
   # Python - Security and dependencies
   - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
-    rev: v1.3.1
+    rev: a4a1eb373d8e809534a46855a58be427a0a29219
     hooks:
       - id: python-safety-dependencies-check
 
   # Python - Lint
   - repo: https://github.com/PyCQA/flake8
-    rev: 6.0.0
+    rev: cb43b60dcc8ff6b20a5dc3f582ff599e1c1f9881
     hooks:
       - id: flake8
 
   # Python - autoformat
   - repo: https://github.com/psf/black
-    rev: 23.1.0
+    rev: 25d886f52c2bbbb58386ac8050f4e67952507bc7
     hooks:
       - id: black
 
   # GithubActions - Validate
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.21.0
+    rev: 0bb1f41fa26c52c49e5861f55d990cc063eb9479
     hooks:
       - id: check-github-workflows
 
   # PHP - Validate and Lint
   - repo: https://github.com/digitalpulp/pre-commit-php
-    rev: 1.4.0
+    rev: f9f30f819d34faa2375e7000822efab0ef677200
     hooks:
       - id: php-lint-all
       - id: php-unit
