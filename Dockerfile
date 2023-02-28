@@ -48,6 +48,7 @@ RUN apk add --no-cache gcompat=1.1.0-r0 php81-gd=8.1.16-r0 php81-zip=8.1.16-r0 p
 COPY --chown=nginx --from=build-casper /tmp/casper-client-rs-1.5.0/target/release/casper-client /usr/local/bin
 RUN chmod +x /usr/local/bin/casper-client
 COPY --chown=nginx --from=build-php ./app/public /app/public
+COPY --chown=nginx --from=build-php ./app/vendor/autoload.php /app/vendor/autoload.php
 COPY --chown=nginx --from=build-php ./app/core.php /app/core.php
 COPY --chown=nginx --from=build-php ./app/templates /app/templates
 COPY --chown=nginx --from=build-php ./app/spreadsheets /app/spreadsheets
