@@ -54,4 +54,11 @@ COPY --chown=nginx --from=build-php ./app/spreadsheets /app/spreadsheets
 COPY --chown=nginx --from=build-php ./app/crontab /app/crontab
 COPY --chown=nginx --from=build-php ./app/classes /app/classes
 
+RUN sed -i 's/;extension=gd/extension=gd/' /etc/php81/php.ini \
+  && sed -i 's/;extension=zip/extension=zip/' /etc/php81/php.ini \
+  && sed -i 's/;extension=mysqli/extension=mysqli/' /etc/php81/php.ini \
+  && sed -i 's/;extension=sqlite3/extension=sqlite3/' /etc/php81/php.ini \
+  && sed -i 's/;extension=gmp/extension=gmp/' /etc/php81/php.ini \
+  && sed -i 's/;extension=bcmath/extension=bcmath/' /etc/php81/php.ini
+
 USER nobody
