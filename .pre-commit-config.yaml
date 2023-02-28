@@ -141,3 +141,11 @@ repos:
           - prettier-plugin-nginx
           - prettier-plugin-properties
           - prettier-plugin-sh
+
+  - repo: local
+    hooks:
+      - id: docker-build
+        name: docker-build
+        entry: scripts/docker_build.sh
+        language: system
+        stages: [push]

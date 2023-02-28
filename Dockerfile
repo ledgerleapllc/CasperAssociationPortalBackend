@@ -1,15 +1,5 @@
-# TODO: Casper client install. Maybe not possible on Alpine. Do we really need it? Alternatives?
-#   Maybe I can build it on a Rust container aside and use the gcompat layer on the final image. WIP
-# TODO: Removing .env
-#   Tom to add the change to handle .env file being present with a try catch.
 # TODO: Release casper-client-rs as an Alpine package to use in this image
 #   Release the amd64 binary to be used in Alpine as well with the gcompat layer
-# TODO: Figure out extensions if needed in the running image after composer install
-#   Tom to check if we need any extensions
-# TODO: phpdoc removed. Binary file?
-#   Don't need that in prod. Used in development environment.
-# TODO: wizard.py?
-#   Not neede here. Deleted.
 # TODO: Crontab done automatically, but do I need to enable it like in the README?
 #   There needs to be just one instance (separate service) that runs the crontab.
 # TODO: Discuss running tests with composer? Laravel tests still accurate?
@@ -32,7 +22,7 @@ RUN chmod +x /usr/local/bin/install-php-extensions \
 FROM rust:1.67.1-slim-bullseye as build-casper
 
 RUN apt-get update \
-  && apt-get install --no-install-recommends -y curl=7.74.0 pkg-config=0.29.2 libssl-dev=1.1.1n build-essential=12.9 libsodium-dev=1.0.18 \
+  && apt-get install --no-install-recommends -y curl=7.74.0-1.3+deb11u7 pkg-config=0.29.2-1 libssl-dev=1.1.1n-0+deb11u4 build-essential=12.9 libsodium-dev=1.0.18-1 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/* \
   && curl -L https://github.com/casper-ecosystem/casper-client-rs/archive/refs/tags/v1.5.0.tar.gz -o casper-client.tar.gz \
@@ -47,9 +37,9 @@ FROM trafex/php-nginx:3.0.0 AS serve
 
 USER root
 
-COPY --chown=nginx config/nginx-server.conf /etc/nginx/conf.d/nginx-server.conf
+COPY --chown=nginx config/default.conf /etc/nginx/conf.d/default.conf
 
-RUN apk add --no-cache gcompat=1.1.0 php81-gd=php81-gd php81-zip=8.1.16 php81-mysqli=8.1.16 php81-sqlite3=3-8.1.16 php81-gmp=8.1.16 php81-bcmath=8.1.16 \
+RUN apk add --no-cache gcompat=1.1.0-r0 php81-gd=8.1.16-r0 php81-zip=8.1.16-r0 php81-mysqli=8.1.16-r0 php81-sqlite3=8.1.16-r0 php81-gmp=8.1.16-r0 php81-bcmath=8.1.16-r0 \
   && rm -rf /var/www/html \
   && rm -rf /var/cache/apk/* \
   && mkdir -p /app \
