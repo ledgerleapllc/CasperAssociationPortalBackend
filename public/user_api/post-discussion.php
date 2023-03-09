@@ -23,6 +23,13 @@ class UserPostDiscussion extends Endpoints {
 	) {
 		global $db, $helper, $pagelock;
 
+		_exit(
+			'error',
+			'Post discussion endpoint is disabled for users at this time',
+			400,
+			'Post discussion endpoint is disabled for users at this time'
+		);
+
 		require_method('POST');
 
 		$auth              = authenticate_session(1);
