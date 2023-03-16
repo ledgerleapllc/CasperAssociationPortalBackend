@@ -45,7 +45,7 @@ class UserGetActiveBallots extends Endpoints {
 				SELECT count(guid) AS vCount
 				FROM votes
 				WHERE ballot_id = $ballot_id
-				AND direction = 'for'
+				AND   direction = 'for'
 			");
 			$for_votes = (int)($for_votes[0]['vCount'] ?? 0);
 
@@ -53,7 +53,7 @@ class UserGetActiveBallots extends Endpoints {
 				SELECT count(guid) AS vCount
 				FROM votes
 				WHERE ballot_id = $ballot_id
-				AND direction = 'against'
+				AND   direction = 'against'
 			");
 			$against_votes = (int)($against_votes[0]['vCount'] ?? 0);
 
@@ -88,6 +88,15 @@ class UserGetActiveBallots extends Endpoints {
 			if ($ballot['time_remaining_perc'] < 0) {
 				$ballot['time_remaining_perc'] = 0;
 			}
+
+			// my vote
+			$myvote = $db->do_select("
+				SELECT direction
+				FROM  votes
+				WHERE ballot_id = $ballot_id
+				AND   guid      = '$user_guid'
+			");
+			$ballot['my_vote'] = $myvote[0]['direction'] ?? '';
 		}
 
 		_exit(

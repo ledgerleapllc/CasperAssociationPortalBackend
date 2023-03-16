@@ -38,7 +38,7 @@ class UserGetBallot extends Endpoints {
 			a.updated_at
 			FROM ballots AS a
 			LEFT JOIN votes AS b
-			ON a.id = b.ballot_id
+			ON    a.id = b.ballot_id
 			WHERE a.id = $ballot_id
 			ORDER BY a.updated_at DESC
 		");
