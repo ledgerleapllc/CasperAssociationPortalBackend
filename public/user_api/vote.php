@@ -39,7 +39,8 @@ class UserVote extends Endpoints {
 			_exit(
 				'error',
 				"Vote must be cast either 'for' or 'against'",
-				400
+				400,
+				"Vote must be cast either 'for' or 'against'"
 			);
 		}
 
@@ -57,7 +58,8 @@ class UserVote extends Endpoints {
 				_exit(
 					'error',
 					"You can't flip a vote you haven't cast yet",
-					400
+					400,
+					"You can't flip a vote you haven't cast yet"
 				);
 			}
 
@@ -93,7 +95,8 @@ class UserVote extends Endpoints {
 			_exit(
 				'error',
 				"You have already cast a vote for this ballot",
-				403
+				403,
+				"You have already cast a vote for this ballot"
 			);
 		}
 
@@ -116,7 +119,8 @@ class UserVote extends Endpoints {
 			_exit(
 				'error',
 				"Cannot cast a vote on a ballot that is still pending",
-				403
+				403,
+				"Cannot cast a vote on a ballot that is still pending"
 			);
 		}
 
@@ -124,7 +128,8 @@ class UserVote extends Endpoints {
 			_exit(
 				'error',
 				"Voting for this ballot has concluded",
-				403
+				403,
+				"Voting for this ballot has concluded"
 			);
 		}
 
