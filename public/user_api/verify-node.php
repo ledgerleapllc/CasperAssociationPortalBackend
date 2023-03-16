@@ -77,7 +77,8 @@ class UserVerifyNode extends Endpoints {
 		_exit(
 			'error',
 			'The specified public key was not found in the pool of claimable validator IDs',
-			403
+			403,
+			'The specified public key was not found in the pool of claimable validator IDs'
 		);
 	}
 }

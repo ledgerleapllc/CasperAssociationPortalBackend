@@ -111,7 +111,8 @@ class UserVote extends Endpoints {
 			_exit(
 				'error',
 				"Ballot does not exist",
-				400
+				400,
+				"Ballot does not exist"
 			);
 		}
 

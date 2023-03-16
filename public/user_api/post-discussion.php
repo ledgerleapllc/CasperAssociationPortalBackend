@@ -59,7 +59,8 @@ class UserPostDiscussion extends Endpoints {
 			_exit(
 				'error',
 				'Discussion body text limited to 64000 characters',
-				400
+				400,
+				'Discussion body text limited to 64000 characters'
 			);
 		}
 
@@ -74,7 +75,8 @@ class UserPostDiscussion extends Endpoints {
 				_exit(
 					'error',
 					'Associated ballot attached to the creation of this discussion is invalid',
-					400
+					400,
+					'Associated ballot attached to the creation of this discussion is invalid'
 				);
 			}
 		}

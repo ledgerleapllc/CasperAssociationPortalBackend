@@ -32,7 +32,8 @@ class UserDeleteComment extends Endpoints {
 			_exit(
 				'error',
 				'You are not authorized to do that',
-				403
+				403,
+				'You are not authorized to do that'
 			);
 		}
 
@@ -49,7 +50,8 @@ class UserDeleteComment extends Endpoints {
 			_exit(
 				'error',
 				'Cannot modify comments on a discussion that is locked and archived',
-				403
+				403,
+				'Cannot modify comments on a discussion that is locked and archived'
 			);
 		}
 

@@ -38,7 +38,8 @@ class UserDeleteDiscussion extends Endpoints {
 			_exit(
 				'error',
 				'You are not authorized to make this change',
-				403
+				403,
+				'You are not authorized to make this change'
 			);
 		}
 
@@ -46,7 +47,8 @@ class UserDeleteDiscussion extends Endpoints {
 			_exit(
 				'error',
 				'This discussion is locked and cannot be deleted',
-				403
+				403,
+				'This discussion is locked and cannot be deleted'
 			);
 		}
 

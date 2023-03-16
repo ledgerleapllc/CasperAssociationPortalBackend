@@ -33,7 +33,8 @@ class UserEditDiscussion extends Endpoints {
 			_exit(
 				'error',
 				'Discussion body text limited to 64000 characters',
-				400
+				400,
+				'Discussion body text limited to 64000 characters'
 			);
 		}
 
@@ -48,7 +49,8 @@ class UserEditDiscussion extends Endpoints {
 			_exit(
 				'error',
 				'You are not authorized to do that',
-				403
+				403,
+				'You are not authorized to do that'
 			);
 		}
 
@@ -58,7 +60,8 @@ class UserEditDiscussion extends Endpoints {
 			_exit(
 				'error',
 				'Cannot modify a locked discussion',
-				403
+				403,
+				'Cannot modify a locked discussion'
 			);
 		}
 

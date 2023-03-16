@@ -34,7 +34,8 @@ class UserRemoveNode extends Endpoints {
 			_exit(
 				'error',
 				'Unable to remove this node your account',
-				400
+				400,
+				'Unable to remove this node your account'
 			);
 		}
 
@@ -42,7 +43,8 @@ class UserRemoveNode extends Endpoints {
 			_exit(
 				'error',
 				'Cannot remove the only node from your account',
-				400
+				400,
+				'Cannot remove the only node from your account'
 			);
 		}
 

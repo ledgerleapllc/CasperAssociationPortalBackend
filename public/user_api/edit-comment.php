@@ -44,7 +44,8 @@ class UserEditComment extends Endpoints {
 			_exit(
 				'error',
 				'The comment you are trying to edit does not exist',
-				404
+				404,
+				'The comment you are trying to edit does not exist'
 			);
 		}
 
@@ -54,7 +55,8 @@ class UserEditComment extends Endpoints {
 			_exit(
 				'error',
 				'You are not authorized to do that',
-				403
+				403,
+				'You are not authorized to do that'
 			);
 		}
 
@@ -71,7 +73,8 @@ class UserEditComment extends Endpoints {
 			_exit(
 				'error',
 				'Cannot modify comments on a discussion that is locked and archived',
-				403
+				403,
+				'Cannot modify comments on a discussion that is locked and archived',
 			);
 		}
 

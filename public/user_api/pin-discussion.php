@@ -39,7 +39,8 @@ class UserPinDiscussion extends Endpoints {
 			_exit(
 				'error',
 				'Discussion does not exist',
-				404
+				404,
+				'Discussion does not exist'
 			);
 		}
 

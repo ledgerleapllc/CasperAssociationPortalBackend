@@ -44,7 +44,8 @@ class UserPostComment extends Endpoints {
 			_exit(
 				'error',
 				'The discussion to which you are trying to post a comment does not exist',
-				404
+				404,
+				'The discussion to which you are trying to post a comment does not exist'
 			);
 		}
 
@@ -55,7 +56,8 @@ class UserPostComment extends Endpoints {
 			_exit(
 				'error',
 				'Cannot modify comments on a discussion that is locked and archived',
-				403
+				403,
+				'Cannot modify comments on a discussion that is locked and archived'
 			);
 		}
 
