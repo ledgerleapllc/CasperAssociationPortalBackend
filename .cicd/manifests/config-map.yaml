@@ -5,6 +5,37 @@ metadata:
   name: {{.Values.appName}}-{{.Values.envName}}-config
   namespace: {{.Values.namespace}}
 data:
-  VITE_API_URL: {{.Values.viteApiUrl}}
-  VITE_FRONTEND_URL: {{.Values.viteFrontendUrl}}
-  VITE_HELLOSIGN_CLIENT_ID: {{.Values.viteHelloSignClientId}}
+  APP_NAME: {{.Values.appServiceName}}
+  CORS_SITE: {{.Values.corsSite}}
+  FRONTEND_URL: {{.Values.frontendUrl}}
+  ADMIN_EMAIL: {{.Values.adminEmail}}
+  ADMIN_PASSWORD: {{.Values.adminPassword}}
+  DEV_MODE: {{.Values.devMode}}
+  S3_BUCKET: {{.Values.s3Bucket}}
+  S3_BUCKET_REGION: {{.Values.s3BucketRegion}}
+  S3_BUCKET_KEY: {{.Values.s3BucketKey}}
+  S3_BUCKET_SECRET: {{.Values.s3BucketSecret}}
+  DB_CONN: {{.Values.dbConn}}
+  DB_HOST: {{.Values.dbHost}}
+  DB_PORT: {{.Values.dbPort}}
+  DB_USER: {{.Values.dbUser}}
+  DB_PASS: {{.Values.dbPass}}
+  DB_NAME: {{.Values.dbName}}
+  MASTER_KEY: {{.Values.masterKey}}
+  NODE_IP: {{.Values.nodeIp}}
+  BACKUP_NODE_IP: {{.Values.backupNodeIp}}
+  TRUSTED_NODE: {{.Values.trustedNode}}
+  BACKUP_TRUSTED_NODE: {{.Values.backupTrustedNode}}
+  ACCOUNT_INFO_STANDARD_URLS_UREF: {{.Values.accountInfoStandardUrlsUref}}
+  COINMARKETCAP_KEY: {{.Values.coinmarketcapKey}}
+  EMAIL_HOST: {{.Values.emailHost}}
+  EMAIL_PORT: {{.Values.emailPort}}
+  EMAIL_USER: {{.Values.emailUser}}
+  EMAIL_PASS: {{.Values.emailPass}}
+  EMAIL_FROM: {{.Values.emailFrom}}
+  SHUFTI_CLIENT_ID: {{.Values.shuftiClientId}}
+  SHUFTI_CLIENT_SECRET: {{.Values.shuftiClientSecret}}
+  HELLOSIGN_CLIENT_ID: {{.Values.hellosignClientId}}
+  HELLOSIGN_API_KEY: {{.Values.hellosignApiKey}}
+  INTEGRATION_TEST_EMAIL: {{.Values.integrationTestEmail}}
+  INTEGRATION_TEST_PASSWORD: {{.Values.integrationTestPassword}}
