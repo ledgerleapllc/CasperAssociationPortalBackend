@@ -67,10 +67,11 @@ repos:
       - id: check-yaml
 
   # Markdown - Lint
-  - repo: https://github.com/jumanjihouse/pre-commit-hooks
-    rev: 38980559e3a605691d6579f96222c30778e5a69e
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.30.0
     hooks:
       - id: markdownlint
+        args: ["--config", ".markdownlint.json"]
 
     # Markdown - auto-format
   - repo: https://github.com/executablebooks/mdformat
