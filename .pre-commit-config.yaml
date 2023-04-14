@@ -65,6 +65,8 @@ repos:
 
       # YAML - validate
       - id: check-yaml
+        files: \.yml$|\.yaml$
+        exclude: ^\.cicd/.*
 
   # Markdown - Lint
   - repo: https://github.com/igorshubovych/markdownlint-cli
