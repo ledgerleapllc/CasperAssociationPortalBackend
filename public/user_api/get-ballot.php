@@ -36,7 +36,7 @@ class UserGetBallot extends Endpoints {
 			a.status,
 			a.created_at, 
 			a.updated_at
-			FROM ballots AS a
+			FROM ballots    AS a
 			LEFT JOIN votes AS b
 			ON    a.id = b.ballot_id
 			WHERE a.id = $ballot_id
@@ -57,17 +57,17 @@ class UserGetBallot extends Endpoints {
 		// for/against percs
 		$for_votes = $db->do_select("
 			SELECT count(guid) AS vCount
-			FROM votes
+			FROM  votes
 			WHERE ballot_id = $ballot_id
-			AND direction = 'for'
+			AND   direction = 'for'
 		");
 		$for_votes = (int)($for_votes[0]['vCount'] ?? 0);
 
 		$against_votes = $db->do_select("
 			SELECT count(guid) AS vCount
-			FROM votes
+			FROM  votes
 			WHERE ballot_id = $ballot_id
-			AND direction = 'against'
+			AND   direction = 'against'
 		");
 		$against_votes = (int)($against_votes[0]['vCount'] ?? 0);
 
@@ -98,9 +98,9 @@ class UserGetBallot extends Endpoints {
 		// my vote
 		$myvote = $db->do_select("
 			SELECT direction
-			FROM votes
+			FROM  votes
 			WHERE ballot_id = $ballot_id
-			AND guid = '$user_guid'
+			AND   guid      = '$user_guid'
 		");
 		$ballot['my_vote'] = $myvote[0]['direction'] ?? '';
 

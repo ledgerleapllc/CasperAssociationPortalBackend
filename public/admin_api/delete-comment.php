@@ -21,6 +21,8 @@ class AdminDeleteComment extends Endpoints {
 		$admin_guid = $auth['guid'] ?? '';
 		$comment_id = (int)(parent::$params['comment_id'] ?? 0);
 
+		// No restriction on admins deleted comments anymore
+		/*
 		$check = $db->do_select("
 			SELECT guid
 			FROM discussion_comments
@@ -39,6 +41,13 @@ class AdminDeleteComment extends Endpoints {
 		$result = $db->do_query("
 			DELETE FROM discussion_comments
 			WHERE id = $comment_id
+		");
+		*/
+
+		$db->do_query("
+			UPDATE discussion_comments
+			SET    deleted = 1
+			WHERE  id      = $comment_id
 		");
 
 		_exit(

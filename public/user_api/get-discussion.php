@@ -84,6 +84,7 @@ class UserGetDiscussion extends Endpoints {
 			a.guid, 
 			a.content,
 			a.flagged,
+			a.deleted,
 			a.created_at,
 			a.updated_at,
 			b.pseudonym,

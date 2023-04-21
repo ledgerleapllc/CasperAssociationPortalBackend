@@ -1570,6 +1570,10 @@ class DB {
 						"type"    => "int",
 						"default" => "DEFAULT '0'"
 					),
+					"deleted"     => array(
+						"type"    => "int",
+						"default" => "DEFAULT '0'"
+					),
 					"created_at"  => array(
 						"type"    => "timestamp",
 						"default" => "NULL DEFAULT NULL"

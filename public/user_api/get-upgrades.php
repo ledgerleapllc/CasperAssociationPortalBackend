@@ -29,7 +29,7 @@ class UserGetUpgrades extends Endpoints {
 			$version  = $upgrade['version'] ?? '';
 			$upgraded = $db->do_select("
 				SELECT status
-				FROM user_upgrades
+				FROM  user_upgrades
 				WHERE guid    = '$user_guid'
 				AND   version = '$version'
 				AND   status  = 'complete'

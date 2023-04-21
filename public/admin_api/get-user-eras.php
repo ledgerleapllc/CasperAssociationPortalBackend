@@ -92,15 +92,15 @@ class AdminGetUserEras extends Endpoints {
 			$era_start_time1 = $era_start_time[0] ?? '';
 			$era_start_time2 = $era_start_time[1] ?? '';
 
-			if (!isset($sorted_eras[$era_id])) {
-				$sorted_eras[$era_id] = array(
+			if (!isset($sorted_eras['#'.$era_id])) {
+				$sorted_eras['#'.$era_id] = array(
 					"era_start_time1"  => $era_start_time1,
 					"era_start_time2"  => $era_start_time2,
 					"addresses"        => array()
 				);
 			}
 
-			$sorted_eras[$era_id]["addresses"][$public_key] = [
+			$sorted_eras['#'.$era_id]["addresses"][$public_key] = [
 				"in_pool" => $era['in_auction'],
 				"rewards" => round($era['uptime'], 3)
 			];

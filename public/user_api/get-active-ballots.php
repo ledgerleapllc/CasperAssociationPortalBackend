@@ -33,7 +33,6 @@ class UserGetActiveBallots extends Endpoints {
 			a.updated_at
 			FROM ballots AS a
 			WHERE a.status = 'active'
-			OR    a.status = 'pending'
 			ORDER BY a.updated_at DESC
 		");
 

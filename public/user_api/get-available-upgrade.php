@@ -21,9 +21,9 @@ class UserGetAvailableUpgrade extends Endpoints {
 
 		$upgrade   = $db->do_select("
 			SELECT *
-			FROM upgrades
+			FROM  upgrades
 			WHERE visible = 1
-			AND activate_era > $current_era
+			AND   activate_era > $current_era
 			LIMIT 1
 		");
 

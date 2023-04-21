@@ -76,8 +76,7 @@ class AdminGetActiveBallots extends Endpoints {
 			$numerator   = $numerator <= 0 ? 1 : $numerator;
 			$denominator = $denominator <= 0 ? 1 : $denominator;
 
-			date_default_timezone_set('GMT');
-			$r = date("d:H:i:s", $numerator);
+			$r = $helper->get_timedelta($numerator);
 
 			$ballot['time_remaining']      = $r;
 			$ballot['time_remaining_perc'] = round($numerator / $denominator * 100);

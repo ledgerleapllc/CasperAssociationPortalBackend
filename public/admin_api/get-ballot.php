@@ -32,9 +32,9 @@ class AdminGetBallot extends Endpoints {
 			a.file_url,
 			a.created_at, 
 			a.updated_at
-			FROM ballots AS a
+			FROM ballots    AS a
 			LEFT JOIN votes AS b
-			ON a.id = b.ballot_id
+			ON    a.id = b.ballot_id
 			WHERE a.id = $ballot_id
 			ORDER BY a.updated_at DESC
 		");
@@ -53,17 +53,17 @@ class AdminGetBallot extends Endpoints {
 		// for/against percs
 		$for_votes = $db->do_select("
 			SELECT count(guid) AS vCount
-			FROM votes
+			FROM  votes
 			WHERE ballot_id = $ballot_id
-			AND direction = 'for'
+			AND   direction = 'for'
 		");
 		$for_votes = (int)($for_votes[0]['vCount'] ?? 0);
 
 		$against_votes = $db->do_select("
 			SELECT count(guid) AS vCount
-			FROM votes
+			FROM  votes
 			WHERE ballot_id = $ballot_id
-			AND direction = 'against'
+			AND   direction = 'against'
 		");
 		$against_votes = (int)($against_votes[0]['vCount'] ?? 0);
 
@@ -82,8 +82,7 @@ class AdminGetBallot extends Endpoints {
 		$numerator   = $numerator <= 0 ? 1 : $numerator;
 		$denominator = $denominator <= 0 ? 1 : $denominator;
 
-		date_default_timezone_set('GMT');
-		$r = date("d:H:i:s", $numerator);
+		$r = $helper->get_timedelta($numerator);
 
 		$ballot['time_remaining']      = $r;
 		$ballot['time_remaining_perc'] = round($numerator / $denominator * 100, 4);

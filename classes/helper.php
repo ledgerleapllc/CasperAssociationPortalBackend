@@ -1005,7 +1005,7 @@ class Helper {
 	 *
 	 */
 	public static function get_user(string $guid) {
-		global $db, $suspensions;
+		global $db, $suspensions, $pagelock;
 
 		if (!$guid) {
 			return array();
@@ -1178,6 +1178,9 @@ class Helper {
 
 		$user_array['kyc_status'] = $kyc_status[0]['kyc_status'] ?? '';
 		$user_array['kyc_denied_reason'] = $kyc_status[0]['kyc_denied_reason'] ?? '';
+
+		// add page_lock look-ahead
+		$user_array['page_locks'] = $pagelock->analyze($guid);
 
 		return $user_array;
 	}
