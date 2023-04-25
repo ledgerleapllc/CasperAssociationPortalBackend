@@ -137,8 +137,6 @@ foreach ($nodes as $node) {
 				type = 'suspension'
 			)
 		");
-		elog($pk_short.' triggered probation');
-		elog($probation_at);
 
 		$probation_at = $probation_at[0]['created_at'] ?? '';
 		$diff         = time() - strtotime($probation_at.' UTC');
@@ -210,8 +208,9 @@ foreach ($nodes as $node) {
 						'uptime'
 					)
 				");
+			}
 
-			} else {
+			else {
 				// Still counting down to probation
 				$query = "
 					UPDATE warnings
@@ -249,6 +248,10 @@ foreach ($nodes as $node) {
 						WHERE guid = '$guid'
 					");
 					$user_email = $user_email[0]['email'] ?? '';
+
+					elog('PROBATION TRIGGERED');////
+					elog($user_email);
+					elog($historical_performance.' '.$status_check.' '.$probation_at.' '.$pk_short);
 
 					if($body && $user_email) {
 						$helper->schedule_email(
