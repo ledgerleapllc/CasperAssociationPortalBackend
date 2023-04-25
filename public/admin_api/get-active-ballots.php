@@ -30,13 +30,15 @@ class AdminGetActiveBallots extends Endpoints {
 			FROM ballots AS a
 			WHERE a.status = 'active'
 			OR    a.status = 'pending'
-			ORDER BY a.updated_at DESC
+			ORDER BY a.start_time ASC
 		");
 
 		$ballots = $ballots ?? array();
 
 		foreach ($ballots as &$ballot) {
 			$ballot_id = (int)($ballot['id'] ?? 0);
+			$status        = $ballot['status'] ?? '';
+
 			$for_votes = $db->do_select("
 				SELECT count(guid) AS vCount
 				FROM votes
@@ -53,19 +55,24 @@ class AdminGetActiveBallots extends Endpoints {
 			");
 			$against_votes = (int)($against_votes[0]['vCount'] ?? 0);
 
-			if ($for_votes > $against_votes) {
-				$ballot['for_against'] = 'Passing '.$for_votes.'/'.$against_votes;
+			if ($status == 'done') {
+				if ($for_votes > $against_votes) {
+					$ballot['for_against'] = 'Passing '.$for_votes.'/'.$against_votes;
+				}
+
+				if ($for_votes < $against_votes) {
+					$ballot['for_against'] = 'Failing '.$for_votes.'/'.$against_votes;
+				}
+
+				if ($for_votes == $against_votes) {
+					$ballot['for_against'] = 'Tied '.$for_votes.'/'.$against_votes;
+				}
 			}
 
-			if ($for_votes < $against_votes) {
-				$ballot['for_against'] = 'Failing '.$for_votes.'/'.$against_votes;
-			}
-
-			if ($for_votes == $against_votes) {
-				$ballot['for_against'] = 'Tied '.$for_votes.'/'.$against_votes;
-			}
-
-			$ballot['total_votes'] = $for_votes + $against_votes;
+			$ballot['total_votes'] = (
+				(int)$for_votes + 
+				(int)$against_votes
+			);
 
 			$now   = time();
 			$end   = strtotime($ballot['end_time'].' UTC');

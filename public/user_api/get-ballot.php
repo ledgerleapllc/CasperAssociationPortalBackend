@@ -6,7 +6,7 @@
  * HEADER Authorization: Bearer
  *
  * @api
- * @param int    $ballot_id
+ * @param int $ballot_id
  *
  */
 class UserGetBallot extends Endpoints {
@@ -25,7 +25,7 @@ class UserGetBallot extends Endpoints {
 		$pagelock->check($user_guid, 'votes');
 
 		// fetch ballot
-		$ballot    = $db->do_select("
+		$ballot = $db->do_select("
 			SELECT 
 			a.id,
 			a.guid, 
@@ -40,13 +40,12 @@ class UserGetBallot extends Endpoints {
 			LEFT JOIN votes AS b
 			ON    a.id = b.ballot_id
 			WHERE a.id = $ballot_id
-			ORDER BY a.updated_at DESC
-		");
+			ORDER BY a.start_time ASC
+		")[0] ?? null;
 
-		$ballot    = $ballot[0] ?? array();
 		$ballot_id = (int)($ballot['id'] ?? 0);
 
-		if (empty($ballot)) {
+		if (!$ballot) {
 			_exit(
 				'error',
 				'Invalid ballot ID',
@@ -55,6 +54,8 @@ class UserGetBallot extends Endpoints {
 		}
 
 		// for/against percs
+		$status = $ballot['status'] ?? '';
+
 		$for_votes = $db->do_select("
 			SELECT count(guid) AS vCount
 			FROM  votes
@@ -71,10 +72,18 @@ class UserGetBallot extends Endpoints {
 		");
 		$against_votes = (int)($against_votes[0]['vCount'] ?? 0);
 
-		$total_votes             = $for_votes + $against_votes;
-		$total_votes             = $total_votes == 0 ? 1 : $total_votes;
-		$ballot['votes_for']     = round($for_votes / $total_votes * 100, 1);
-		$ballot['votes_against'] = round($against_votes / $total_votes * 100, 1);
+		$total_votes = (
+			(int)$for_votes + 
+			(int)$against_votes
+		);
+
+		$ballot['total_votes'] = $total_votes;
+
+		if ($status == 'done') {
+			$denominator             = $total_votes == 0 ? 1 : $total_votes;
+			$ballot['votes_for']     = round($for_votes / $denominator * 100, 1);
+			$ballot['votes_against'] = round($against_votes / $denominator * 100, 1);
+		}
 
 		// time remaining
 		$now   = time();

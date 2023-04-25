@@ -20,7 +20,7 @@ class UserGetActiveBallots extends Endpoints {
 		// 403 if page is locked from user access due to KYC or probation
 		$pagelock->check($user_guid, 'votes');
 
-		$ballots   = $db->do_select("
+		$ballots = $db->do_select("
 			SELECT 
 			a.id,
 			a.guid, 
@@ -33,13 +33,16 @@ class UserGetActiveBallots extends Endpoints {
 			a.updated_at
 			FROM ballots AS a
 			WHERE a.status = 'active'
-			ORDER BY a.updated_at DESC
+			OR    a.status = 'pending'
+			ORDER BY a.start_time ASC
 		");
 
 		$ballots = $ballots ?? array();
 
 		foreach ($ballots as &$ballot) {
-			$ballot_id = (int)($ballot['id'] ?? 0);
+			$ballot_id     = (int)($ballot['id'] ?? 0);
+			$status        = $ballot['status'] ?? '';
+
 			$for_votes = $db->do_select("
 				SELECT count(guid) AS vCount
 				FROM votes
@@ -56,19 +59,24 @@ class UserGetActiveBallots extends Endpoints {
 			");
 			$against_votes = (int)($against_votes[0]['vCount'] ?? 0);
 
-			if ($for_votes > $against_votes) {
-				$ballot['for_against'] = 'Passing '.$for_votes.'/'.$against_votes;
+			if ($status == 'done') {
+				if ($for_votes > $against_votes) {
+					$ballot['for_against'] = 'Passing '.$for_votes.'/'.$against_votes;
+				}
+
+				if ($for_votes < $against_votes) {
+					$ballot['for_against'] = 'Failing '.$for_votes.'/'.$against_votes;
+				}
+
+				if ($for_votes == $against_votes) {
+					$ballot['for_against'] = 'Tied '.$for_votes.'/'.$against_votes;
+				}
 			}
 
-			if ($for_votes < $against_votes) {
-				$ballot['for_against'] = 'Failing '.$for_votes.'/'.$against_votes;
-			}
-
-			if ($for_votes == $against_votes) {
-				$ballot['for_against'] = 'Tied '.$for_votes.'/'.$against_votes;
-			}
-
-			$ballot['total_votes'] = $for_votes + $against_votes;
+			$ballot['total_votes'] = (
+				(int)$for_votes + 
+				(int)$against_votes
+			);
 
 			$now   = time();
 			$end   = strtotime($ballot['end_time'].' UTC');
