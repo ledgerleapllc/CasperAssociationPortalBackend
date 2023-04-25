@@ -11,6 +11,7 @@
  * @param string $start_time
  * @param string $end_time
  * @param string $file_url
+ * @param string $file_name
  *
  */
 class AdminCreateBallot extends Endpoints {
@@ -19,7 +20,8 @@ class AdminCreateBallot extends Endpoints {
 		$description = '',
 		$start_time  = '',
 		$end_time    = '',
-		$file_url    = ''
+		$file_url    = '',
+		$file_name   = ''
 	) {
 		global $db, $helper;
 
@@ -32,6 +34,7 @@ class AdminCreateBallot extends Endpoints {
 		$start_time   = parent::$params['start_time'] ?? '';
 		$end_time     = parent::$params['end_time'] ?? '';
 		$file_url     = parent::$params['file_url'] ?? '';
+		$file_name    = parent::$params['file_name'] ?? '';
 		$created_at   = $helper->get_datetime();
 
 		$helper->sanitize_input(
@@ -65,6 +68,10 @@ class AdminCreateBallot extends Endpoints {
 				'Ballot file url too long. Max 255 characters',
 				400
 			);
+		}
+
+		if (strlen($file_name) > 64) {
+			$file_name = substr($file_name, 0, 64);
 		}
 
 		$helper->sanitize_input(
@@ -116,6 +123,7 @@ class AdminCreateBallot extends Endpoints {
 				end_time,
 				status,
 				file_url,
+				file_name,
 				created_at,
 				updated_at
 			) VALUES (
@@ -126,6 +134,7 @@ class AdminCreateBallot extends Endpoints {
 				'$end_time',
 				'$status',
 				'$file_url',
+				'$file_name',
 				'$created_at',
 				'$created_at'
 			)

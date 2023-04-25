@@ -30,6 +30,7 @@ class AdminGetBallot extends Endpoints {
 			a.end_time,
 			a.status,
 			a.file_url,
+			a.file_name,
 			a.created_at, 
 			a.updated_at
 			FROM ballots    AS a

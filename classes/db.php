@@ -1032,6 +1032,10 @@ class DB {
 						"type"    => "varchar(255)",
 						"default" => "DEFAULT ''"
 					),
+					"file_name"   => array(
+						"type"    => "varchar(255)",
+						"default" => "NOT NULL"
+					),
 					"reminded"    => array(
 						"type"    => "int(1)",
 						"default" => "DEFAULT 0"

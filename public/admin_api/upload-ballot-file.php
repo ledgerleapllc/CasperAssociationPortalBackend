@@ -84,7 +84,10 @@ class AdminUploadBallotFile extends Endpoints {
 		if ($ObjectURL) {
 			_exit(
 				'success',
-				$ObjectURL
+				array(
+					"file_url"  => $ObjectURL,
+					"file_name" => $name
+				)
 			);
 		}
 
