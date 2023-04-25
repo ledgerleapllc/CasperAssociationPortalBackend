@@ -46,7 +46,9 @@ foreach ($nodes as $node) {
 	$query      = null;
 
 	$h = $db->do_select("
-		SELECT historical_performance, status
+		SELECT 
+		historical_performance, 
+		status
 		FROM  all_node_data
 		WHERE public_key = '$public_key'
 		AND   era_id     = $current_era_id
@@ -69,6 +71,12 @@ foreach ($nodes as $node) {
 	");
 
 	if (!$check) {
+		// clear duplicates
+		$db->do_query("
+			DELETE FROM warnings
+			WHERE public_key = '$public_key'
+		");
+
 		$db->do_query("
 			INSERT INTO warnings (
 				guid,
@@ -102,7 +110,10 @@ foreach ($nodes as $node) {
 		";
 	}
 
-	if ($historical_performance < $uptime_warning) {
+	if (
+		$historical_performance <  $uptime_warning &&
+		$historical_performance >= $uptime_probation
+	) {
 		$query = "
 			UPDATE warnings
 			SET 
@@ -126,6 +137,8 @@ foreach ($nodes as $node) {
 				type = 'suspension'
 			)
 		");
+		elog($pk_short.' triggered probation');
+		elog($probation_at);
 
 		$probation_at = $probation_at[0]['created_at'] ?? '';
 		$diff         = time() - strtotime($probation_at.' UTC');
