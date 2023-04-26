@@ -403,7 +403,7 @@ function get_params() {
  */
 function _request($key, $strict = 0) {
 	if (isset($_REQUEST[$key])) {
-		$data   = $_REQUEST[$key];
+		$data   = (string)$_REQUEST[$key];
 		$output = '';
 		$length = strlen($data) > 255 ? 255 : strlen($data);
 

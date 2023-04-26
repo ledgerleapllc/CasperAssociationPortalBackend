@@ -148,7 +148,7 @@ class Throttle {
 		'/admin/get-all-votes' => 20,
 		'/admin/get-ballot' => 20,
 		'/admin/cancel-ballot' => 5,
-		'/admin/create-ballot' => 3,
+		'/admin/create-ballot' => 5,
 		'/admin/upload-ballot-file' => 5,
 		'/admin/get-general-assemblies' => 20,
 		'/admin/get-intake' => 20,
