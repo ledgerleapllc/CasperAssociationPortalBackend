@@ -69,6 +69,15 @@ class UserGetFinishedBallots extends Endpoints {
 			}
 
 			$ballot['total_votes'] = $for_votes + $against_votes;
+
+			// my vote
+			$myvote = $db->do_select("
+				SELECT direction
+				FROM  votes
+				WHERE ballot_id = $ballot_id
+				AND   guid      = '$user_guid'
+			");
+			$ballot['my_vote'] = $myvote[0]['direction'] ?? '';
 		}
 
 		_exit(
