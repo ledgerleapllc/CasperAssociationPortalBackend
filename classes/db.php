@@ -134,6 +134,10 @@ class DB {
 					"notes"       => array(
 						"type"    => "text",
 						"default" => ""
+					),
+					"past_upgrade"=> array(
+						"type"    => "int(1)",
+						"default" => "DEFAULT 0"
 					)
 				),
 				"primary"         => "id",

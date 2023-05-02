@@ -99,7 +99,8 @@ class AdminSavePastUpgrade extends Endpoints {
 				activate_at,
 				activate_era,
 				link,
-				notes
+				notes,
+				past_upgrade
 			) VALUES (
 				'$version',
 				'$created_at',
@@ -108,7 +109,8 @@ class AdminSavePastUpgrade extends Endpoints {
 				'$activate_at',
 				$activate_era,
 				'$link',
-				'$notes'
+				'$notes',
+				1
 			)
 		");
 
