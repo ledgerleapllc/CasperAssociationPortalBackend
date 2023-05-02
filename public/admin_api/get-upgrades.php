@@ -17,13 +17,11 @@ class AdminGetUpgrades extends Endpoints {
 		$auth       = authenticate_session(2);
 		$admin_guid = $auth['guid'] ?? '';
 
-		$upgrades  = $db->do_select("
+		$upgrades = $db->do_select("
 			SELECT *
 			FROM upgrades
-			ORDER BY id DESC
-		");
-
-		$upgrades = $upgrades ?? array();
+			ORDER BY activate_era DESC
+		") ?? array();
 
 		_exit(
 			'success',

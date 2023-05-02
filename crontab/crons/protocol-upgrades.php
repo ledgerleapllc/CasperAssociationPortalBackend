@@ -4,7 +4,13 @@ include_once(__DIR__.'/../../core.php');
 global $helper, $db;
 
 $ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, 'http://'.NODE_IP.':8888/status');
+
+curl_setopt(
+	$ch, 
+	CURLOPT_URL, 
+	'http://'.NODE_IP.':8888/status'
+);
+
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 $port8888_response = curl_exec($ch);
 
@@ -30,7 +36,12 @@ if (
 	defined(BACKUP_NODE_IP) &&
 	BACKUP_NODE_IP
 ) {
-	curl_setopt($ch, CURLOPT_URL, 'http://'.BACKUP_NODE_IP.':8888/status');
+	curl_setopt(
+		$ch, 
+		CURLOPT_URL, 
+		'http://'.BACKUP_NODE_IP.':8888/status'
+	);
+
 	$port8888_response = curl_exec($ch);
 
 	try {

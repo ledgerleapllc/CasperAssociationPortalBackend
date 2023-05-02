@@ -21,7 +21,11 @@ class AdminGetAvailableUpgrade extends Endpoints {
 
 		// do blockchain check
 		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, 'http://'.NODE_IP.':8888/status');
+		curl_setopt(
+			$ch, 
+			CURLOPT_URL, 
+			'http://'.NODE_IP.':8888/status'
+		);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 		$port8888_response = curl_exec($ch);
 
