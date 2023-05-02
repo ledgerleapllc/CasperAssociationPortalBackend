@@ -20,7 +20,7 @@ class UserGetUpgrades extends Endpoints {
 		$upgrades  = $db->do_select("
 			SELECT *
 			FROM upgrades
-			ORDER BY id DESC
+			ORDER BY activate_era DESC
 		");
 
 		$upgrades = $upgrades ?? array();
