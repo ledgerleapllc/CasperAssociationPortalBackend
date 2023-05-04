@@ -1069,10 +1069,10 @@ class Helper {
 
 				$entity_pii = self::decrypt_pii($entity_pii);
 
-				$pii_data['entity_name']         = $entity_pii['entity_name'] ?? '';
-				$pii_data['entity_type']         = $entity_pii['entity_type'] ?? '';
-				$pii_data['registration_number'] = $entity_pii['registration_number'] ?? '';
-				$pii_data['tax_id']              = $entity_pii['tax_id'] ?? '';
+				$pii_data['entity_name']       = $entity_pii['entity_name'] ?? '';
+				$pii_data['entity_type']       = $entity_pii['entity_type'] ?? '';
+				$pii_data['entity_reg_number'] = $entity_pii['registration_number'] ?? '';
+				$pii_data['entity_vat_number'] = $entity_pii['tax_id'] ?? '';
 			}
 		}
 
