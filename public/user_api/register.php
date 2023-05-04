@@ -362,8 +362,8 @@ class UserRegister extends Endpoints {
 			$pii_data    = Structs::entity_info;
 			$pii_data["entity_name"]          = $entity_name;
 			$pii_data["entity_type"]          = $entity_type;
-			$pii_data["registration_number"]  = $entity_type;
-			$pii_data["registration_country"] = $entity_type;
+			$pii_data["registration_number"]  = $registration_number;
+			$pii_data["registration_country"] = $registration_country;
 			$pii_data["tax_id"]               = $tax_id;
 			$pii_data_enc = $helper->encrypt_pii($pii_data);
 
