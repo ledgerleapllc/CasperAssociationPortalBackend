@@ -1051,6 +1051,31 @@ class Helper {
 			$pii_data = Structs::user_info;
 		}
 
+		$account_type = $user_array['account_type'] ?? '';
+
+		if ($account_type == 'entity') {
+			$entity_guid = $db->do_select("
+				SELECT entity_guid
+				FROM  user_entity_relations
+				WHERE user_guid = '$guid'
+			")[0]['entity_guid'] ?? '';
+
+			if ($entity_guid) {
+				$entity_pii = $db->do_select("
+					SELECT pii_data
+					FROM  entities
+					WHERE entity_guid = '$entity_guid'
+				")[0]['pii_data'] ?? '';
+
+				$entity_pii = self::decrypt_pii($entity_pii);
+
+				$pii_data['entity_name']         = $entity_pii['entity_name'] ?? '';
+				$pii_data['entity_type']         = $entity_pii['entity_type'] ?? '';
+				$pii_data['registration_number'] = $entity_pii['registration_number'] ?? '';
+				$pii_data['tax_id']              = $entity_pii['tax_id'] ?? '';
+			}
+		}
+
 		$user_array['pii_data'] = $pii_data;
 
 		// attach special warning message
