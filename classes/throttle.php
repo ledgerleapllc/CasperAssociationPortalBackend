@@ -193,6 +193,7 @@ class Throttle {
 		'/admin/manually-update-user-kyc' => 6,
 		'/admin/reinstate-user' => 15,
 		'/admin/reset-user-suspension' => 15,
+		'/admin/get-demo-users' => 200,
 
 		'/public/ca-kyc-hash' => 30,
 		'/public/contact-us' => 4,
