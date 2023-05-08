@@ -98,6 +98,7 @@ repos:
     rev: 25d886f52c2bbbb58386ac8050f4e67952507bc7
     hooks:
       - id: black
+        args: [--skip-string-normalization]
 
   # GithubActions - Validate
   - repo: https://github.com/python-jsonschema/check-jsonschema
