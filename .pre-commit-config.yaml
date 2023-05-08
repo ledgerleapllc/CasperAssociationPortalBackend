@@ -114,7 +114,7 @@ repos:
         files: \.(php)$
         args: [--standard=phpcs-ruleset.xml -p]
       - id: php-unit
-      - id: php-stan
+      # - id: php-stan #TODO: Figure out the right config for composer
 
   # Kubernetes - Validate and Lint
   - repo: https://github.com/stackrox/kube-linter
