@@ -110,8 +110,10 @@ repos:
     rev: f9f30f819d34faa2375e7000822efab0ef677200
     hooks:
       - id: php-lint-all
-      - id: php-unit
       - id: php-cs
+        files: \.(php)$
+        args: [--standard=phpcs-ruleset.xml -p]
+      - id: php-unit
       - id: php-stan
 
   # Kubernetes - Validate and Lint
