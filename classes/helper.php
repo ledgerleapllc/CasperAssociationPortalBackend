@@ -835,10 +835,17 @@ class Helper {
 		(like zero) then we need to pass back an older object.
 		Otherwise everyone will get suspended simultaneously.
 		*/
-		if ($avg < 2) {
+		if ($avg < 20) {
 			// BAD.. something has happened to MAKEs endpoint
 			elog('Problem with MAKE services uptime endpoint...using last known uptime variables');
 			$uptime_array = self::fetch_setting('global_uptime_object');
+
+			try {
+				$uptime_array = json_decode($uptime_array);
+			} catch (Exception $e) {
+				elog('Uptime array from DB backup is not decoding properly');
+				$uptime_array = array();
+			}
 		}
 
 		// write/overwrite trustworthy uptime object
