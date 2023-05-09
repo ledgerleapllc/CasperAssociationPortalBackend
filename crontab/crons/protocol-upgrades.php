@@ -68,6 +68,8 @@ if ($activation_point && $protocol_version) {
 
 	if (!$check) {
 		// estimate activation date from activation_point
+		$now           = $helper->get_datetime();
+		$current_era   = $helper->get_current_era_id();
 		$eras_diff     = $activation_point - $current_era;
 		$hours         = $eras_diff * 2;
 		$activation_at = $helper->get_datetime($hours * 60 * 60);
