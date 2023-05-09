@@ -150,26 +150,80 @@ function elog($msg) {
 }
 
 /**
- * Cron logging
+ * Cron logging, with rotator
  *
  * @param string $msg
  *
  */
 function cronlog($msg) {
+	$cron_file   = BASE_DIR.'/crontab/cron.log';
+	$cron_file_1 = BASE_DIR.'/crontab/cron.log.1';
+	$cron_file_2 = BASE_DIR.'/crontab/cron.log.2';
+	$cron_file_3 = BASE_DIR.'/crontab/cron.log.3';
+	$cron_file_4 = BASE_DIR.'/crontab/cron.log.4';
+	$cron_file_5 = BASE_DIR.'/crontab/cron.log.5';
+
+	$size = 0;
+
+	try {
+		$size = (int)(filesize($cron_file));
+
+		// 1MB rotation
+		if ($size > 1048576) {
+			if (file_exists($cron_file_4)) {
+				rename(
+					$cron_file_4,
+					$cron_file_5,
+				);
+			}
+
+			if (file_exists($cron_file_3)) {
+				rename(
+					$cron_file_3,
+					$cron_file_4,
+				);
+			}
+
+			if (file_exists($cron_file_2)) {
+				rename(
+					$cron_file_2,
+					$cron_file_3,
+				);
+			}
+
+			if (file_exists($cron_file_1)) {
+				rename(
+					$cron_file_1,
+					$cron_file_2,
+				);
+			}
+
+			rename(
+				$cron_file,
+				$cron_file_1,
+			);
+
+			file_put_contents(
+				$cron_file, 
+				''
+			);
+		}
+	} catch (Exception $e) {}
+
 	file_put_contents(
-		BASE_DIR.'/crontab/cron.log', 
+		$cron_file, 
 		print_r("\n", true),
 		FILE_APPEND | LOCK_EX
 	);
 
 	file_put_contents(
-		BASE_DIR.'/crontab/cron.log', 
+		$cron_file, 
 		'['.APP_NAME.' '.(date('c')).'] - ',
 		FILE_APPEND | LOCK_EX
 	);
 
 	file_put_contents(
-		BASE_DIR.'/crontab/cron.log', 
+		$cron_file, 
 		print_r($msg, true),
 		FILE_APPEND | LOCK_EX
 	);

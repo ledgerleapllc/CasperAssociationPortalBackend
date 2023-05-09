@@ -16,3 +16,4 @@ public/documents/*
 
 tmp/*.pem
 crontab/cron.log
+crontab/cron.log.*
