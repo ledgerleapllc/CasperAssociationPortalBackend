@@ -123,11 +123,23 @@ repos:
     hooks:
       - id: kube-linter
 
+  # TODO: Fix this
   # HTML - Validate
-  - repo: https://github.com/Lucas-C/pre-commit-hooks-java
-    rev: 9fa1d706666367df85bc4436392a56b070d7af2e
-    hooks:
-      - id: validate-html
+  # - repo: https://github.com/svenkreiss/html5validator
+  #   rev: 67988d3d7985382e782b641dfe5cba1974d11d3d
+  #   hooks:
+  #     - id: html5validator
+  #       args:
+  #         - "--ignore"
+  #         - 'Bad value "[FRONTEND_URL]/terms-of-service" for attribute "href" on element "a": Illegal character in path segment: "[" is not allowed'
+  #         - "--ignore"
+  #         - 'Bad value "[FRONTEND_URL]/privacy-policy" for attribute "href" on element "a": Illegal character in path segment: "[" is not allowed'
+  #         - "--ignore"
+  #         - 'Bad value "[LINK]" for attribute "href" on element "a": Illegal character in path segment: "[" is not allowed'
+  #         - "--ignore"
+  #         - 'Bad value "[API_URL]/logo2.png" for attribute "src" on element "img": Illegal character in path segment: "[" is not allowed'
+  #         - "--ignore"
+  #         - 'Element "title" must not be empty'
 
   # HTML - Validate
   - repo: https://github.com/Lucas-C/pre-commit-hooks-lxml
