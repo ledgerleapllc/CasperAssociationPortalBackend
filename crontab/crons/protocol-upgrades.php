@@ -87,7 +87,7 @@ if ($activation_point && $protocol_version) {
 				'$protocol_version',
 				'$now',
 				'$now',
-				0,
+				1,
 				'$activation_at',
 				$activation_point
 			)

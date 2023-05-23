@@ -14,6 +14,7 @@
  * @method array   get_emailer_admins()
  * @method string  format_hash()
  * @method bool    can_claim_validator_id()
+ * @method array   get_block()
  * @method string  get_state_root_hash()
  * @method string  public_key_to_account_hash()
  * @method array   get_account_info_standard()
@@ -371,19 +372,215 @@ class Helper {
 
 	/**
 	 *
-	 * Fetch current block hash from Casper blockchain
+	 * Fetch current block from Casper blockchain
+	 *
+	 * @param  string $height
+	 * @return array  $block
+	 *
+	 */
+	public static function get_block($height = 0) {
+		$node_ip = 'http://'.NODE_IP.':7777/rpc';
+		$params  = array();
+		$height  = (int)$height;
+		$curl    = curl_init();
+
+		if ($height) {
+			$params = array(
+				'block_identifier' => array(
+					'Height' => $height
+				)
+			);
+		}
+
+		$json_data = [
+			'id' => (int) time(),
+			'jsonrpc' => '2.0',
+			'method'  => 'chain_get_block',
+			'params'  => $params
+		];
+
+		curl_setopt(
+			$curl, 
+			CURLOPT_URL, 
+			$node_ip.'/rpc'
+		);
+
+		curl_setopt(
+			$curl, 
+			CURLOPT_POST, 
+			true
+		);
+
+		curl_setopt(
+			$curl, 
+			CURLOPT_RETURNTRANSFER, 
+			true
+		);
+
+		curl_setopt(
+			$curl, 
+			CURLOPT_POSTFIELDS, 
+			json_encode($json_data)
+		);
+
+		curl_setopt(
+			$curl, 
+			CURLOPT_HTTPHEADER, 
+			array(
+				'Accept: application/json',
+				'Content-type: application/json',
+			)
+		);
+
+		$response = curl_exec($curl);
+
+		try {
+			$json = json_decode($response);
+		} catch (Exception $e) {
+			$json = json_decode('{}');
+		}
+
+		$block = array(
+			'block_hash'      => $json->result->block->hash ?? '',
+			'state_root_hash' => $json->result->block->header->state_root_hash ?? '',
+			'era_id'          => (int)($json->result->block->header->era_id ?? 0),
+			'timestamp'       => $json->result->block->header->timestamp ?? '',
+			'height'          => (int)($json->result->block->header->height ?? 0)
+		);
+
+		return $block;
+	}
+
+	/**
+	 *
+	 * Fetch auction state by block hash from Casper blockchain
+	 *
+	 * @return string $auction_state
+	 *
+	 */
+	public static function get_auction($block_hash) {
+		$node_ip = 'http://'.NODE_IP.':7777/rpc';
+		$params  = array();
+		$curl    = curl_init();
+
+		$json_data = [
+			'id' => (int) time(),
+			'jsonrpc' => '2.0',
+			'method'  => 'state_get_auction_info',
+			'params'  => array(
+				'block_identifier' => array(
+					'Hash' => $block_hash
+				)
+			)
+		];
+
+		curl_setopt(
+			$curl, 
+			CURLOPT_URL, 
+			$node_ip.'/rpc'
+		);
+
+		curl_setopt(
+			$curl, 
+			CURLOPT_POST, 
+			true
+		);
+
+		curl_setopt(
+			$curl, 
+			CURLOPT_RETURNTRANSFER, 
+			true
+		);
+
+		curl_setopt(
+			$curl, 
+			CURLOPT_POSTFIELDS, 
+			json_encode($json_data)
+		);
+
+		curl_setopt(
+			$curl, 
+			CURLOPT_HTTPHEADER, 
+			array(
+				'Accept: application/json',
+				'Content-type: application/json',
+			)
+		);
+
+		$response = curl_exec($curl);
+
+		try {
+			$json = json_decode($response);
+		} catch (Exception $e) {
+			$json = json_decode('{}');
+		}
+
+		$auction_state = $json->result->auction_state ?? array();
+
+		return $auction_state;
+	}
+
+	/**
+	 *
+	 * Fetch current state root hash from Casper blockchain
 	 *
 	 * @return string $state_root_hash
 	 *
 	 */
 	public static function get_state_root_hash() {
-		$get_block = 'casper-client get-block ';
-		$node_arg  = '--node-address http://'.NODE_IP.':7777/rpc ';
+		$curl = curl_init();
+		$node_ip = 'http://'.NODE_IP.':7777/rpc';
 
-		$json  = shell_exec($get_block.$node_arg);
-		$json  = json_decode($json);
+		$json_data = [
+			'id' => (int) time(),
+			'jsonrpc' => '2.0',
+			'method'  => 'chain_get_state_root_hash',
+			'params'  => []
+		];
 
-		$state_root_hash = $json->result->block->header->state_root_hash ?? '';
+		curl_setopt(
+			$curl, 
+			CURLOPT_URL, 
+			$node_ip.'/rpc'
+		);
+
+		curl_setopt(
+			$curl, 
+			CURLOPT_POST, 
+			true
+		);
+
+		curl_setopt(
+			$curl, 
+			CURLOPT_RETURNTRANSFER, 
+			true
+		);
+
+		curl_setopt(
+			$curl, 
+			CURLOPT_POSTFIELDS, 
+			json_encode($json_data)
+		);
+
+		curl_setopt(
+			$curl, 
+			CURLOPT_HTTPHEADER, 
+			array(
+				'Accept: application/json',
+				'Content-type: application/json',
+			)
+		);
+
+		$response = curl_exec($curl);
+		curl_close($curl);
+
+		try {
+			$json = json_decode($response);
+		} catch (Exception $e) {
+			$json = json_decode('{}');
+		}
+
+		$state_root_hash = $json->result->state_root_hash ?? '';
 
 		return $state_root_hash;
 	}

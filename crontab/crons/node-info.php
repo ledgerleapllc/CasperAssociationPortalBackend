@@ -5,15 +5,10 @@ global $helper, $db;
 
 date_default_timezone_set('UTC');
 
-$get_block      = 'casper-client get-block ';
-$get_auction    = 'casper-client get-auction-info ';
-$node_arg       = '--node-address http://'.NODE_IP.':7777/rpc ';
+$get_block    = $helper->get_block();
+$current_era  = (int)($get_block['era_id'] ?? 0);
 
-$json           = shell_exec($get_block.$node_arg);
-$json           = json_decode($json);
-$current_era    = (int)($json->result->block->header->era_id ?? 0);
-
-$historic_era   = $db->do_select("
+$historic_era = $db->do_select("
 	SELECT era_id
 	FROM all_node_data
 	ORDER BY era_id DESC
@@ -46,10 +41,9 @@ $m = 1;
 // find max in range first
 while ($timestamp != '') {
 	$m         *= 2;
-	$json       = shell_exec($get_block.$node_arg.'-b '.$m);
-	$json       = json_decode($json);
-	$test_era   = (int)($json->result->block->header->era_id ?? 0);
-	$timestamp  = $json->result->block->header->timestamp ?? '';
+	$get_block  = $helper->get_block($m);
+	$test_era   = (int)($get_block['era_id'] ?? 0);
+	$timestamp  = $get_block['timestamp'] ?? '';
 }
 
 // run search algo
@@ -57,10 +51,9 @@ $historic_block = $m;
 elog('finding max block ... '.$historic_block);
 
 while ($test_era != $historic_era) {
-	$json       = shell_exec($get_block.$node_arg.'-b '.$historic_block);
-	$json       = json_decode($json);
-	$test_era   = (int)($json->result->block->header->era_id ?? 0);
-	$timestamp  = $json->result->block->header->timestamp ?? '';
+	$get_block  = $helper->get_block($historic_block);
+	$test_era   = (int)($get_block['era_id'] ?? 0);
+	$timestamp  = $get_block['timestamp'] ?? '';
 
 	if (
 		!$timestamp || $timestamp == '' ||
@@ -96,13 +89,11 @@ while ($current_era >= $historic_era) {
 		elog('Already have era '.$historic_era.' data. skipping');
 		$historic_era += 1;
 	} else {
-		$command      = $get_block.$node_arg.'-b '.$historic_block;
-		$switch_block = shell_exec($command);
-		$json         = json_decode($switch_block);
-		$era_id       = (int)($json->result->block->header->era_id ?? 0);
+		$switch_block = $helper->get_block($historic_block);
+		$era_id       = (int)($switch_block['era_id'] ?? 0);
 		elog('Checking block '.$historic_block.' for era '.$historic_era.'. Found era '.$era_id);
-		$block_hash   = $json->result->block->hash ?? '';
-		$timestamp    = $json->result->block->header->timestamp ?? '';
+		$block_hash   = $switch_block['block_hash'] ?? '';
+		$timestamp    = $switch_block['timestamp'] ?? '';
 		$timestamp    = date("Y-m-d H:i:s", strtotime($timestamp));
 
 		if ($era_id == 0) {
@@ -116,12 +107,9 @@ while ($current_era >= $historic_era) {
 			// get auction info for this new detected era switch
 			elog($era_id.' '.$block_hash);
 			$historic_era   += 1;
-			$command         = $get_auction.$node_arg.'-b '.$block_hash;
-			$auction_info    = shell_exec($command);
 
 			// very large object. aprx 10MB
-			$decoded_response       = json_decode($auction_info);
-			$auction_state          = $decoded_response->result->auction_state ?? array();
+			$auction_state          = $helper->get_auction($block_hash);
 			$bids                   = $auction_state->bids ?? array();
 
 			// get era ID
