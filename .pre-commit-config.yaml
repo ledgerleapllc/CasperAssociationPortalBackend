@@ -147,7 +147,6 @@ repos:
     hooks:
       - id: forbid-html-img-without-alt-text
       - id: forbid-non-std-html-attributes
-      - id: detect-missing-css-classes
 
   # Various - autoformat
   - repo: https://github.com/pre-commit/mirrors-prettier
