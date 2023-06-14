@@ -34,7 +34,7 @@ class AdminGetUpgradedUsers extends Endpoints {
 			ON a.guid = b.guid
 			LEFT JOIN user_upgrades AS c
 			ON b.guid = c.guid
-			AND c.version = '$version' 
+			AND c.version = '$version'
 			WHERE a.verified IS NOT NULL
 		");
 

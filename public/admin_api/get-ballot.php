@@ -21,17 +21,17 @@ class AdminGetBallot extends Endpoints {
 		$admin_guid = $auth['guid'] ?? '';
 		$ballot_id  = (int)(parent::$params['ballot_id'] ?? 0);
 		$ballot     = $db->do_select("
-			SELECT 
+			SELECT
 			a.id,
-			a.guid, 
-			a.title, 
+			a.guid,
+			a.title,
 			a.description,
 			a.start_time,
 			a.end_time,
 			a.status,
 			a.file_url,
 			a.file_name,
-			a.created_at, 
+			a.created_at,
 			a.updated_at
 			FROM ballots    AS a
 			LEFT JOIN votes AS b
@@ -70,7 +70,7 @@ class AdminGetBallot extends Endpoints {
 		$against_votes = (int)($against_votes[0]['vCount'] ?? 0);
 
 		$total_votes = (
-			(int)$for_votes + 
+			(int)$for_votes +
 			(int)$against_votes
 		);
 

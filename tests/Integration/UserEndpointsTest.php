@@ -599,7 +599,7 @@ final class UserEndpointsTest extends TestCase
 		global $db;
 
 		$test_hash = hash(
-			'sha256', 
+			'sha256',
 			getenv('SHUFTI_CLIENT_ID').
 			":".
 			getenv('SHUFTI_CLIENT_SECRET')
@@ -1152,7 +1152,7 @@ final class UserEndpointsTest extends TestCase
 			'/user/post-discussion',
 			array(
 				'draft_id'          => 0,
-				'title'             => 'Test discussion', 
+				'title'             => 'Test discussion',
 				'description'       => 'this is an integration test',
 				'associated_ballot' => 0,
 				'for_upgrade'       => 0
@@ -1175,7 +1175,7 @@ final class UserEndpointsTest extends TestCase
 			'/user/save-draft-discussion',
 			array(
 				'draft_id'          => 0,
-				'title'             => 'Test discussion draft', 
+				'title'             => 'Test discussion draft',
 				'description'       => 'this is an integration test for discussion drafts',
 				'associated_ballot' => 0,
 				'for_upgrade'       => 0
@@ -1582,7 +1582,7 @@ final class UserEndpointsTest extends TestCase
 			ORDER BY ID DESC
 			LIMIT 1
 		");
-		$ballot_id = (int)($ballot_id[0]['id'] ?? 0); 
+		$ballot_id = (int)($ballot_id[0]['id'] ?? 0);
 
 		// fetch ballot
 		$json = Helper::self_curl(
@@ -1647,7 +1647,7 @@ final class UserEndpointsTest extends TestCase
 			ORDER BY ID DESC
 			LIMIT 1
 		");
-		$ballot_id = (int)($ballot_id[0]['id'] ?? 0); 
+		$ballot_id = (int)($ballot_id[0]['id'] ?? 0);
 
 		$json = Helper::self_curl(
 			'post',
@@ -2378,7 +2378,7 @@ final class UserEndpointsTest extends TestCase
 	// 	global $db;
 
 	// 	$scan = Helper::get_dir_contents(
-	// 		BASE_DIR, 
+	// 		BASE_DIR,
 	// 		BASE_DIR.'/public/user_api'
 	// 	);
 
@@ -2508,8 +2508,8 @@ final class UserEndpointsTest extends TestCase
 
 	// 			curl_setopt($ch, CURLOPT_POST, 0);
 	// 			curl_setopt(
-	// 				$ch, 
-	// 				CURLOPT_URL, 
+	// 				$ch,
+	// 				CURLOPT_URL,
 	// 				$url_with_args
 	// 			);
 

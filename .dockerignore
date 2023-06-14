@@ -1,0 +1,9 @@
+sonar-project.properties
+*.md
+LICENSE
+.gitignore
+.dockerignore
+.git
+.github
+tests
+.cicd

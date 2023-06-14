@@ -1,6 +1,6 @@
 <?php
 /**
- * Http throttling class intended to mitigate brute force attacks on th API. 
+ * Http throttling class intended to mitigate brute force attacks on th API.
  * Especially for endpoints that call the auto-mailer, eg. forgot-password.
  *
  * Instantiating the class immediately causes the throttling to take effect.
@@ -9,7 +9,7 @@
  * @param  string  $real_ip
  */
 class Throttle {
-	/** 
+	/**
 	 * Known endpoints array. Referenced by PHPUnit
 	 */
 	public const endpoints = array(
@@ -279,8 +279,8 @@ class Throttle {
 
 		$db->do_query("
 			UPDATE throttle
-			SET 
-			hit          = $new_minute_throttle, 
+			SET
+			hit          = $new_minute_throttle,
 			last_request = $this->now
 			WHERE ip     = '$this->ip'
 			AND   uri    = '$this->uri'

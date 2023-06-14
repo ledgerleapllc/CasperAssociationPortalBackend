@@ -76,7 +76,7 @@ class AdminUploadTerms extends Endpoints {
 
 		try {
 			file_put_contents(
-				BASE_DIR.'/public/documents/terms-of-service.'.$file_ext, 
+				BASE_DIR.'/public/documents/terms-of-service.'.$file_ext,
 				$content
 			);
 		} catch (Exception $e) {

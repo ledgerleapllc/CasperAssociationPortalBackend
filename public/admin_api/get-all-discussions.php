@@ -17,7 +17,7 @@ class AdminGetAllDiscussions extends Endpoints {
 		$auth        = authenticate_session(2);
 		$admin_guid  = $auth['guid'] ?? '';
 		$discussions = $db->do_select("
-			SELECT 
+			SELECT
 			a.id,
 			a.title,
 			a.description,

@@ -115,9 +115,9 @@ class UserGetDashboard extends Endpoints {
 
 		// node data
 		$nodes = $db->do_select("
-			SELECT 
-			a.node_rank, 
-			a.public_key, 
+			SELECT
+			a.node_rank,
+			a.public_key,
 			a.historical_performance,
 			a.bid_delegators_count    AS delegators,
 			a.bid_self_staked_amount  AS self_stake,
@@ -160,7 +160,7 @@ class UserGetDashboard extends Endpoints {
 						in_current_era = 0 OR
 						bid_inactive   = 1
 					)
-					ORDER BY era_id DESC 
+					ORDER BY era_id DESC
 				");
 				$eras_since_redmark = (int)($eras_since_redmark[0]['era_id'] ?? $current_era_id);
 				$eras_since_redmark = $current_era_id - $eras_since_redmark;

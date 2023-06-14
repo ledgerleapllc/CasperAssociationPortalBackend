@@ -61,7 +61,7 @@ class UserUploadSignature extends Endpoints {
 
 		$sig_message = $db->do_select("
 			SELECT sig_message
-			FROM   users 
+			FROM   users
 			WHERE  guid = '$user_guid'
 		");
 

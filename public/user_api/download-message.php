@@ -20,7 +20,7 @@ class UserDownloadMessage extends Endpoints {
 		$message   = 'Please use the Casper Signature python tool to sign this message! '.$timestamp;
 
 		$db->do_query("
-			UPDATE users 
+			UPDATE users
 			SET sig_message = '$message'
 			WHERE guid = '$user_guid'
 		");

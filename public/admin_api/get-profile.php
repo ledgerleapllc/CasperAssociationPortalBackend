@@ -46,7 +46,7 @@ class AdminGetProfile extends Endpoints {
 				created_at,
 				avatar_url,
 				kyc_hash
-				FROM users 
+				FROM users
 				WHERE guid = '$identifier'
 			");
 		} elseif(preg_match(Regex::$pseudonym['pattern'], $identifier)) {
@@ -60,7 +60,7 @@ class AdminGetProfile extends Endpoints {
 				created_at,
 				avatar_url,
 				kyc_hash
-				FROM users 
+				FROM users
 				WHERE pseudonym = '$identifier'
 			");
 		} else {

@@ -130,7 +130,7 @@ class UserSavePii extends Endpoints {
 			SET pii_data = '$enc_pii'
 			WHERE guid   = '$user_guid'
 		");
-		
+
 		_exit(
 			'success',
 			'Saved personal information'

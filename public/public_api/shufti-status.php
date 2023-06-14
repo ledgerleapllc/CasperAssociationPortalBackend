@@ -42,7 +42,7 @@ class PublicShuftiStatus extends Endpoints {
 			$user_guid  = $record['guid'] ?? '';
 			$user_email = $db->do_select("
 				SELECT email
-				FROM users 
+				FROM users
 				WHERE guid = '$user_guid'
 			");
 			$user_email = $user_email[0]['email'] ?? '';
@@ -63,30 +63,30 @@ class PublicShuftiStatus extends Endpoints {
 				curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
 				curl_setopt(
-					$ch, 
-					CURLOPT_URL, 
+					$ch,
+					CURLOPT_URL,
 					'https://api.shuftipro.com/status'
 				);
 
 				curl_setopt(
-					$ch, 
-					CURLOPT_HTTPHEADER, 
+					$ch,
+					CURLOPT_HTTPHEADER,
 					array(
 						'Content-Type: application/json'
 					)
 				);
 
 				curl_setopt(
-					$ch, 
-					CURLOPT_USERPWD, 
+					$ch,
+					CURLOPT_USERPWD,
 					getenv('SHUFTI_CLIENT_ID').
 					":".
 					getenv('SHUFTI_CLIENT_SECRET')
 				);
 
 				curl_setopt(
-					$ch, 
-					CURLOPT_POSTFIELDS, 
+					$ch,
+					CURLOPT_POSTFIELDS,
 					json_encode(
 						array(
 							'reference' => $reference
@@ -98,7 +98,7 @@ class PublicShuftiStatus extends Endpoints {
 				if (
 					$test_hash &&
 					$test_hash == hash(
-						'sha256', 
+						'sha256',
 						getenv('SHUFTI_CLIENT_ID').
 						":".
 						getenv('SHUFTI_CLIENT_SECRET')
@@ -145,7 +145,7 @@ class PublicShuftiStatus extends Endpoints {
 						DELETE FROM shufti
 						WHERE reference_id = '$reference'
 					");
-				} else 
+				} else
 
 				if ($parsed_event == 'verification.accepted') {
 					$db->do_query("
@@ -170,14 +170,14 @@ class PublicShuftiStatus extends Endpoints {
 							'Good news, your KYC in the Casper Association portal was approved. You now have access to all member areas.'
 						);
 					}
-				} else 
+				} else
 
 				if ($parsed_event == 'verification.declined') {
 					$declined_reason = $json->declined_reason ?? '';
 
 					$db->do_query("
 						UPDATE shufti
-						SET 
+						SET
 						status             = 'denied',
 						data               = '$response_enc',
 						declined_reason    = '$declined_reason',
@@ -197,11 +197,11 @@ class PublicShuftiStatus extends Endpoints {
 							'We are sorry, your KYC in the Casper Association portal was denied. Your admin has been notified and we are looking into the cause. You may need to re-submit your documents.'
 						);
 					}
-				} else 
+				} else
 
 				if ($parsed_event == 'verification.status.changed') {
 					// do nothing
-				} else 
+				} else
 
 				if ($parsed_event == 'request.timeout') {
 					$db->do_query("

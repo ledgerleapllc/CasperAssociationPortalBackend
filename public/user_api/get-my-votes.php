@@ -21,7 +21,7 @@ class UserGetMyVotes extends Endpoints {
 		$pagelock->check($user_guid, 'votes');
 
 		$votes     = $db->do_select("
-			SELECT 
+			SELECT
 			a.id,
 			a.direction,
 			a.created_at,

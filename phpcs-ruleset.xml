@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<ruleset name="CustomRuleset">
+  <rule ref="PSR1">
+    <exclude name="PSR1.Classes.ClassDeclaration.MissingNamespace"/>
+    <exclude name="PSR1.Methods.CamelCapsMethodName.NotCamelCaps"/>
+    <exclude name="PSR1.Files.SideEffects"/>
+  </rule>
+  <rule ref="Generic.NamingConventions.UpperCaseConstantName">
+    <exclude name="Generic.NamingConventions.UpperCaseConstantName"/>
+  </rule>
+</ruleset>

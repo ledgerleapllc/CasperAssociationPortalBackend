@@ -6,8 +6,8 @@ global $helper, $db;
 $ch = curl_init();
 
 curl_setopt(
-	$ch, 
-	CURLOPT_URL, 
+	$ch,
+	CURLOPT_URL,
 	'http://'.NODE_IP.':8888/status'
 );
 
@@ -37,8 +37,8 @@ if (
 	BACKUP_NODE_IP
 ) {
 	curl_setopt(
-		$ch, 
-		CURLOPT_URL, 
+		$ch,
+		CURLOPT_URL,
 		'http://'.BACKUP_NODE_IP.':8888/status'
 	);
 

@@ -28,7 +28,7 @@ class PublicGetProfile extends Endpoints {
 				created_at AS registered_at,
 				avatar_url,
 				kyc_hash
-				FROM users 
+				FROM users
 				WHERE pseudonym = '$pseudonym'
 			");
 		} else {

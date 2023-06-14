@@ -1,0 +1,23 @@
+---
+version: "3.7"
+services:
+  app:
+    image: app
+    build: .
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+    env_file:
+      - .env
+  db:
+    image: mariadb:10.6
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: camp
+      MYSQL_USER: app
+      MYSQL_PASSWORD: app
+    volumes:
+      - ./db:/var/lib/mysql
+    ports:
+      - "3306:3306"

@@ -44,18 +44,18 @@ class UserUpdateAvatar extends Endpoints {
 
 		if ($check >= $max_attempts) {
 			_exit(
-				'error', 
-				'You can only change your avatar image '.$max_attempts.' times per month.', 
-				429, 
+				'error',
+				'You can only change your avatar image '.$max_attempts.' times per month.',
+				429,
 				'You can only change your avatar image '.$max_attempts.' times per month.'
 			);
 		}
 
 		if ($size > $max_size) {
 			_exit(
-				'error', 
-				'Avatar image too large. Cannot exceed 1 MB', 
-				413, 
+				'error',
+				'Avatar image too large. Cannot exceed 1 MB',
+				413,
 				'Avatar image too large. Cannot exceed 1 MB'
 			);
 		}
@@ -88,9 +88,9 @@ class UserUpdateAvatar extends Endpoints {
 			$type != 'image/svg+xml'
 		) {
 			_exit(
-				'error', 
-				'Invalid avatar image type. Please use one of *.png, *.jpg, *.jpeg, *.svg', 
-				415, 
+				'error',
+				'Invalid avatar image type. Please use one of *.png, *.jpg, *.jpeg, *.svg',
+				415,
 				'Invalid avatar image type. Please use one of *.png, *.jpg, *.jpeg, *.svg'
 			);
 		}
@@ -140,9 +140,9 @@ class UserUpdateAvatar extends Endpoints {
 		}
 
 		_exit(
-			'error', 
-			'There was a problem updating your avatar at this time. Please try again later', 
-			400, 
+			'error',
+			'There was a problem updating your avatar at this time. Please try again later',
+			400,
 			'There was a problem updating your avatar at this time. Please try again later'
 		);
 	}

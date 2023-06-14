@@ -78,18 +78,18 @@ class Router {
 
 	private static function notFound() {
 		_exit(
-			'error', 
-			'Not Found', 
-			404, 
+			'error',
+			'Not Found',
+			404,
 			'Not Found'
 		);
 	}
 
 	private static function noResource() {
 		_exit(
-			'success', 
-			"I'm a teapot", 
-			418, 
+			'success',
+			"I'm a teapot",
+			418,
 			'I am a teapot - Resource not specified'
 		);
 	}

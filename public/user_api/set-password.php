@@ -54,12 +54,12 @@ class UserSetPassword extends Endpoints {
 
 		/* final confirmation check */
 		$check = $db->do_select("
-			SELECT 
-			guid, 
-			email, 
-			password, 
-			twofa, 
-			totp, 
+			SELECT
+			guid,
+			email,
+			password,
+			twofa,
+			totp,
 			role,
 			confirmation_code
 

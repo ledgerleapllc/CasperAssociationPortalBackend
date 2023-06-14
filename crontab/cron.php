@@ -11,7 +11,7 @@
  *
  * To manually trigger a specific cronjob, specify the name on the cli:
  *
- * $ php crontab/cron.php node-info 
+ * $ php crontab/cron.php node-info
  *
  * @var Cron $cron Master cron controller.
  *

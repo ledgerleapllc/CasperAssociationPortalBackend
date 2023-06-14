@@ -736,7 +736,7 @@ final class AdminEndpointsTest extends TestCase
 			'/admin/post-discussion',
 			array(
 				'draft_id'          => 0,
-				'title'             => 'Test discussion', 
+				'title'             => 'Test discussion',
 				'description'       => 'this is an integration test',
 				'associated_ballot' => 0,
 				'for_upgrade'       => 0
@@ -759,7 +759,7 @@ final class AdminEndpointsTest extends TestCase
 			'/admin/save-draft-discussion',
 			array(
 				'draft_id'          => 0,
-				'title'             => 'Test discussion draft', 
+				'title'             => 'Test discussion draft',
 				'description'       => 'this is an integration test for discussion drafts',
 				'associated_ballot' => 0,
 				'for_upgrade'       => 0
@@ -1226,7 +1226,7 @@ final class AdminEndpointsTest extends TestCase
 			ORDER BY ID DESC
 			LIMIT 1
 		");
-		$ballot_id = (int)($ballot_id[0]['id'] ?? 0); 
+		$ballot_id = (int)($ballot_id[0]['id'] ?? 0);
 
 		// fetch ballot
 		$json = Helper::self_curl(
@@ -1893,7 +1893,7 @@ final class AdminEndpointsTest extends TestCase
 
 		$this->assertEquals(403, $status);
 		$this->assertEquals(
-			'Unauthorized - Failed security clearance check', 
+			'Unauthorized - Failed security clearance check',
 			$detail
 		);
 	}
@@ -2118,7 +2118,7 @@ final class AdminEndpointsTest extends TestCase
 
 		$guid = $db->do_select("
 			SELECT guid
-			FROM users 
+			FROM users
 			WHERE email = 'thomas+subadmin@ledgerleap.com'
 		");
 
@@ -2147,7 +2147,7 @@ final class AdminEndpointsTest extends TestCase
 
 		$guid = $db->do_select("
 			SELECT guid
-			FROM users 
+			FROM users
 			WHERE email = 'thomas+subadmin@ledgerleap.com'
 		");
 

@@ -94,7 +94,7 @@ class Totp {
 	 *
 	 */
 	public static function check_code(
-		$guid, 
+		$guid,
 		$code
 	) {
 		global $helper, $db;

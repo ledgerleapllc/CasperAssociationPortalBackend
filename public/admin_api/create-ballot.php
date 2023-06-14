@@ -139,7 +139,7 @@ class AdminCreateBallot extends Endpoints {
 				'$created_at'
 			)
 		");
-		
+
 		_exit(
 			'success',
 			'Created a new ballot'

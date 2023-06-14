@@ -26,14 +26,14 @@ class UserGetDiscussion extends Endpoints {
 		// fetch discussion
 		$discussion_id = (int)(parent::$params['discussion_id'] ?? 0);
 		$discussion    = $db->do_select("
-			SELECT 
-			a.id, 
+			SELECT
+			a.id,
 			a.guid AS creator_guid,
-			a.title, 
-			a.description, 
+			a.title,
+			a.description,
 			a.is_read,
 			a.locked,
-			a.created_at, 
+			a.created_at,
 			a.updated_at,
 			a.associated_ballot,
 			a.for_upgrade,
@@ -81,7 +81,7 @@ class UserGetDiscussion extends Endpoints {
 		$comments = $db->do_select("
 			SELECT
 			a.id,
-			a.guid, 
+			a.guid,
 			a.content,
 			a.flagged,
 			a.deleted,

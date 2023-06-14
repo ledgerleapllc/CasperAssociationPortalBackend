@@ -1,0 +1,168 @@
+---
+repos:
+  # Semantic commits:
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: b0808a81d4945c510f9baeaf2cff97dccdd55ed0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: [feat, fix, ci, chore, test, docs, revert]
+
+  # Docker
+  - repo: https://github.com/hadolint/hadolint
+    rev: dc66e0996474b324f10649618f424fc76ca60e28
+    hooks:
+      - id: hadolint
+        args:
+          - --ignore
+          - SC1091
+          - --ignore
+          - SC2086
+          - --ignore
+          - DL3059
+          - Dockerfile
+
+  # NGINX - validate config
+  - repo: local
+    hooks:
+      - id: custom-nginx-validate-hook
+        name: Validate and format NGINX config
+        entry: scripts/validate_and_format_nginx.sh
+        language: system
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 9260cbc9c84c06022993bfbcc42fdbf0305c5b8e
+    hooks:
+      # Python - validate extras
+      - id: check-ast
+      - id: check-docstring-first
+      - id: debug-statements
+      - id: check-builtin-literals
+      - id: double-quote-string-fixer
+      - id: check-shebang-scripts-are-executable
+      - id: check-symlinks
+
+      # Python - requirements.txt
+      - id: requirements-txt-fixer
+
+      # Generic
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-merge-conflict
+        args: [--assume-in-merge]
+      - id: destroyed-symlinks
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+
+      # Security
+      - id: detect-aws-credentials
+        args: [--allow-missing-credentials]
+      - id: detect-private-key
+
+      # JSON - validate
+      - id: check-json
+
+      # YAML - validate
+      - id: check-yaml
+        files: \.yml$|\.yaml$
+        exclude: ^\.cicd/.*
+
+  # Markdown - Lint
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.30.0
+    hooks:
+      - id: markdownlint
+        args: ["--config", ".markdownlint.json"]
+
+    # Markdown - auto-format
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 0cbd2054dedf98ec8366001c8a16eacfa85cebc1
+    hooks:
+      - id: mdformat
+
+  # Python - Security and dependencies
+  - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
+    rev: a4a1eb373d8e809534a46855a58be427a0a29219
+    hooks:
+      - id: python-safety-dependencies-check
+
+  # Python - Lint
+  - repo: https://github.com/PyCQA/flake8
+    rev: cb43b60dcc8ff6b20a5dc3f582ff599e1c1f9881
+    hooks:
+      - id: flake8
+
+  # Python - autoformat
+  - repo: https://github.com/psf/black
+    rev: 25d886f52c2bbbb58386ac8050f4e67952507bc7
+    hooks:
+      - id: black
+        args: [--skip-string-normalization]
+
+  # GithubActions - Validate
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0bb1f41fa26c52c49e5861f55d990cc063eb9479
+    hooks:
+      - id: check-github-workflows
+
+  # PHP - Validate and Lint
+  - repo: https://github.com/digitalpulp/pre-commit-php
+    rev: f9f30f819d34faa2375e7000822efab0ef677200
+    hooks:
+      - id: php-lint-all
+      - id: php-cs
+        files: \.(php)$
+        args: [--standard=phpcs-ruleset.xml -p]
+      - id: php-unit
+      # - id: php-stan #TODO: Figure out the right config for composer
+
+  # Kubernetes - Validate and Lint
+  - repo: https://github.com/stackrox/kube-linter
+    rev: e319b0971a7121d2b21ea493059d97060d849068
+    hooks:
+      - id: kube-linter
+
+  # TODO: Fix this
+  # HTML - Validate
+  # - repo: https://github.com/svenkreiss/html5validator
+  #   rev: 67988d3d7985382e782b641dfe5cba1974d11d3d
+  #   hooks:
+  #     - id: html5validator
+  #       args:
+  #         - "--ignore"
+  #         - 'Bad value "[FRONTEND_URL]/terms-of-service" for attribute "href" on element "a": Illegal character in path segment: "[" is not allowed'
+  #         - "--ignore"
+  #         - 'Bad value "[FRONTEND_URL]/privacy-policy" for attribute "href" on element "a": Illegal character in path segment: "[" is not allowed'
+  #         - "--ignore"
+  #         - 'Bad value "[LINK]" for attribute "href" on element "a": Illegal character in path segment: "[" is not allowed'
+  #         - "--ignore"
+  #         - 'Bad value "[API_URL]/logo2.png" for attribute "src" on element "img": Illegal character in path segment: "[" is not allowed'
+  #         - "--ignore"
+  #         - 'Element "title" must not be empty'
+
+  # HTML - Validate
+  - repo: https://github.com/Lucas-C/pre-commit-hooks-lxml
+    rev: 525453db169e9f5fe31700a05d53e706bc41aa4c
+    hooks:
+      - id: forbid-html-img-without-alt-text
+      - id: forbid-non-std-html-attributes
+
+  # Various - autoformat
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: cafd5506f18eea191804850dacc0a4264772d59d
+    hooks:
+      - id: prettier
+        additional_dependencies:
+          - prettier
+          - prettier-plugin-nginx
+          - prettier-plugin-properties
+          - prettier-plugin-sh
+
+  - repo: local
+    hooks:
+      - id: docker-build
+        name: docker-build
+        entry: scripts/docker_build.sh
+        language: system
+        stages: [push]

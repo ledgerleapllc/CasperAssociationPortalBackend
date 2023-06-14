@@ -44,7 +44,7 @@ class AdminAcceptTeamInvite extends Endpoints {
 
 		$user = $db->do_select("
 			SELECT *
-			FROM users 
+			FROM users
 			WHERE email = '$email'
 		");
 

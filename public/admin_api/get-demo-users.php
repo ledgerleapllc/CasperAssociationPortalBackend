@@ -18,7 +18,7 @@ class AdminGetDemoUsers extends Endpoints {
 		$admin_guid  = $auth['guid'] ?? '';
 
 		$demo_users  = $db->do_select("
-			SELECT 
+			SELECT
 			a.guid,
 			a.public_key,
 			b.email

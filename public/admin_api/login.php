@@ -10,7 +10,7 @@
  */
 class AdminLogin extends Endpoints {
 	function __construct(
-		$email = '', 
+		$email = '',
 		$password = ''
 	) {
 		global $db, $helper, $authentication;
@@ -69,7 +69,7 @@ class AdminLogin extends Endpoints {
 		$created_at    = $helper->get_datetime();
 		$ip            = $helper->get_real_ip();
 		$user_agent    = filter($_SERVER['HTTP_USER_AGENT'] ?? '');
-		
+
 		if (!hash_equals($fetched_password_hash, $password_hash)) {
 			// log failed login
 			if($guid) {
@@ -135,7 +135,7 @@ class AdminLogin extends Endpoints {
 
 			// email mfa type
 			$code = $helper->generate_hash(6);
-			
+
 			$helper->schedule_email(
 				'twofa',
 				$email,
@@ -228,7 +228,7 @@ class AdminLogin extends Endpoints {
 		// No MFA enabled, and browser/cookie/IP not recognized. Do 2fa check
 		else {
 			$code = $helper->generate_hash(6);
-			
+
 			$helper->schedule_email(
 				'twofa',
 				$email,

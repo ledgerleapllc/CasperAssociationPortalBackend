@@ -224,8 +224,8 @@ while ($current_era >= $historic_era) {
 
 				$node_status = 'online';
 				$selection   = $db->do_select("
-					SELECT 
-					b.type, 
+					SELECT
+					b.type,
 					b.created_at
 					FROM user_nodes    AS a
 					LEFT JOIN warnings AS b
@@ -497,9 +497,9 @@ while ($current_era >= $historic_era) {
 				$stake_score  = $stake_score < 0 ? 0 : $stake_score;
 
 				$ranking_output[$r['public_key']] = (
-					$uptime_score + 
-					$fee_score    + 
-					$count_score  + 
+					$uptime_score +
+					$fee_score    +
+					$count_score  +
 					$stake_score
 				);
 			}
@@ -514,8 +514,8 @@ while ($current_era >= $historic_era) {
 			// conditional update (fast)
 			$query = "
 				UPDATE all_node_data
-				SET node_rank = 
-				CASE public_key 
+				SET node_rank =
+				CASE public_key
 			";
 
 			$i       = 1;

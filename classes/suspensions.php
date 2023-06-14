@@ -268,7 +268,7 @@ class Suspensions {
 		// suspension table
 		$db->do_query("
 			UPDATE suspensions
-			SET 
+			SET
 			reinstated    = 1,
 			reinstated_at = '$now',
 			decision      = 'Yes'
@@ -324,7 +324,7 @@ class Suspensions {
 		// suspension table
 		$db->do_query("
 			UPDATE suspensions
-			SET 
+			SET
 			decision = 'No'
 			WHERE id = '$sid'
 		");

@@ -1,19 +1,40 @@
+# Environments
 .env
 .env.backup
 
+# Backup Files
+*.bck
+
+# Databases
+db/
+
+# Dependency Lock Files
 composer.lock
 node-info.lock
 
+# Testing Artifacts
 .phpunit.result.cache
 
-vendor/
-
+# Documentation
+phpdoc
 .phpdoc/
 docs/
 public/docs/
 public/documents/*
 !public/documents/index.php
 
+# Temporary Files
 tmp/*.pem
-crontab/cron.log
-crontab/cron.log.*
+*.log
+
+# Vendors
+vendor/
+
+# Tools
+nginx-config-formatter
+
+# Caches
+.cache
+
+# Editors/IDEs
+.vscode

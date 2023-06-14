@@ -52,11 +52,11 @@ class UserGetMyEras extends Endpoints {
 		$eras = $db->do_select("
 			SELECT
 			a.public_key,
-			a.era_id, 
-			a.created_at, 
-			a.in_current_era, 
+			a.era_id,
+			a.created_at,
+			a.in_current_era,
 			a.in_auction,
-			a.bid_inactive, 
+			a.bid_inactive,
 			a.uptime
 			FROM  all_node_data AS a
 			JOIN  user_nodes    AS b

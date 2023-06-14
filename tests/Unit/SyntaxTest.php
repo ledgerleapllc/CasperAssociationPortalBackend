@@ -1,6 +1,6 @@
 <?php
 /**
- * Syntax check unit test. 
+ * Syntax check unit test.
  * Starts at base DIR and iterates through all *.php files recursively.
  * Spawns child processes shell_exec -l syntax check on all files found.
  *

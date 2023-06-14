@@ -18,7 +18,7 @@ class AdminGetHistoricRevokedUsers extends Endpoints {
 		$admin_guid = $auth['guid'] ?? '';
 
 		$users = $db->do_select("
-			SELECT 
+			SELECT
 			a.guid,
 			a.reinstatable,
 			a.reason,

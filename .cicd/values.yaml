@@ -1,0 +1,46 @@
+---
+# K8S / Harness
+envName: <+env.name>
+appName: <+service.name>
+artifactImage: <+artifact.image> # from Harness Service Primary Artifact
+containerPort: 80
+servicePort: 80
+namespace: <+service.name>-<+env.name>
+ingressDomainName: <+serviceVariables.ingressDomainName>
+
+# Application
+## General
+appServiceName: <+service.appName>
+corsSite: <+serviceVariables.corsSite>
+frontendUrl: <+serviceVariables.frontendUrl>
+adminEmail: <+serviceVariables.adminEmail>
+adminPassword: <+serviceVariables.adminPassword>
+devMode: <+serviceVariables.devMode>
+s3Bucket: <+serviceVariables.s3Bucket>
+s3BucketRegion: <+serviceVariables.s3BucketRegion>
+s3BucketKey: <+serviceVariables.s3BucketKey>
+s3BucketSecret: <+serviceVariables.s3BucketSecret>
+dbConn: <+serviceVariables.dbConn>
+dbHost: <+serviceVariables.dbHost>
+dbPort: <+serviceVariables.dbPort>
+dbUser: <+serviceVariables.dbUser>
+dbPass: <+serviceVariables.dbPass>
+dbName: <+serviceVariables.dbName>
+masterKey: <+serviceVariables.masterKey>
+nodeIp: <+serviceVariables.nodeIp>
+backupNodeIp: <+serviceVariables.backupNodeIp>
+trustedNode: <+serviceVariables.trustedNode>
+backupTrustedNode: <+serviceVariables.backupTrustedNode>
+accountInfoStandardUrlsUref: <+serviceVariables.accountInfoStandardUrlsUref>
+coinmarketcapKey: <+serviceVariables.coinmarketcapKey>
+emailHost: <+serviceVariables.emailHost>
+emailPort: <+serviceVariables.emailPort>
+emailUser: <+serviceVariables.emailUser>
+emailPass: <+serviceVariables.emailPass>
+emailFrom: <+serviceVariables.emailFrom>
+shuftiClientId: <+serviceVariables.shuftiClientId>
+shuftiClientSecret: <+serviceVariables.shuftiClientSecret>
+hellosignClientId: <+serviceVariables.hellosignClientId>
+hellosignApiKey: <+serviceVariables.hellosignApiKey>
+integrationTestEmail: <+serviceVariables.integrationTestEmail>
+integrationTestPassword: <+serviceVariables.integrationTestPassword>

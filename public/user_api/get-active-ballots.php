@@ -21,15 +21,15 @@ class UserGetActiveBallots extends Endpoints {
 		$pagelock->check($user_guid, 'votes');
 
 		$ballots = $db->do_select("
-			SELECT 
+			SELECT
 			a.id,
-			a.guid, 
-			a.title, 
+			a.guid,
+			a.title,
 			a.description,
 			a.start_time,
 			a.end_time,
 			a.status,
-			a.created_at, 
+			a.created_at,
 			a.updated_at
 			FROM ballots AS a
 			WHERE a.status = 'active'
@@ -74,7 +74,7 @@ class UserGetActiveBallots extends Endpoints {
 			}
 
 			$ballot['total_votes'] = (
-				(int)$for_votes + 
+				(int)$for_votes +
 				(int)$against_votes
 			);
 

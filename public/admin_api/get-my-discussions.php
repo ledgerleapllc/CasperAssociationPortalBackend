@@ -17,14 +17,14 @@ class AdminGetMyDiscussions extends Endpoints {
 		$auth        = authenticate_session(2);
 		$admin_guid  = $auth['guid'] ?? '';
 		$discussions = $db->do_select("
-			SELECT 
-			a.id, 
-			a.title, 
-			a.description, 
+			SELECT
+			a.id,
+			a.title,
+			a.description,
 			a.is_read,
 			a.locked,
 			a.for_upgrade,
-			a.created_at, 
+			a.created_at,
 			a.updated_at,
 			b.avatar_url,
 			b.pseudonym,

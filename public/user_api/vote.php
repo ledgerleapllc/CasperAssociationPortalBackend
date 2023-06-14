@@ -71,8 +71,8 @@ class UserVote extends Endpoints {
 
 			$db->do_query("
 				UPDATE votes
-				SET 
-				direction       = '$new_direction', 
+				SET
+				direction       = '$new_direction',
 				updated_at      = '$created_at'
 				WHERE ballot_id = $ballot_id
 				AND   guid      = '$user_guid'

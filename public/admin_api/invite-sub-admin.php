@@ -23,9 +23,9 @@ class AdminInviteSubAdmin extends Endpoints {
 
 		if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 			_exit(
-				'error', 
-				'Invalid email address', 
-				400, 
+				'error',
+				'Invalid email address',
+				400,
 				'Invalid email address'
 			);
 		}

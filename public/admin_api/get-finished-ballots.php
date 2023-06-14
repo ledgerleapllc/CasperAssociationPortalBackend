@@ -17,15 +17,15 @@ class AdminGetFinishedBallots extends Endpoints {
 		$auth       = authenticate_session(1);
 		$admin_guid = $auth['guid'] ?? '';
 		$ballots    = $db->do_select("
-			SELECT 
+			SELECT
 			a.id,
-			a.guid, 
-			a.title, 
+			a.guid,
+			a.title,
 			a.description,
 			a.start_time,
 			a.end_time,
 			a.status,
-			a.created_at, 
+			a.created_at,
 			a.updated_at
 			FROM ballots AS a
 			WHERE a.status = 'done'

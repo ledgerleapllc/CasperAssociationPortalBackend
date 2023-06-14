@@ -95,9 +95,9 @@ class PublicGetValidators extends Endpoints {
 			$stake_score  = $stake_score < 0 ? 0 : $stake_score;
 
 			$ranking[$v['public_key']] = (
-				$uptime_score + 
-				$fee_score    + 
-				$count_score  + 
+				$uptime_score +
+				$fee_score    +
+				$count_score  +
 				$stake_score
 			);
 		}
