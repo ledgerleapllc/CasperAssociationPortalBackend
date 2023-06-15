@@ -90,7 +90,7 @@ class UserLogin extends Endpoints {
 
 			$link = PROTOCOL.'://'.FRONTEND_URL.'/set-password?token='.$hash;
 
-			$helper->schedule_email(
+			$helper->instant_email(
 				'user-alert',
 				$email,
 				'Set your new password',
@@ -173,7 +173,7 @@ class UserLogin extends Endpoints {
 			// email mfa type
 			$code = $helper->generate_hash(6);
 
-			$helper->schedule_email(
+			$helper->instant_email(
 				'twofa',
 				$email,
 				'Multi Factor Authentication',
@@ -265,7 +265,7 @@ class UserLogin extends Endpoints {
 		else {
 			$code = $helper->generate_hash(6);
 
-			$helper->schedule_email(
+			$helper->instant_email(
 				'twofa',
 				$email,
 				'Verify Login Attempt Was You',

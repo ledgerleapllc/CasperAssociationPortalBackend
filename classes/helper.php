@@ -39,6 +39,7 @@
  * @method string  get_datetime()
  * @method string  get_filing_year()
  * @method bool    schedule_email()
+ * @method bool    instant_email()
  * @method bool    send_mfa()
  * @method string  verify_mfa()             String returned is a success/error reason message.
  * @method bool    create_mfa_allowance()
@@ -55,6 +56,10 @@
  * @method bool    ISO3166_country()
  *
  */
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
 
 class Helper {
 	private const cipher       = "AES-256-CBC";
@@ -2036,6 +2041,170 @@ class Helper {
 
 	/**
 	 *
+	 * Immediately send an email
+	 *
+	 * As an alternative to the safer email scheduler, we can fire an email instantly, avoiding the delay. Eg. 2fa codes
+	 *
+	 * @param  string  $template_id
+	 * @param  string  $recipient
+	 * @param  string  $subject
+	 * @param  string  $body
+	 * @param  string  $link
+	 * @return bool    $return   Indicating if dispatch was successful
+	 *
+	 */
+	public static function instant_email(
+		string $template_id,
+		string $recipient,
+		string $subject,
+		string $body,
+		string $link = ''
+	) {
+		global $db;
+
+		/*
+		Template IDs
+
+		 - welcome
+		 - approved
+		 - denied
+		 - twofa
+		 - register
+		 - register-admin
+		 - forgot-password
+
+		*/
+
+		// Check previously sent instant emails for duplicates/throttling
+		$now         = self::get_datetime();
+		$one_min_ago = self::get_datetime(-60);
+		$ten_min_ago = self::get_datetime(-600);
+
+		$one_min_check = $db->do_select("
+			SELECT COUNT(email) AS c
+			FROM  instant_emails
+			WHERE email = '$recipient'
+			AND   sent_at > '$one_min_ago'
+		")[0]['c'] ?? 0;
+
+		$ten_min_check = $db->do_select("
+			SELECT COUNT(email) AS c
+			FROM  instant_emails
+			WHERE email = '$recipient'
+			AND   sent_at > '$ten_min_ago'
+		")[0]['c'] ?? 0;
+
+		if ($one_min_check > 5) {
+			// exit 429
+			_exit(
+				'error',
+				'You are trying to send emails too often. Please wait one minute to try again.',
+				429,
+				'You are trying to send emails too often. Please wait one minute to try again.'
+			);
+		}
+
+		if ($ten_min_check > 10) {
+			// exit 429
+			_exit(
+				'error',
+				'You are trying to send emails too often. Please wait five minutes to try again.',
+				429,
+				'You are trying to send emails too often. Please wait five minutes to try again.'
+			);
+		}
+
+		// send instant email
+		$emailer = new PHPMailer(true);
+		$emailer->isSMTP();
+		$emailer->Host = getenv('EMAIL_HOST');
+		$emailer->Port = getenv('EMAIL_PORT');
+		$emailer->SMTPKeepAlive = true;
+		$emailer->Timeout    = 10;
+		$emailer->SMTPSecure = 'tls';
+		$emailer->SMTPAuth   = true;
+		$emailer->Username   = getenv('EMAIL_USER');
+		$emailer->Password   = getenv('EMAIL_PASS');
+
+		$emailer->setFrom(
+			getenv('EMAIL_FROM'), 
+			getenv('APP_NAME')
+		);
+
+		$emailer->addReplyTo(
+			getenv('EMAIL_FROM'),
+			getenv('APP_NAME')
+		);
+
+		$emailer->isHTML(true);
+
+		$api_url   = PROTOCOL."://".CORS_SITE;
+		$front_url = PROTOCOL."://".FRONTEND_URL;
+		$this_year = self::get_filing_year();
+
+		if ($this_year != FIRST_YEAR) {
+			$year_marker = FIRST_YEAR.' - '.$this_year;
+		} else {
+			$year_marker = FIRST_YEAR;
+		}
+
+		if (!$link) {
+			$link = $front_url;
+		}
+
+		$template = file_get_contents(
+			BASE_DIR.
+			'/templates/'.
+			$template_id.
+			'.html'
+		);
+
+		$template = str_replace('[SUBJECT]',      $subject,     $template);
+		$template = str_replace('[BODY]',         $body,        $template);
+		$template = str_replace('[LINK]',         $link,        $template);
+		$template = str_replace('[API_URL]',      $api_url,     $template);
+		$template = str_replace('[FRONTEND_URL]', $front_url,   $template);
+		$template = str_replace('[YEAR_MARKER]',  $year_marker, $template);
+
+		try {
+			$emailer->addAddress($recipient);
+			$emailer->Subject = $subject;
+			$emailer->Body    = $template;
+			$emailer->send();
+			elog("SENT: Instant '".$template_id."' email to: ".$recipient);
+
+			$db->do_query("
+				INSERT INTO instant_emails (
+					template_id,
+					subject,
+					body,
+					link,
+					email,
+					sent_at
+				) VALUES (
+					'$template_id',
+					'$subject',
+					'$body',
+					'$link',
+					'$recipient',
+					'$now'
+				)
+			");
+		} catch (Exception $e) {
+			// elog($e);
+			$emailer->getSMTPInstance()->reset();
+			elog("FAILED: Instant '".$template_id."' email to: ".$recipient);
+			return false;
+		}
+
+		$emailer->clearAddresses();
+		$emailer->clearAttachments();
+
+		return true;
+	}
+
+	/**
+	 *
 	 * Send MFA code
 	 *
 	 * For MFA authenticated functions
@@ -2058,7 +2227,7 @@ class Helper {
 		$code       = self::generate_hash(6);
 		$created_at = self::get_datetime();
 
-		if($selection) {
+		if ($selection) {
 			$query = "
 				DELETE FROM twofa
 				WHERE guid = '$guid'
@@ -2078,7 +2247,7 @@ class Helper {
 			";
 			$db->do_query($query);
 
-			self::schedule_email(
+			self::instant_email(
 				'twofa',
 				$email,
 				APP_NAME.' - Multi Factor Authentication',

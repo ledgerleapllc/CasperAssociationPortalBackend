@@ -136,7 +136,7 @@ class AdminLogin extends Endpoints {
 			// email mfa type
 			$code = $helper->generate_hash(6);
 
-			$helper->schedule_email(
+			$helper->instant_email(
 				'twofa',
 				$email,
 				'Multi Factor Authentication',
@@ -229,7 +229,7 @@ class AdminLogin extends Endpoints {
 		else {
 			$code = $helper->generate_hash(6);
 
-			$helper->schedule_email(
+			$helper->instant_email(
 				'twofa',
 				$email,
 				'Verify Login Attempt Was You',

@@ -305,6 +305,40 @@ class DB {
 				"primary"         => "id",
 				"insert_records"  => array()
 			),
+			"instant_emails"      => array(
+				"fields"          => array(
+					"id"          => array(
+						"type"    => "int",
+						"default" => "NOT NULL AUTO_INCREMENT"
+					),
+					"template_id" => array(
+						"type"    => "varchar(255)",
+						"default" => "DEFAULT NULL"
+					),
+					"subject"     => array(
+						"type"    => "varchar(255)",
+						"default" => "DEFAULT ''"
+					),
+					"body"        => array(
+						"type"    => "text",
+						"default" => ""
+					),
+					"link"        => array(
+						"type"    => "text",
+						"default" => ""
+					),
+					"email"       => array(
+						"type"    => "varchar(255)",
+						"default" => "DEFAULT NULL"
+					),
+					"sent_at"     => array(
+						"type"    => "varchar(64)",
+						"default" => "DEFAULT NULL"
+					)
+				),
+				"primary"         => "id",
+				"insert_records"  => array()
+			),
 			"sessions"            => array(
 				"fields"          => array(
 					"id"          => array(
