@@ -11,10 +11,10 @@ data:
   ADMIN_EMAIL: {{.Values.adminEmail}}
   ADMIN_PASSWORD: {{.Values.adminPassword}}
   DEV_MODE: {{.Values.devMode}}
-  S3_BUCKET: {{.Values.s3Bucket}}
-  S3_BUCKET_REGION: {{.Values.s3BucketRegion}}
-  S3_BUCKET_KEY: {{.Values.s3BucketKey}}
-  S3_BUCKET_SECRET: {{.Values.s3BucketSecret}}
+  S3BUCKET: {{.Values.s3Bucket}}
+  S3BUCKET_REGION: {{.Values.s3BucketRegion}}
+  S3BUCKET_KEY: {{.Values.s3BucketKey}}
+  S3BUCKET_SECRET: {{.Values.s3BucketSecret}}
   DB_CONN: {{.Values.dbConn}}
   DB_HOST: {{.Values.dbHost}}
   DB_PORT: {{.Values.dbPort}}
