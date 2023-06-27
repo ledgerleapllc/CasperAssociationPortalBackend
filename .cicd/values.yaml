@@ -10,7 +10,7 @@ ingressDomainName: <+serviceVariables.ingressDomainName>
 
 # Application
 ## General
-appServiceName: <+service.appName>
+appServiceName: <+service.appServiceName>
 corsSite: <+serviceVariables.corsSite>
 frontendUrl: <+serviceVariables.frontendUrl>
 adminEmail: <+serviceVariables.adminEmail>
