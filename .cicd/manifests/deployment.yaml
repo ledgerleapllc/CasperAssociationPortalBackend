@@ -17,18 +17,18 @@ spec:
         app: {{.Values.appName}}-{{.Values.envName}}
     spec:
       containers:
-        - name: {{.Values.appName}}-{{.Values.envName}}
-          image: {{.Values.artifactImage}}
-          imagePullPolicy: Always
-          ports:
+      - name: {{.Values.appName}}-{{.Values.envName}}
+        image: {{.Values.artifactImage}}
+        imagePullPolicy: Always
+        ports:
         - containerPort: {{.Values.containerPort}}
-          resources:
-            requests:
-              memory: {{.Values.resourceMemoryRequest}}
-              cpu: {{.Values.resourceCpuRequest}}
-            limits:
-              memory: {{.Values.resourceMemoryLimit}}
-              cpu: {{.Values.resourceCpuLimit}}
-          envFrom:
-            - configMapRef:
-                name: {{.Values.appName}}-{{.Values.envName}}-config
+        resources:
+          requests:
+            memory: {{.Values.resourceMemoryRequest}}
+            cpu: {{.Values.resourceCpuRequest}}
+          limits:
+            memory: {{.Values.resourceMemoryLimit}}
+            cpu: {{.Values.resourceCpuLimit}}
+        envFrom:
+        - configMapRef:
+            name: {{.Values.appName}}-{{.Values.envName}}-config
