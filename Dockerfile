@@ -18,7 +18,7 @@ WORKDIR /app
 
 COPY --chown=nginx config/default.conf /etc/nginx/conf.d/default.conf
 
-RUN apk add --no-cache gcompat=1.1.0-r0 php81-gd=8.1.19-r0 php81-zip=8.1.19-r0 php81-mysqli=8.1.19-r0 php81-sqlite3=8.1.19-r0 php81-gmp=8.1.19-r0 php81-bcmath=8.1.19-r0 \
+RUN apk add --no-cache gcompat=1.1.0-r0 php81-gd php81-zip php81-mysqli php81-sqlite3 php81-gmp php81-bcmath \
   && rm -rf /var/www/html \
   && rm -rf /var/cache/apk/* \
   && mkdir -p /app \
