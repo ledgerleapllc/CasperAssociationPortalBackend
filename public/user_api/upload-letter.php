@@ -84,7 +84,7 @@ class UserUploadLetter extends Endpoints {
 		$enabled = (bool)$helper->fetch_setting('enabled_letter_received');
 
 		if ($enabled) {
-			$subject = 'Your letter of motivation has been received';
+			$subject = 'You have completed all onboarding steps';
 			$body    = $helper->fetch_setting('email_letter_received');
 
 			if($body) {
