@@ -787,6 +787,12 @@ class Helper {
 			WHERE public_key = '$validator_id'
 		");
 
+		$mbs = (int)($db->do_select("
+			SELECT mbs
+			FROM  mbs
+			WHERE era_id = $first_era
+		")[0]['mbs'] ?? 0);
+
 		$first_era    = (int)($first_era[0]['first_era'] ?? $current_era_id);
 		$total_eras   = $current_era_id - $first_era;
 		$total_eras   = $total_eras < 0 ? 0 : $total_eras;
@@ -802,6 +808,7 @@ class Helper {
 				in_current_era = 0 OR
 				bid_inactive   = 1
 			)
+			AND current_era_weight > $mbs
 		");
 
 		$total_redmarks = $total_redmarks[0]['total_redmarks'] ?? 0;
@@ -2315,8 +2322,8 @@ class Helper {
 		$created_at   = $selection[0]['created_at'] ?? 0;
 		$expire_time  = self::get_datetime(-300); // 5 minutes ago
 
-		if($selection) {
-			if($mfa_code == $fetched_code) {
+		if ($selection) {
+			if (strtolower($mfa_code) == strtolower($fetched_code)) {
 				$query = "
 					DELETE FROM twofa
 					WHERE guid = '$guid'
