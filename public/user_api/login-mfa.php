@@ -107,7 +107,10 @@ class UserLoginMfa extends Endpoints {
 			$created_at   = $selection[0]['created_at'] ?? 0;
 			$expire_time  = $helper->get_datetime(-300); // 5 minutes ago
 
-			if($selection && $mfa_code == $fetched_code) {
+			if (
+				$selection && 
+				strtolower($mfa_code) == strtolower($fetched_code)
+			) {
 				if($expire_time < $created_at) {
 					$query = "
 						DELETE FROM twofa
@@ -133,7 +136,7 @@ class UserLoginMfa extends Endpoints {
 			}
 		}
 
-		if($AUTHENTICATED) {
+		if ($AUTHENTICATED) {
 			/* issue session */
 			$bearer = $authentication->issue_session($guid);
 

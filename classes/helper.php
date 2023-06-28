@@ -2322,8 +2322,8 @@ class Helper {
 		$created_at   = $selection[0]['created_at'] ?? 0;
 		$expire_time  = self::get_datetime(-300); // 5 minutes ago
 
-		if($selection) {
-			if($mfa_code == $fetched_code) {
+		if ($selection) {
+			if (strtolower($mfa_code) == strtolower($fetched_code)) {
 				$query = "
 					DELETE FROM twofa
 					WHERE guid = '$guid'

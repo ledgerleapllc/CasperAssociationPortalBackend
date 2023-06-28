@@ -424,7 +424,7 @@ class UserRegister extends Endpoints {
 			$body      = 'Hello and welcome to the Casper Association Portal. Your registration code is below:<br><br>';
 			$link      = $confirmation_code;
 
-			$helper->schedule_email(
+			$helper->instant_email(
 				'verify-registration',
 				$recipient,
 				$subject,

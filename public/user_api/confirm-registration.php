@@ -40,7 +40,7 @@ class UserConfirmRegistration extends Endpoints {
 
 		if(
 			$confirmation_code &&
-			$confirmation_code == $fetched_confirmation_code
+			strtolower($confirmation_code) == strtolower($fetched_confirmation_code)
 		) {
 			$db->do_query("
 				UPDATE users
