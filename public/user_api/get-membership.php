@@ -81,51 +81,21 @@ class UserGetMembership extends Endpoints {
 			$public_key = $node['public_key'] ?? '';
 			$uptime     = (float)($node['historical_performance'] ?? 0);
 			$return['uptime'] += $uptime;
+			$return['updates'] = 100;
 
-			$node_eras = $db->do_select("
-				SELECT count(era_id) AS eCount
-				FROM  all_node_data
-				WHERE in_current_era = 1
-				AND   bid_inactive   = 0
-				AND   public_key     = '$public_key'
-			");
+			$era_data = $helper->get_era_data($public_key);
 
-			$eCount = (int)($node_eras[0]['eCount'] ?? 0);
-
-			if ($eCount > $return['total_eras']) {
-				$return['total_eras'] = $eCount;
+			if ($return['total_eras'] < $era_data['total_eras']) {
+				$return['total_eras'] = $era_data['total_eras'];
 			}
 
-			$node_eras_since_redmark = $db->do_select("
-				SELECT era_id
-				FROM all_node_data
-				WHERE public_key = '$public_key'
-				AND (
-					in_current_era = 0 OR
-					bid_inactive   = 1
-				)
-				ORDER BY era_id DESC
-				LIMIT 1;
-			");
-			$node_eras_since_redmark = (int)($node_eras_since_redmark['era_id'] ?? 0);
-			$node_eras_since_redmark = $current_era_id - $node_eras_since_redmark;
-			$node_eras_since_redmark = $node_eras_since_redmark < 0 ?? 0;
-
-			if ($node_eras_since_redmark < $return['eras_since_redmark']) {
-				$return['eras_since_redmark'] = $node_eras_since_redmark;
+			if ($return['total_redmarks'] < $era_data['total_redmarks']) {
+				$return['total_redmarks'] = $era_data['total_redmarks'];
 			}
 
-			$total_redmarks = $db->do_select("
-				SELECT count(era_id) AS eCount
-				FROM all_node_data
-				WHERE public_key = '$public_key'
-				AND (
-					in_current_era = 0 OR
-					bid_inactive   = 1
-				)
-			");
-			$return['total_redmarks'] += (int)($total_redmarks[0]['eCount'] ?? 0);
-			$return['updates'] = 100;;
+			if ($return['eras_since_redmark'] < $era_data['eras_since_redmark']) {
+				$return['eras_since_redmark'] = $era_data['eras_since_redmark'];
+			}
 		}
 
 		$nodes_count      = count($nodes) < 1 ? 1 : count($nodes);
