@@ -781,11 +781,11 @@ class Helper {
 		$total_redmarks     = 0;
 		$eras_since_redmark = 0;
 
-		$first_era = $db->do_select("
+		$first_era = (int)($db->do_select("
 			SELECT min(era_id) AS first_era
 			FROM all_node_data
 			WHERE public_key = '$validator_id'
-		");
+		")[0]['first_era'] ?? $current_era_id);
 
 		$mbs = (int)($db->do_select("
 			SELECT mbs
@@ -793,7 +793,6 @@ class Helper {
 			WHERE era_id = $first_era
 		")[0]['mbs'] ?? 0);
 
-		$first_era    = (int)($first_era[0]['first_era'] ?? $current_era_id);
 		$total_eras   = $current_era_id - $first_era;
 		$total_eras   = $total_eras < 0 ? 0 : $total_eras;
 		$historic_era = $current_era_id - $redmark_calc_size;
