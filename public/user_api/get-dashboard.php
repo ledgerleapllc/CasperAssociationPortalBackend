@@ -118,7 +118,7 @@ class UserGetDashboard extends Endpoints {
 			SELECT
 			a.node_rank,
 			a.public_key,
-			a.historical_performance,
+			a.uptime,
 			a.bid_delegators_count    AS delegators,
 			a.bid_self_staked_amount  AS self_stake,
 			a.bid_total_staked_amount AS total_stake
