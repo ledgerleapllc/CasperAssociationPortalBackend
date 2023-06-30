@@ -15,6 +15,13 @@ class AdminVerifyDemoUser extends Endpoints {
 	) {
 		global $db, $helper;
 
+		_exit(
+			'error',
+			'verify-demo-user endpoint disabled',
+			403,
+			'verify-demo-user endpoint disabled'
+		);
+
 		require_method('POST');
 
 		$auth        = authenticate_session(2);
