@@ -91,7 +91,7 @@ class UserGetVoteEligibility extends Endpoints {
 		}
 
 		if ($return["redmarks"] === null) {
-			$return["redmarks"] = $setting_eras_since_redmark;
+			$return["redmarks"] = 0;
 		}
 
 		if ($return["eras_of_history"] === null) {
