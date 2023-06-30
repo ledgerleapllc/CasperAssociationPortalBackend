@@ -135,7 +135,7 @@ class UserGetDashboard extends Endpoints {
 		if ($nodes) {
 			foreach ($nodes as $node) {
 				$rank        = (int)($node['node_rank'] ?? 0);
-				$uptime      = (float)($node['historical_performance'] ?? 0);
+				$uptime      = (float)($node['uptime'] ?? 0);
 				$delegators  = (int)($node['delegators'] ?? 0);
 				$self_stake  = (int)($node['self_stake'] ?? 0);
 				$total_stake = (int)($node['total_stake'] ?? 0);
@@ -145,36 +145,10 @@ class UserGetDashboard extends Endpoints {
 					$return['rank'] = $rank;
 				}
 
-				$eras_active = $db->do_select("
-					SELECT count(era_id) AS eCount
-					FROM all_node_data
-					WHERE public_key = '$public_key'
-				");
-				$eras_active = (int)($eras_active[0]['eCount'] ?? 0);
-
-				$eras_since_redmark = $db->do_select("
-					SELECT era_id
-					FROM all_node_data
-					WHERE public_key = '$public_key'
-					AND (
-						in_current_era = 0 OR
-						bid_inactive   = 1
-					)
-					ORDER BY era_id DESC
-				");
-				$eras_since_redmark = (int)($eras_since_redmark[0]['era_id'] ?? $current_era_id);
-				$eras_since_redmark = $current_era_id - $eras_since_redmark;
-
-				$total_redmarks = $db->do_select("
-					SELECT count(era_id) AS rCount
-					FROM all_node_data
-					WHERE public_key = '$public_key'
-					AND (
-						in_current_era = 0 OR
-						bid_inactive   = 1
-					)
-				");
-				$total_redmarks = (int)($total_redmarks[0]['rCount'] ?? 0);
+				$node_era_data      = $helper->get_era_data($public_key);
+				$eras_active        = $node_era_data['total_eras'];
+				$eras_since_redmark = $node_era_data['eras_since_redmark'];
+				$total_redmarks     = $node_era_data['total_redmarks'];
 
 				$return['uptime']            += $uptime;
 				$return['total_stake']       += $total_stake;

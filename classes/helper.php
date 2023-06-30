@@ -820,6 +820,7 @@ class Helper {
 				in_current_era = 0 OR
 				bid_inactive   = 1
 			)
+			AND current_era_weight > $mbs
 		");
 
 		$eras_since_redmark = (int)($eras_since_redmark[0]['era_id'] ?? 0);
