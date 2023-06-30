@@ -43,21 +43,11 @@ class UserGetVoteEligibility extends Endpoints {
 		);
 
 		foreach ($user_nodes as $node) {
-			$public_key  = $node['public_key'] ?? '';
-			$past_era_id = $current_era_id - $setting_eras_since_redmark;
+			$public_key    = $node['public_key'] ?? '';
+			$node_era_data = $helper->get_era_data($public_key);
 
 			// redmarks window
-			$redmarks = $db->do_select("
-				SELECT count(id) AS eCount
-				FROM   all_node_data
-				WHERE  public_key  = '$public_key'
-				AND (
-					in_current_era = 0 OR
-					bid_inactive   = 1
-				)
-				AND era_id        >= $past_era_id
-			");
-			$redmarks = (int)($redmarks[0]['eCount'] ?? 0);
+			$redmarks = $node_era_data['total_redmarks'];
 
 			if ($return["redmarks"] === null) {
 				$return["redmarks"] = $redmarks;
@@ -68,14 +58,7 @@ class UserGetVoteEligibility extends Endpoints {
 			}
 
 			// required history
-			$eras_of_history = $db->do_select("
-				SELECT count(id) AS eCount
-				FROM   all_node_data
-				WHERE  public_key = '$public_key'
-				AND    in_current_era = 1
-				AND    bid_inactive   = 0
-			");
-			$eras_of_history = (int)($eras_of_history[0]['eCount'] ?? 0);
+			$eras_of_history = $node_era_data['total_eras'];
 
 			if ($eras_of_history > $setting_minimum_eras) {
 				$eras_of_history = $setting_minimum_eras;
