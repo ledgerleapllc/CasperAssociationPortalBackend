@@ -187,16 +187,16 @@ class Suspensions {
 			$public_key = $node['public_key'] ?? '';
 
 			// check uptime
-			$hist = $db->do_select("
-				SELECT historical_performance
+			$uptime = $db->do_select("
+				SELECT uptime
 				FROM  all_node_data
 				WHERE public_key = '$public_key'
 				AND   era_id     = $current_era_id
 			");
-			$hist = (float)($hist[0]['historical_performance'] ?? 0);
+			$uptime = (float)($uptime[0]['uptime'] ?? 0);
 
-			if ($hist < $uptime_flag) {
-				$uptime_flag = $hist;
+			if ($uptime < $uptime_flag) {
+				$uptime_flag = $uptime;
 			}
 
 			// check redmarks

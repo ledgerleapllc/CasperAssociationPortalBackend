@@ -20,8 +20,7 @@ class AdminGetUserEras extends Endpoints {
 		$auth           = authenticate_session(2);
 		$admin_guid     = $auth['guid'] ?? '';
 		$current_era_id = $helper->get_current_era_id();
-		$settings_eras  = $helper->fetch_setting('uptime_calc_size');
-		$era_minus_360  = $current_era_id - (int)$settings_eras;
+		$era_minus_360  = $current_era_id - 360;
 		$guid           = parent::$params['guid'] ?? '';
 
 		$helper->sanitize_input(
@@ -101,7 +100,7 @@ class AdminGetUserEras extends Endpoints {
 			}
 
 			$sorted_eras['#'.$era_id]["addresses"][$public_key] = [
-				"in_pool" => $era['in_auction'],
+				"in_pool" => (int)($era['in_current_era']) && !(int)($era['bid_inactive']),
 				"rewards" => round($era['uptime'], 3)
 			];
 		}

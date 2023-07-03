@@ -79,7 +79,7 @@ class UserGetMembership extends Endpoints {
 
 		foreach ($nodes as $node) {
 			$public_key = $node['public_key'] ?? '';
-			$uptime     = (float)($node['historical_performance'] ?? 0);
+			$uptime     = (float)($node['uptime'] ?? 0);
 			$return['uptime'] += $uptime;
 			$return['updates'] = 100;
 

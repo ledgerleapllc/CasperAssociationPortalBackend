@@ -111,6 +111,7 @@ class AdminGetDashboard extends Endpoints {
 			SELECT
 			a.public_key,
 			a.historical_performance,
+			a.uptime,
 			a.bid_delegators_count    AS delegators,
 			a.bid_total_staked_amount AS total_stake
 			FROM  all_node_data AS a
@@ -124,7 +125,7 @@ class AdminGetDashboard extends Endpoints {
 
 		if ($nodes) {
 			foreach ($nodes as $node) {
-				$uptime      = (float)($node['historical_performance'] ?? 0);
+				$uptime      = (float)($node['uptime'] ?? 0);
 				$delegators  = (int)($node['delegators'] ?? 0);
 				$total_stake = (int)($node['total_stake'] ?? 0);
 				$public_key  = $node['public_key'] ?? '';
