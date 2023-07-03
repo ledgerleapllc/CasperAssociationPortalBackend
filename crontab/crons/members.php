@@ -47,6 +47,7 @@ foreach ($nodes as $node) {
 
 	$h = $db->do_select("
 		SELECT
+		uptime,
 		historical_performance,
 		status
 		FROM  all_node_data
@@ -54,6 +55,7 @@ foreach ($nodes as $node) {
 		AND   era_id     = $current_era_id
 	");
 
+	$uptime                 = $h[0]['uptime'] ?? 0;
 	$historical_performance = $h[0]['historical_performance'] ?? 0;
 	$status_check           = $h[0]['status'] ?? 'offline';
 
@@ -96,7 +98,7 @@ foreach ($nodes as $node) {
 		");
 	}
 
-	if ($historical_performance >= $uptime_warning) {
+	if ($uptime >= $uptime_warning) {
 		// all good
 		$query = "
 			UPDATE warnings
@@ -111,8 +113,8 @@ foreach ($nodes as $node) {
 	}
 
 	if (
-		$historical_performance <  $uptime_warning &&
-		$historical_performance >= $uptime_probation
+		$uptime <  $uptime_warning &&
+		$uptime >= $uptime_probation
 	) {
 		$query = "
 			UPDATE warnings
@@ -120,13 +122,13 @@ foreach ($nodes as $node) {
 			type         = 'warning',
 			created_at   = '$now',
 			dismissed_at = NULL,
-			message      = 'Warning - Your node $pk_short is starting to fall out of acceptable Casper Association membership criteria. Uptime is $historical_performance%. Please check the health of your node and make adjustments to fix it. If your node uptime falls below $uptime_probation%, you may become at risk of membership probation.'
+			message      = 'Warning - Your node $pk_short is starting to fall out of acceptable Casper Association membership criteria. Uptime is $uptime%. Please check the health of your node and make adjustments to fix it. If your node uptime falls below $uptime_probation%, you may become at risk of membership probation.'
 			WHERE guid       = '$guid'
 			AND   public_key = '$public_key'
 		";
 	}
 
-	if ($historical_performance < $uptime_probation) {
+	if ($uptime < $uptime_probation) {
 		$probation_at = $db->do_select("
 			SELECT created_at
 			FROM  warnings
@@ -184,7 +186,7 @@ foreach ($nodes as $node) {
 					SET
 					type             = 'suspension',
 					dismissed_at     = NULL,
-					message          = 'Your node $pk_short has fallen outside of acceptable Casper Association membership criteria. Uptime is $historical_performance%, less than the required $uptime_probation%. Your account is in suspension. Please check the health of your node and make adjustments to fix it.'
+					message          = 'Your node $pk_short has fallen outside of acceptable Casper Association membership criteria. Uptime is $uptime%, less than the required $uptime_probation%. Your account is in suspension. Please check the health of your node and make adjustments to fix it.'
 					WHERE guid       = '$guid'
 					AND   public_key = '$public_key'
 				";
@@ -217,7 +219,7 @@ foreach ($nodes as $node) {
 					SET
 					type             = 'probation',
 					dismissed_at     = NULL,
-					message          = 'Your node $pk_short has fallen outside of acceptable Casper Association membership criteria. Uptime is $historical_performance%, less than the required $uptime_probation%. You have $time_left_ux to correct the issue to avoid suspension. Please check the health of your node and make adjustments to fix it.'
+					message          = 'Your node $pk_short has fallen outside of acceptable Casper Association membership criteria. Uptime is $uptime%, less than the required $uptime_probation%. You have $time_left_ux to correct the issue to avoid suspension. Please check the health of your node and make adjustments to fix it.'
 					WHERE guid       = '$guid'
 					AND   public_key = '$public_key'
 				";
@@ -251,7 +253,7 @@ foreach ($nodes as $node) {
 
 					elog('PROBATION TRIGGERED');////
 					elog($user_email);
-					elog($historical_performance.' '.$status_check.' '.$probation_at.' '.$pk_short);
+					elog($uptime.' '.$status_check.' '.$probation_at.' '.$pk_short);
 
 					if($body && $user_email) {
 						$helper->schedule_email(
@@ -272,7 +274,7 @@ foreach ($nodes as $node) {
 				type             = 'probation',
 				created_at       = '$now',
 				dismissed_at     = NULL,
-				message          = 'Your node $pk_short has fallen outside of acceptable Casper Association membership criteria. Uptime is $historical_performance%, less than the required $uptime_probation%. You have $time_left_ux to correct the issue to avoid suspension. Please check the health of your node and make adjustments to fix it.'
+				message          = 'Your node $pk_short has fallen outside of acceptable Casper Association membership criteria. Uptime is $uptime%, less than the required $uptime_probation%. You have $time_left_ux to correct the issue to avoid suspension. Please check the health of your node and make adjustments to fix it.'
 				WHERE guid       = '$guid'
 				AND   public_key = '$public_key'
 			";
