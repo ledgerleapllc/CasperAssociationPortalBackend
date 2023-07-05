@@ -114,7 +114,6 @@ class AdminUploadTerms extends Endpoints {
 		} catch (Exception $e) {
 			elog('Admin denied access to cloning Terms of Service document to the cors dir - public/documents. terms-of-service public link is broken.');
 		}
-		
 
 		_exit(
 			'success',

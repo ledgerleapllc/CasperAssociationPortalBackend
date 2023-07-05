@@ -66,8 +66,9 @@ class UserGetMyEras extends Endpoints {
 			ORDER BY a.era_id DESC
 		");
 
-		$eras = $eras ?? array();
-		$sorted_eras = array();
+		$eras         = $eras ?? array();
+		$sorted_eras  = array();
+		$last_in_pool = null;
 
 		// for each node address's era
 		foreach ($eras as $era) {
@@ -86,10 +87,24 @@ class UserGetMyEras extends Endpoints {
 				);
 			}
 
+			$in_pool = (bool)((int)($era['in_current_era']) && !(int)($era['bid_inactive']));
+
+			if (
+				$in_pool === false &&
+				$last_in_pool === true
+			) {
+				$redmark_era = true;
+			} else {
+				$redmark_era = false;
+			}
+
 			$sorted_eras['#'.$era_id]["addresses"][$public_key] = [
-				"in_pool" => (int)($era['in_current_era']) && !(int)($era['bid_inactive']),
-				"rewards" => round($era['uptime'], 3)
+				"in_pool"     => $in_pool,
+				"rewards"     => round($era['uptime'], 3),
+				"redmark_era" => $redmark_era
 			];
+
+			$last_in_pool = $in_pool;
 		}
 
 		$return["eras"] = $sorted_eras;
