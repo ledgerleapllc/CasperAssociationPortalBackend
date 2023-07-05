@@ -61,10 +61,42 @@ class AdminUploadTerms extends Endpoints {
 			);
 		}
 
+		// set mime type
+		if (
+			$file_ext == 'jpg' ||
+			$file_ext == 'jpeg'
+		) {
+			$mime_type = 'image/jpeg';
+		}
+
+		if ($file_ext == 'png') {
+			$mime_type = 'image/png';
+		}
+
+		if ($file_ext == 'gif') {
+			$mime_type = 'image/gif';
+		}
+
+		if ($file_ext == 'pdf') {
+			$mime_type = 'application/pdf';
+		}
+
+		if (
+			$file_ext == 'doc' ||
+			$file_ext == 'docx'
+		) {
+			$mime_type = 'application/msword';
+		}
+
+		if ($file_ext == 'txt') {
+			$mime_type = 'text/plain';
+		}
+
 		$s3result = $S3->putObject([
-			'Bucket'     => S3BUCKET,
-			'Key'        => 'documents/'.$file_name,
-			'SourceFile' => $doc
+			'Bucket'      => S3BUCKET,
+			'Key'         => 'documents/'.$file_name,
+			'SourceFile'  => $doc,
+			'ContentType' => $mime_type
 		]);
 
 		$ObjectURL = $s3result['ObjectURL'] ?? FRONTEND_URL.'/not-found';
@@ -72,6 +104,8 @@ class AdminUploadTerms extends Endpoints {
 		$helper->apply_setting('esign_doc', $ObjectURL);
 
 		// also save clone for cors pdf embedder
+		/// jul 5, 2023 update: trying only s3 source
+		/*
 		$content = file_get_contents($doc);
 
 		try {
@@ -80,8 +114,9 @@ class AdminUploadTerms extends Endpoints {
 				$content
 			);
 		} catch (Exception $e) {
-			elog('Admin denied access to cloning Terms of Service document to the cors dir - public/documents. terms-fo-service public link is broken.');
+			elog('Admin denied access to cloning Terms of Service document to the cors dir - public/documents. terms-of-service public link is broken.');
 		}
+		*/
 
 		_exit(
 			'success',
