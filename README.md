@@ -38,17 +38,6 @@ Install composer v2.5.0
 curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version=2.5.0
 ```
 
-#### Casper Client
-
-```bash
-apt-get update
-apt-get install --no-install-recommends -y curl=7.74.0-1.3+deb11u7 pkg-config=0.29.2-1 libssl-dev=1.1.1n-0+deb11u4 build-essential=12.9 libsodium-dev=1.0.18-1
-curl -L https://github.com/casper-ecosystem/casper-client-rs/archive/refs/tags/v1.5.0.tar.gz -o casper-client.tar.gz
-tar -xvf casper-client.tar.gz -C /tmp
-cd /tmp/casper-client-rs-1.5.0
-cargo build --release
-```
-
 #### NGINX
 
 - Install it:
