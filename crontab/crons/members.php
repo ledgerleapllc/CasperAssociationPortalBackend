@@ -12,7 +12,6 @@ $now               = $helper->get_datetime();
 $current_era_id    = $helper->get_current_era_id();
 
 // collect settings
-$uptime_calc_size  = (int)$helper->fetch_setting('uptime_calc_size');
 $uptime_warning    = (float)$helper->fetch_setting('uptime_warning');
 $uptime_probation  = (float)$helper->fetch_setting('uptime_probation');
 $correction_units  = (int)$helper->fetch_setting('uptime_correction_units');

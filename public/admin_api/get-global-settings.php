@@ -18,7 +18,6 @@ class AdminGetGlobalSettings extends Endpoints {
 		$admin_guid = $auth['guid'] ?? '';
 
 		// uptime
-		$uptime_calc_size         = $helper->fetch_setting('uptime_calc_size');
 		$uptime_warning           = $helper->fetch_setting('uptime_warning');
 		$uptime_probation         = $helper->fetch_setting('uptime_probation');
 		$uptime_correction_units  = $helper->fetch_setting('uptime_correction_units');
@@ -48,7 +47,6 @@ class AdminGetGlobalSettings extends Endpoints {
 		_exit(
 			'success',
 			array(
-				'uptime_calc_size'         => $uptime_calc_size,
 				'uptime_warning'           => $uptime_warning,
 				'uptime_probation'         => $uptime_probation,
 				'uptime_correction_units'  => $uptime_correction_units,

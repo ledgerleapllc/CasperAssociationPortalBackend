@@ -1318,7 +1318,6 @@ class Helper {
 			// attach suspension settings for reference
 			$user_array['settings'] =  array(
 				"uptime_probation"  => (float)self::fetch_setting('uptime_probation'),
-				"uptime_calc_size"  => (int)self::fetch_setting('uptime_calc_size'),
 				"redmark_revoke"    => (int)self::fetch_setting('redmark_revoke'),
 				"redmark_calc_size" => (int)self::fetch_setting('redmark_calc_size')
 			);
