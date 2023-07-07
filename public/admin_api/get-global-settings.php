@@ -25,7 +25,7 @@ class AdminGetGlobalSettings extends Endpoints {
 		$uptime_correction_metric = $helper->fetch_setting('uptime_correction_metric');
 
 		// voting lock
-		$minimum_eras       = $helper->fetch_setting('minimum_eras');
+		$eras_required_to_vote    = $helper->fetch_setting('eras_required_to_vote');
 		$eras_since_redmark = $helper->fetch_setting('eras_since_redmark');
 
 		// redmarks
@@ -54,7 +54,7 @@ class AdminGetGlobalSettings extends Endpoints {
 				'uptime_correction_units'  => $uptime_correction_units,
 				'uptime_correction_metric' => $uptime_correction_metric,
 
-				'minimum_eras'             => $minimum_eras,
+				'eras_required_to_vote'    => $eras_required_to_vote,
 				'eras_since_redmark'       => $eras_since_redmark,
 
 				'redmark_revoke'           => $redmark_revoke,

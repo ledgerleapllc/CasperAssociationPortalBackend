@@ -24,7 +24,7 @@ class UserGetMembership extends Endpoints {
 			"kyc_status"         => "Not Verified",
 			"uptime"             => 0,
 			"total_eras"         => 0,
-			"eras_since_redmark" => 0,
+			"eras_since_redmark" => 999999999,
 			"total_redmarks"     => 0,
 			"updates"            => 0
 		);
@@ -85,17 +85,19 @@ class UserGetMembership extends Endpoints {
 
 			$era_data = $helper->get_era_data($public_key);
 
+			$return['total_redmarks'] += $era_data['total_redmarks'];
+
 			if ($return['total_eras'] < $era_data['total_eras']) {
 				$return['total_eras'] = $era_data['total_eras'];
 			}
 
-			if ($return['total_redmarks'] < $era_data['total_redmarks']) {
-				$return['total_redmarks'] = $era_data['total_redmarks'];
-			}
-
-			if ($return['eras_since_redmark'] < $era_data['eras_since_redmark']) {
+			if ($era_data['eras_since_redmark'] < $return['eras_since_redmark']) {
 				$return['eras_since_redmark'] = $era_data['eras_since_redmark'];
 			}
+		}
+
+		if ($return['eras_since_redmark'] > $return['total_eras']) {
+			$return['eras_since_redmark'] = $return['total_eras'];
 		}
 
 		$nodes_count      = count($nodes) < 1 ? 1 : count($nodes);

@@ -31,20 +31,24 @@ class UserGetVoteEligibility extends Endpoints {
 
 		$user_nodes = $user_nodes ?? array();
 
-		$setting_eras_since_redmark = (int)($helper->fetch_setting('eras_since_redmark'));
-		$setting_minimum_eras       = (int)($helper->fetch_setting('minimum_eras'));
+		$setting_eras_since_redmark    = (int)($helper->fetch_setting('eras_since_redmark'));
+		$setting_eras_required_to_vote = (int)($helper->fetch_setting('eras_required_to_vote'));
 
 		$return = array(
 			"can_vote"         => false,
 			"eras_of_history"  => null,
-			"history_required" => $setting_minimum_eras,
+			"history_required" => $setting_eras_required_to_vote,
 			"redmarks"         => 0,
 			"redmarks_window"  => $setting_eras_since_redmark
 		);
 
 		foreach ($user_nodes as $node) {
 			$public_key    = $node['public_key'] ?? '';
-			$node_era_data = $helper->get_era_data($public_key);
+
+			$node_era_data = $helper->get_era_data(
+				$public_key,
+				$setting_eras_required_to_vote
+			);
 
 			// redmarks window
 			$redmarks = $node_era_data['total_redmarks'];
@@ -60,8 +64,8 @@ class UserGetVoteEligibility extends Endpoints {
 			// required history
 			$eras_of_history = $node_era_data['total_eras'];
 
-			if ($eras_of_history > $setting_minimum_eras) {
-				$eras_of_history = $setting_minimum_eras;
+			if ($eras_of_history > $setting_eras_required_to_vote) {
+				$eras_of_history = $setting_eras_required_to_vote;
 			}
 
 			if ($return["eras_of_history"] === null) {
@@ -83,7 +87,7 @@ class UserGetVoteEligibility extends Endpoints {
 
 		if (
 			$return["redmarks"]        <= 0 &&
-			$return["eras_of_history"] >= $setting_minimum_eras
+			$return["eras_of_history"] >= $setting_eras_required_to_vote
 		) {
 			$return["can_vote"] = true;
 		}

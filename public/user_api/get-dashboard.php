@@ -30,7 +30,7 @@ class UserGetDashboard extends Endpoints {
 			"delegators"           => 0,
 			"uptime"               => 0,
 			"eras_active"          => 0,
-			"eras_since_redmark"   => 0,
+			"eras_since_redmark"   => 999999999,
 			"total_redmarks"       => 0,
 			"total_members"        => 0,
 			"verified_members"     => array(),
@@ -145,18 +145,26 @@ class UserGetDashboard extends Endpoints {
 					$return['rank'] = $rank;
 				}
 
-				$node_era_data      = $helper->get_era_data($public_key);
-				$eras_active        = $node_era_data['total_eras'];
-				$eras_since_redmark = $node_era_data['eras_since_redmark'];
-				$total_redmarks     = $node_era_data['total_redmarks'];
+				$era_data = $helper->get_era_data($public_key);
 
-				$return['uptime']            += $uptime;
-				$return['total_stake']       += $total_stake;
-				$return['self_stake']        += $self_stake;
-				$return['delegators']        += $delegators;
-				$return['eras_active']        = $eras_active;
-				$return['eras_since_redmark'] = $eras_since_redmark;
-				$return['total_redmarks']     = $total_redmarks;
+				$return['total_redmarks'] += $era_data['total_redmarks'];
+
+				if ($return['eras_active'] < $era_data['total_eras']) {
+					$return['eras_active'] = $era_data['total_eras'];
+				}
+
+				if ($era_data['eras_since_redmark'] < $return['eras_since_redmark']) {
+					$return['eras_since_redmark'] = $era_data['eras_since_redmark'];
+				}
+
+				$return['uptime']      += $uptime;
+				$return['total_stake'] += $total_stake;
+				$return['self_stake']  += $self_stake;
+				$return['delegators']  += $delegators;
+			}
+
+			if ($return['eras_since_redmark'] > $return['eras_active']) {
+				$return['eras_since_redmark'] = $return['eras_active'];
 			}
 
 			$return['uptime'] = round($return['uptime'] / count($nodes), 2);

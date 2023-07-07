@@ -770,12 +770,12 @@ class Helper {
 	 *
 	 */
 	public static function get_era_data(
-		string $validator_id = ''
+		string $validator_id = '',
+		int    $window       = 99999999
 	) {
 		global $db;
 
-		$current_era_id    = self::get_current_era_id();
-		$redmark_calc_size = (int)self::fetch_setting('eras_since_redmark');
+		$current_era_id = self::get_current_era_id();
 
 		$total_eras         = 0;
 		$total_redmarks     = 0;
@@ -783,7 +783,7 @@ class Helper {
 
 		$first_era = (int)($db->do_select("
 			SELECT min(era_id) AS first_era
-			FROM all_node_data
+			FROM  all_node_data
 			WHERE public_key = '$validator_id'
 		")[0]['first_era'] ?? $current_era_id);
 
@@ -793,16 +793,17 @@ class Helper {
 			WHERE era_id = $first_era
 		")[0]['mbs'] ?? 0);
 
-		$total_eras   = $current_era_id - $first_era;
-		$total_eras   = $total_eras < 0 ? 0 : $total_eras;
-		$historic_era = $current_era_id - $redmark_calc_size;
+		$total_eras = $current_era_id - $first_era;
+		$total_eras = $total_eras < 0 ? 0 : $total_eras;
+
+		$historic_era = $current_era_id - $window;
 		$historic_era = $historic_era < 0 ? 0 : $historic_era;
 
 		$total_redmarks = $db->do_select("
 			SELECT count(era_id) AS total_redmarks
-			FROM all_node_data
+			FROM  all_node_data
 			WHERE public_key = '$validator_id'
-			AND era_id > $historic_era
+			AND   era_id     > $historic_era
 			AND (
 				in_current_era = 0 OR
 				bid_inactive   = 1

@@ -200,7 +200,11 @@ class Suspensions {
 			}
 
 			// check redmarks
-			$total_redmarks = $helper->get_era_data($public_key);
+			$total_redmarks = $helper->get_era_data(
+				$public_key,
+				$redmark_calc_size
+			);
+
 			$total_redmarks = (int)($total_redmarks['total_redmarks'] ?? 0);
 
 			if ($total_redmarks > $redmark_flag) {
