@@ -47,7 +47,7 @@ class UserGetVoteEligibility extends Endpoints {
 
 			$node_era_data = $helper->get_era_data(
 				$public_key,
-				$setting_eras_required_to_vote
+				$setting_eras_since_redmark
 			);
 
 			// redmarks window
