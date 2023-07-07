@@ -14,6 +14,10 @@ $current_era_id    = $helper->get_current_era_id();
 // collect settings
 $uptime_warning    = (float)$helper->fetch_setting('uptime_warning');
 $uptime_probation  = (float)$helper->fetch_setting('uptime_probation');
+
+$redmark_revoke    = (int)($helper->fetch_setting('redmark_revoke'));
+$redmark_calc_size = (int)($helper->fetch_setting('redmark_calc_size'));
+
 $correction_units  = (int)$helper->fetch_setting('uptime_correction_units');
 $correction_metric = $helper->fetch_setting('uptime_correction_metric');
 $correction_time   = 0;
@@ -97,6 +101,59 @@ foreach ($nodes as $node) {
 		");
 	}
 
+	// do instant revocation based on too many redmarks in the redmark window
+	$era_data = $helper->get_era_data(
+		$public_key,
+		$redmark_calc_size
+	);
+
+	$total_redmarks_in_window = $era_data['total_redmarks'];
+
+	if ($total_redmarks_in_window => $redmark_revoke) {
+		$plural1 = 'redmarks';
+		$plural2 = 'eras';
+
+		if ($total_redmarks_in_window == 1) {
+			$plural1 = 'redmark';
+		}
+
+		if ($redmark_calc_size == 1) {
+			$plural2 = 'era';
+		}
+
+		$db->do_query("
+			UPDATE warnings
+			SET
+			type             = 'suspension',
+			dismissed_at     = NULL,
+			message          = 'Your node $pk_short has fallen outside of acceptable Casper Association membership criteria. You have $total_redmarks_in_window $plural1 within $redmark_calc_size $plural2. Your account is in suspension. Please check the health of your node and make adjustments to fix it.'
+			WHERE guid       = '$guid'
+			AND   public_key = '$public_key'
+		");
+
+		$db->do_query("
+			UPDATE all_node_data
+			SET   status     = 'suspended'
+			WHERE public_key = '$public_key'
+			AND   era_id     = $current_era_id
+		");
+
+		// insert into suspensions
+		$db->do_query("
+			INSERT INTO suspensions (
+				guid,
+				created_at,
+				reason
+			) VALUES (
+				'$guid',
+				'$now',
+				'redmarks'
+			)
+		");
+		continue;
+	}
+
+	// now do uptime based revocation
 	if ($uptime >= $uptime_warning) {
 		// all good
 		$query = "

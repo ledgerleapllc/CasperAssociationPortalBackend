@@ -242,7 +242,7 @@ while ($current_era >= $historic_era) {
 					$delta          = $correction_time - $diff;
 					$delta          = $delta < 0 ? 0 : $delta;
 
-					if ($historical_performance < $uptime_probation) {
+					if ($uptime < $uptime_probation) {
 						if (
 							$warning_status == 'suspension' &&
 							$delta          == 0
