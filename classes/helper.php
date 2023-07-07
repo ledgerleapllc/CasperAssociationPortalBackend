@@ -813,7 +813,7 @@ class Helper {
 
 		$total_redmarks = $total_redmarks[0]['total_redmarks'] ?? 0;
 
-		$eras_since_redmark = $db->do_select("
+		$eras_since_redmark = (int)($db->do_select("
 			SELECT era_id
 			FROM all_node_data
 			WHERE public_key = '$validator_id'
@@ -822,9 +822,10 @@ class Helper {
 				bid_inactive   = 1
 			)
 			AND current_era_weight > $mbs
-		");
+			ORDER BY era_id DESC
+			LIMIT 1
+		")[0]['era_id'] ?? 0);
 
-		$eras_since_redmark = (int)($eras_since_redmark[0]['era_id'] ?? 0);
 		$eras_since_redmark = $current_era_id - $eras_since_redmark;
 		$eras_since_redmark = (
 			$eras_since_redmark > $total_eras ?
