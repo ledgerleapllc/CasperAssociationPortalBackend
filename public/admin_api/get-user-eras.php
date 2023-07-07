@@ -86,7 +86,7 @@ class AdminGetUserEras extends Endpoints {
 		$mbs = (int)($db->do_select("
 			SELECT mbs
 			FROM  mbs
-			WHERE era_id = $current_era_id
+			WHERE era_id = $era_minus_360
 		")[0]['mbs'] ?? 0);
 
 		// for each node address's era

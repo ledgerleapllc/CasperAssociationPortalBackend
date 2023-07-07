@@ -775,7 +775,7 @@ class Helper {
 		global $db;
 
 		$current_era_id    = self::get_current_era_id();
-		$redmark_calc_size = (int)self::fetch_setting('redmark_calc_size');
+		$redmark_calc_size = (int)self::fetch_setting('eras_since_redmark');
 
 		$total_eras         = 0;
 		$total_redmarks     = 0;

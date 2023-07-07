@@ -56,7 +56,8 @@ class UserGetMyEras extends Endpoints {
 			a.in_current_era,
 			a.in_auction,
 			a.bid_inactive,
-			a.uptime
+			a.uptime,
+			a.current_era_weight
 			FROM  all_node_data AS a
 			JOIN  user_nodes    AS b
 			ON    a.public_key  = b.public_key
@@ -72,7 +73,7 @@ class UserGetMyEras extends Endpoints {
 		$mbs = (int)($db->do_select("
 			SELECT mbs
 			FROM  mbs
-			WHERE era_id = $current_era_id
+			WHERE era_id = $era_minus_360
 		")[0]['mbs'] ?? 0);
 
 		// for each node address's era
