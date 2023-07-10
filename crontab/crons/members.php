@@ -109,7 +109,7 @@ foreach ($nodes as $node) {
 
 	$total_redmarks_in_window = $era_data['total_redmarks'];
 
-	if ($total_redmarks_in_window => $redmark_revoke) {
+	if ($total_redmarks_in_window >= $redmark_revoke) {
 		$plural1 = 'redmarks';
 		$plural2 = 'eras';
 
