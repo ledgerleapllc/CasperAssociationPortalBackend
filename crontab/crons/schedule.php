@@ -81,7 +81,7 @@ foreach ($selection as $s) {
 		";
 		$db->do_query($query);
 	} catch (Exception $e) {
-		// elog($e);
+		elog($e);
 		$emailer->getSMTPInstance()->reset();
 		elog("FAILED: Scheduled '".$template_id."' email ID# ".$sid);
 	}
