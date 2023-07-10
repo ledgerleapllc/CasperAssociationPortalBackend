@@ -98,6 +98,7 @@ class Cron {
 			}
 
 			cronlog("Cron->$target_cron not found");
+			elog("Cron->$target_cron not found");
 			return false;
 		}
 
@@ -111,6 +112,7 @@ class Cron {
 
 		if (!$hour || !$minute || !$second) {
 			cronlog('Cron controller broken - not running');
+			elog('Cron controller broken - not running');
 			return false;
 		}
 
@@ -170,6 +172,7 @@ class Cron {
 	) {
 		$command = "/usr/bin/flock -w 0 ".BASE_DIR."/crontab/locks/$name.lock php ".BASE_DIR."/crontab/crons/$name.php 2>&1 | tee -a ".BASE_DIR."/crontab/cron.log > /dev/null &";
 		cronlog("Running cron - $name");
+		elog("Running cron - $name");
 		$proc = shell_exec($command);
 		// cronlog($proc);
 	}
