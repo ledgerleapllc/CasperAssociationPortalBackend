@@ -2199,7 +2199,7 @@ class Helper {
 				)
 			");
 		} catch (Exception $e) {
-			// elog($e);
+			elog($e);
 			$emailer->getSMTPInstance()->reset();
 			elog("FAILED: Instant '".$template_id."' email to: ".$recipient);
 			return false;
