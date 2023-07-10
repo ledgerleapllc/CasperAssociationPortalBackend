@@ -170,7 +170,8 @@ class Cron {
 	private static function run_cron(
 		string $name
 	) {
-		$command = "/usr/bin/flock -w 0 ".BASE_DIR."/crontab/locks/$name.lock php ".BASE_DIR."/crontab/crons/$name.php 2>&1 | tee -a ".BASE_DIR."/crontab/cron.log > /dev/null &";
+		// $command = "/usr/bin/flock -w 0 ".BASE_DIR."/crontab/locks/$name.lock php ".BASE_DIR."/crontab/crons/$name.php 2>&1 | tee -a ".BASE_DIR."/crontab/cron.log > /dev/null &";
+		$command = "php ".BASE_DIR."/crontab/crons/$name.php 2>&1";
 		cronlog("Running cron - $name");
 		elog("Running cron - $name");
 		$proc = shell_exec($command);
