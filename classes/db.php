@@ -964,7 +964,6 @@ class DB {
 						"default" => "NULL DEFAULT NULL"
 					)
 				),
-				"primary"         => "guid",
 				"insert_records"  => array()
 			),
 			"all_node_data"       => array(
