@@ -23,9 +23,9 @@ class UserRemoveNode extends Endpoints {
 
 		$check = $db->do_select("
 			SELECT *
-			FROM user_nodes
-			WHERE guid     = '$user_guid'
-			AND public_key = '$public_key'
+			FROM  user_nodes
+			WHERE guid       = '$user_guid'
+			AND   public_key = '$public_key'
 		");
 
 		$count = count($check ?? array());
@@ -50,8 +50,21 @@ class UserRemoveNode extends Endpoints {
 
 		$db->do_query("
 			DELETE FROM user_nodes
-			WHERE guid     = '$user_guid'
-			AND public_key = '$public_key'
+			WHERE guid       = '$user_guid'
+			AND   public_key = '$public_key'
+		");
+
+		// remove warnings and probations associated with the node
+		$db->do_query("
+			DELETE FROM warnings
+			WHERE guid       = '$user_guid'
+			AND   public_key = '$public_key'
+		");
+
+		$db->do_query("
+			DELETE FROM probations
+			WHERE guid       = '$user_guid'
+			AND   public_key = '$public_key'
 		");
 
 		_exit(
