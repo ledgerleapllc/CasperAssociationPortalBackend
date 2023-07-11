@@ -46,7 +46,6 @@ foreach ($nodes as $node) {
 	$guid       = $node['guid'] ?? '';
 	$public_key = $node['public_key'] ?? '';
 	$pk_short   = $helper->format_hash($public_key, 15);
-	$query      = null;
 
 	$h = $db->do_select("
 		SELECT
@@ -126,11 +125,12 @@ foreach ($nodes as $node) {
 			SET
 			type             = 'suspension',
 			dismissed_at     = NULL,
-			message          = 'Your node $pk_short has fallen outside of acceptable Casper Association membership criteria. You have $total_redmarks_in_window $plural1 within $redmark_calc_size $plural2. Your account is in suspension. Please check the health of your node and make adjustments to fix it.'
+			message          = 'Your node $pk_short has fallen outside of acceptable Casper Association membership criteria. You have $total_redmarks_in_window $plural1 within $redmark_calc_size $plural2. Your account is revoked. Please check the health of your node and make adjustments to fix it.'
 			WHERE guid       = '$guid'
 			AND   public_key = '$public_key'
 		");
 
+		// update node data
 		$db->do_query("
 			UPDATE all_node_data
 			SET   status     = 'suspended'
@@ -153,10 +153,10 @@ foreach ($nodes as $node) {
 		continue;
 	}
 
-	// now do uptime based revocation
+	// now do uptime based warnings/probations/suspensions
 	if ($uptime >= $uptime_warning) {
 		// all good
-		$query = "
+		$db->do_query("
 			UPDATE warnings
 			SET
 			type             = 'warning',
@@ -165,14 +165,29 @@ foreach ($nodes as $node) {
 			message          = ''
 			WHERE guid       = '$guid'
 			AND   public_key = '$public_key'
-		";
+		");
+
+		// clear pre-existing warning_notifications
+		$db->do_query("
+			DELETE FROM warning_notifications
+			WHERE guid = '$guid'
+		");
+
+		// clear pre-existing probations
+		$db->do_query("
+			DELETE FROM probations
+			WHERE guid       = '$guid'
+			AND   public_key = '$public_key'
+		");
+		continue;
 	}
 
+	// only a warning this time
 	if (
 		$uptime <  $uptime_warning &&
 		$uptime >= $uptime_probation
 	) {
-		$query = "
+		$db->do_query("
 			UPDATE warnings
 			SET
 			type         = 'warning',
@@ -181,71 +196,117 @@ foreach ($nodes as $node) {
 			message      = 'Warning - Your node $pk_short is starting to fall out of acceptable Casper Association membership criteria. Uptime is $uptime%. Please check the health of your node and make adjustments to fix it. If your node uptime falls below $uptime_probation%, you may become at risk of membership probation.'
 			WHERE guid       = '$guid'
 			AND   public_key = '$public_key'
-		";
-	}
-
-	if ($uptime < $uptime_probation) {
-		$probation_at = $db->do_select("
-			SELECT created_at
-			FROM  warnings
-			WHERE guid       = '$guid'
-			AND   public_key = '$public_key'
-			AND (
-				type = 'probation' OR
-				type = 'suspension'
-			)
 		");
 
-		$probation_at = $probation_at[0]['created_at'] ?? '';
-		$diff         = time() - strtotime($probation_at.' UTC');
-		$delta        = $correction_time - $diff;
-		$delta        = $delta < 0 ? 0 : $delta;
-		$time_left    = $helper->get_timedelta($delta);
-		$time_left_ux = '';
+		// send warning notification
+		$notified = $db->do_select("
+			SELECT *
+			FROM  warning_notifications
+			WHERE guid = '$guid'
+		");
 
-		// format time left
-		$split    = explode(':', $time_left);
-		$s_day    = (int)($split[0] ?? '');
-		$s_hour   = (int)($split[1] ?? '');
-		$s_minute = (int)($split[2] ?? '');
+		if (!$notified) {
+			$db->do_query("
+				INSERT INTO warning_notifications (
+					guid,
+					sent_at
+				) VALUES (
+					'$guid',
+					'$now'
+				)
+			");
 
-		if ($s_minute > 0) {
-			$time_left_ux = $s_minute.' minute';
+			$enabled = (bool)$helper->fetch_setting('enabled_warning');
 
-			if ($s_minute != 1) {
-				$time_left_ux .= 's';
+			if ($enabled) {
+				$subject = 'Uptime warning';
+				$body    = $helper->fetch_setting('email_warning');
+
+				$user_email = $db->do_select("
+					SELECT email
+					FROM  users
+					WHERE guid = '$guid'
+				")[0]['email'] ?? '';
+
+				if ($body && $user_email) {
+					$helper->schedule_email(
+						'user-alert',
+						$user_email,
+						$subject,
+						$body
+					);
+				}
 			}
 		}
 
-		if ($s_hour > 0) {
-			$time_left_ux = $s_hour.' hour';
+		// clear pre-existing probations
+		$db->do_query("
+			DELETE FROM probations
+			WHERE guid       = '$guid'
+			AND   public_key = '$public_key'
+		");
+		continue;
+	}
 
-			if ($s_hour != 1) {
-				$time_left_ux .= 's';
-			}
-		}
-
-		if ($s_day > 0) {
-			$time_left_ux = $s_day.' day';
-
-			if ($s_day != 1) {
-				$time_left_ux .= 's';
-			}
-		}
+	// uh oh. you get slapped on the wrist
+	if ($uptime < $uptime_probation) {
+		// get existing probation by users public_key
+		$probation_at = $db->do_select("
+			SELECT created_at
+			FROM  probations
+			WHERE guid       = '$guid'
+			AND   public_key = '$public_key'
+		")[0]['created_at'] ?? '';
 
 		// already in probation countdown to suspension
 		if ($probation_at) {
+			$diff         = time() - strtotime($probation_at.' UTC');
+			$delta        = $correction_time - $diff;
+			$delta        = $delta < 0 ? 0 : $delta;
+			$time_left    = $helper->get_timedelta($delta);
+			$time_left_ux = '';
+
+			// format time left
+			$split    = explode(':', $time_left);
+			$s_day    = (int)($split[0] ?? '');
+			$s_hour   = (int)($split[1] ?? '');
+			$s_minute = (int)($split[2] ?? '');
+
+			if ($s_minute > 0) {
+				$time_left_ux = $s_minute.' minute';
+
+				if ($s_minute != 1) {
+					$time_left_ux .= 's';
+				}
+			}
+
+			if ($s_hour > 0) {
+				$time_left_ux = $s_hour.' hour';
+
+				if ($s_hour != 1) {
+					$time_left_ux .= 's';
+				}
+			}
+
+			if ($s_day > 0) {
+				$time_left_ux = $s_day.' day';
+
+				if ($s_day != 1) {
+					$time_left_ux .= 's';
+				}
+			}
+
+			// DROP INTO SUSPENSION IF TIME IS UP
 			if ($delta == 0) {
-				// DROP INTO SUSPENSION
-				$query = "
+				$db->do_query("
 					UPDATE warnings
 					SET
 					type             = 'suspension',
 					dismissed_at     = NULL,
-					message          = 'Your node $pk_short has fallen outside of acceptable Casper Association membership criteria. Uptime is $uptime%, less than the required $uptime_probation%. Your account is in suspension. Please check the health of your node and make adjustments to fix it.'
+					message          = 'Your node $pk_short has fallen outside of acceptable Casper Association membership criteria. Uptime is $uptime%, less than the required $uptime_probation%. Your account is revoked. Please check the health of your node and make adjustments to fix it.'
 					WHERE guid       = '$guid'
 					AND   public_key = '$public_key'
-				";
+				");
 
 				$db->do_query("
 					UPDATE all_node_data
@@ -266,19 +327,20 @@ foreach ($nodes as $node) {
 						'uptime'
 					)
 				");
+				continue;
 			}
 
 			else {
 				// Still counting down to probation
-				$query = "
+				$db->do_query("
 					UPDATE warnings
 					SET
 					type             = 'probation',
 					dismissed_at     = NULL,
-					message          = 'Your node $pk_short has fallen outside of acceptable Casper Association membership criteria. Uptime is $uptime%, less than the required $uptime_probation%. You have $time_left_ux to correct the issue to avoid suspension. Please check the health of your node and make adjustments to fix it.'
+					message          = 'Your node $pk_short has fallen outside of acceptable Casper Association membership criteria. Uptime is $uptime%, less than the required $uptime_probation%. You have $time_left_ux to correct the issue to avoid revocation. Please check the health of your node and make adjustments to fix it.'
 					WHERE guid       = '$guid'
 					AND   public_key = '$public_key'
-				";
+				");
 
 				// update all_node_data by public_key and current_era
 				$db->do_query("
@@ -287,58 +349,62 @@ foreach ($nodes as $node) {
 					WHERE public_key = '$public_key'
 					AND   era_id     = $current_era_id
 				");
-
-				// email for user, as per global settings
-				$enabled = (bool)$helper->fetch_setting('enabled_probation');
-
-				if (
-					$enabled && (
-						$status_check == 'online'  ||
-						$status_check == 'offline'
-					)
-				) {
-					$subject = 'You have been placed on probation';
-					$body    = $helper->fetch_setting('email_probation');
-
-					$user_email = $db->do_select("
-						SELECT email
-						FROM users
-						WHERE guid = '$guid'
-					");
-					$user_email = $user_email[0]['email'] ?? '';
-
-					elog('PROBATION TRIGGERED');////
-					elog($user_email);
-					elog($uptime.' '.$status_check.' '.$probation_at.' '.$pk_short);
-
-					if($body && $user_email) {
-						$helper->schedule_email(
-							'user-alert',
-							$user_email,
-							$subject,
-							$body
-						);
-					}
-				}
 			}
+		}
 
 		// Now starting probation countdown
-		} else {
-			$query = "
+		else {
+			elog('PROBATION TRIGGERED');
+			elog($uptime.' '.$status_check.' '.$probation_at.' '.$pk_short);
+
+			$db->do_query("
 				UPDATE warnings
 				SET
 				type             = 'probation',
 				created_at       = '$now',
 				dismissed_at     = NULL,
-				message          = 'Your node $pk_short has fallen outside of acceptable Casper Association membership criteria. Uptime is $uptime%, less than the required $uptime_probation%. You have $time_left_ux to correct the issue to avoid suspension. Please check the health of your node and make adjustments to fix it.'
+				message          = 'Your node $pk_short has fallen outside of acceptable Casper Association membership criteria. Uptime is $uptime%, less than the required $uptime_probation%. You have $time_left_ux to correct the issue to avoid revocation. Please check the health of your node and make adjustments to fix it.'
 				WHERE guid       = '$guid'
 				AND   public_key = '$public_key'
-			";
-		}
-	}
+			");
 
-	if ($query) {
-		// elog($query);
-		$db->do_query($query);
+			// add probation record
+			$db->do_query("
+				INSERT INTO probations (
+					guid,
+					public_key,
+					created_at
+				) VALUES (
+					'$guid',
+					'$public_key',
+					'$now'
+				)
+			");
+
+			// send probation email
+			$enabled = (bool)$helper->fetch_setting('enabled_probation');
+
+			if ($enabled) {
+				$subject = 'You have been placed on probation';
+				$body    = $helper->fetch_setting('email_probation');
+
+				$user_email = $db->do_select("
+					SELECT email
+					FROM  users
+					WHERE guid = '$guid'
+				")[0]['email'] ?? '';
+
+				elog($user_email);
+
+				if ($body && $user_email) {
+					$helper->schedule_email(
+						'user-alert',
+						$user_email,
+						$subject,
+						$body
+					);
+				}
+			}
+		}
 	}
 }

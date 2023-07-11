@@ -65,6 +65,7 @@ define('ADMIN_EMAIL',     getenv('ADMIN_EMAIL'));
 define('MASTER_KEY',      getenv('MASTER_KEY'));
 define('CRON_TOKEN',      getenv('CRON_TOKEN'));
 define('DEV_MODE',        (bool)(getenv('DEV_MODE')));
+define('DOCKER_BUILD',    (bool)(int)getenv('DOCKER_BUILD'));
 define('NODE_IP',         getenv('NODE_IP'));
 define('BACKUP_NODE_IP',  getenv('BACKUP_NODE_IP'));
 define('S3BUCKET',        getenv('S3BUCKET'));

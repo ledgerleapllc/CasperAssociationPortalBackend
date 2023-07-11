@@ -29,6 +29,7 @@ class AdminGetEmailerTriggers extends Endpoints {
 		$email_vote_reminder    = $helper->fetch_setting('email_vote_reminder');
 		$email_probation        = $helper->fetch_setting('email_probation');
 		$email_revoked          = $helper->fetch_setting('email_revoked');
+		$email_warning          = $helper->fetch_setting('email_warning');
 
 		$enabled_letter_uploaded  = $helper->fetch_setting('enabled_letter_uploaded');
 		$enabled_kyc_needs_review = $helper->fetch_setting('enabled_kyc_needs_review');
@@ -42,6 +43,7 @@ class AdminGetEmailerTriggers extends Endpoints {
 		$enabled_vote_reminder    = $helper->fetch_setting('enabled_vote_reminder');
 		$enabled_probation        = $helper->fetch_setting('enabled_probation');
 		$enabled_revoked          = $helper->fetch_setting('enabled_revoked');
+		$enabled_warning          = $helper->fetch_setting('enabled_warning');
 		$reinstatement_contact    = $helper->fetch_setting('reinstatement_contact');
 
 		$triggers = array(
@@ -57,6 +59,7 @@ class AdminGetEmailerTriggers extends Endpoints {
 			"email_vote_reminder"      => $email_vote_reminder,
 			"email_probation"          => $email_probation,
 			"email_revoked"            => $email_revoked,
+			"email_warning"            => $email_warning,
 
 			"enabled_letter_uploaded"  => $enabled_letter_uploaded,
 			"enabled_kyc_needs_review" => $enabled_kyc_needs_review,
@@ -70,6 +73,7 @@ class AdminGetEmailerTriggers extends Endpoints {
 			"enabled_vote_reminder"    => $enabled_vote_reminder,
 			"enabled_probation"        => $enabled_probation,
 			"enabled_revoked"          => $enabled_revoked,
+			"enabled_warning"          => $enabled_warning,
 
 			"reinstatement_contact"    => $reinstatement_contact
 		);

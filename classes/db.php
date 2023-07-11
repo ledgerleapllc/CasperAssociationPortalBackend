@@ -928,6 +928,19 @@ class DB {
 				),
 				"insert_records"  => array()
 			),
+			"warning_notifications"=> array(
+				"fields"          => array(
+					"guid"        => array(
+						"type"    => "varchar(36)",
+						"default" => "NOT NULL"
+					),
+					"sent_at"     => array(
+						"type"    => "timestamp",
+						"default" => "NULL DEFAULT NULL"
+					),
+				),
+				"insert_records"  => array()
+			),
 			"user_nodes"          => array(
 				"fields"          => array(
 					"guid"        => array(
@@ -1669,6 +1682,32 @@ class DB {
 					"decision"    => array(
 						"type"    => "varchar(255)",
 						"default" => ""
+					)
+				),
+				"primary"         => "id",
+				"insert_records"  => array()
+			),
+			"probations"          => array(
+				"fields"          => array(
+					"id"          => array(
+						"type"    => "int",
+						"default" => "NOT NULL AUTO_INCREMENT"
+					),
+					"guid"        => array(
+						"type"    => "varchar(36)",
+						"default" => "NOT NULL",
+					),
+					"public_key"  => array(
+						"type"    => "varchar(70)",
+						"default" => "NOT NULL"
+					),
+					"created_at"  => array(
+						"type"    => "timestamp",
+						"default" => "NULL DEFAULT NULL"
+					),
+					"updated_at"  => array(
+						"type"    => "timestamp",
+						"default" => "NULL DEFAULT NULL"
 					)
 				),
 				"primary"         => "id",
