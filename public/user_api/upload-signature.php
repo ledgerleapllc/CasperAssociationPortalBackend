@@ -103,9 +103,9 @@ class UserUploadSignature extends Endpoints {
 		if (!$VERIFIED) {
 			_exit(
 				'error',
-				'Signature file is failed to verify',
+				'Signature file failed to verify',
 				400,
-				'Signature file is failed to verify'
+				'Signature file failed to verify'
 			);
 		}
 
