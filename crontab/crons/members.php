@@ -258,44 +258,45 @@ foreach ($nodes as $node) {
 			AND   public_key = '$public_key'
 		")[0]['created_at'] ?? '';
 
+		// pre-calc our delta for either contingency
+		$diff         = time() - strtotime($probation_at.' UTC');
+		$delta        = $correction_time - $diff;
+		$delta        = $delta < 0 ? 0 : $delta;
+		$time_left    = $helper->get_timedelta($delta);
+		$time_left_ux = '';
+
+		// format time left
+		$split    = explode(':', $time_left);
+		$s_day    = (int)($split[0] ?? '');
+		$s_hour   = (int)($split[1] ?? '');
+		$s_minute = (int)($split[2] ?? '');
+
+		if ($s_minute > 0) {
+			$time_left_ux = $s_minute.' minute';
+
+			if ($s_minute != 1) {
+				$time_left_ux .= 's';
+			}
+		}
+
+		if ($s_hour > 0) {
+			$time_left_ux = $s_hour.' hour';
+
+			if ($s_hour != 1) {
+				$time_left_ux .= 's';
+			}
+		}
+
+		if ($s_day > 0) {
+			$time_left_ux = $s_day.' day';
+
+			if ($s_day != 1) {
+				$time_left_ux .= 's';
+			}
+		}
+
 		// already in probation countdown to suspension
 		if ($probation_at) {
-			$diff         = time() - strtotime($probation_at.' UTC');
-			$delta        = $correction_time - $diff;
-			$delta        = $delta < 0 ? 0 : $delta;
-			$time_left    = $helper->get_timedelta($delta);
-			$time_left_ux = '';
-
-			// format time left
-			$split    = explode(':', $time_left);
-			$s_day    = (int)($split[0] ?? '');
-			$s_hour   = (int)($split[1] ?? '');
-			$s_minute = (int)($split[2] ?? '');
-
-			if ($s_minute > 0) {
-				$time_left_ux = $s_minute.' minute';
-
-				if ($s_minute != 1) {
-					$time_left_ux .= 's';
-				}
-			}
-
-			if ($s_hour > 0) {
-				$time_left_ux = $s_hour.' hour';
-
-				if ($s_hour != 1) {
-					$time_left_ux .= 's';
-				}
-			}
-
-			if ($s_day > 0) {
-				$time_left_ux = $s_day.' day';
-
-				if ($s_day != 1) {
-					$time_left_ux .= 's';
-				}
-			}
-
 			// DROP INTO SUSPENSION IF TIME IS UP
 			if ($delta == 0) {
 				$db->do_query("
