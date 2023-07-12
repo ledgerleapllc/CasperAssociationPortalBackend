@@ -24,9 +24,9 @@ class UserGetVoteEligibility extends Endpoints {
 		// define nodes and return object
 		$user_nodes = $db->do_select("
 			SELECT public_key
-			FROM user_nodes
+			FROM  user_nodes
 			WHERE guid = '$user_guid'
-			AND verified IS NOT NULL
+			AND   verified IS NOT NULL
 		");
 
 		$user_nodes = $user_nodes ?? array();
