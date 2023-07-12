@@ -96,8 +96,7 @@ class AdminUploadTerms extends Endpoints {
 			'Bucket'      => S3BUCKET,
 			'Key'         => 'documents/'.$file_name,
 			'SourceFile'  => $doc,
-			'ContentType' => $mime_type,
-			'x-amz-acl'   => 'public-read'
+			'ContentType' => $mime_type
 		]);
 
 		$ObjectURL = $s3result['ObjectURL'] ?? FRONTEND_URL.'/not-found';
