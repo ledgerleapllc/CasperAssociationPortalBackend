@@ -96,7 +96,8 @@ class AdminUploadTerms extends Endpoints {
 			'Bucket'      => S3BUCKET,
 			'Key'         => 'documents/'.$file_name,
 			'SourceFile'  => $doc,
-			'ContentType' => $mime_type
+			'ContentType' => $mime_type,
+			'x-amz-acl'   => 'public-read'
 		]);
 
 		$ObjectURL = $s3result['ObjectURL'] ?? FRONTEND_URL.'/not-found';
@@ -104,6 +105,8 @@ class AdminUploadTerms extends Endpoints {
 		$helper->apply_setting('esign_doc', $ObjectURL);
 
 		// also save clone for cors pdf embedder
+		//// no longer cloning to /public/documents
+		/*
 		$content = file_get_contents($doc);
 
 		try {
@@ -114,6 +117,7 @@ class AdminUploadTerms extends Endpoints {
 		} catch (Exception $e) {
 			elog('Admin denied access to cloning Terms of Service document to the cors dir - public/documents. terms-of-service public link is broken.');
 		}
+		*/
 
 		_exit(
 			'success',
