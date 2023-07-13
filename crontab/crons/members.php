@@ -170,7 +170,8 @@ foreach ($nodes as $node) {
 		// clear pre-existing warning_notifications
 		$db->do_query("
 			DELETE FROM warning_notifications
-			WHERE guid = '$guid'
+			WHERE guid       = '$guid'
+			AND   public_key = '$public_key'
 		");
 
 		// clear pre-existing probations
@@ -202,16 +203,19 @@ foreach ($nodes as $node) {
 		$notified = $db->do_select("
 			SELECT *
 			FROM  warning_notifications
-			WHERE guid = '$guid'
+			WHERE guid       = '$guid'
+			AND   public_key = '$public_key'
 		");
 
 		if (!$notified) {
 			$db->do_query("
 				INSERT INTO warning_notifications (
 					guid,
+					public_key,
 					sent_at
 				) VALUES (
 					'$guid',
+					'$public_key',
 					'$now'
 				)
 			");
