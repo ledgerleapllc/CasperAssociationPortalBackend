@@ -934,6 +934,10 @@ class DB {
 						"type"    => "varchar(36)",
 						"default" => "NOT NULL"
 					),
+					"public_key"  => array(
+						"type"    => "varchar(70)",
+						"default" => "NOT NULL"
+					),
 					"sent_at"     => array(
 						"type"    => "timestamp",
 						"default" => "NULL DEFAULT NULL"
