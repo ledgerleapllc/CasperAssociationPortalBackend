@@ -152,7 +152,7 @@ class Suspensions {
 
 		$reinstatable = (bool)($reinstatable[0]['reinstatable'] ?? 0);
 
-		return false;
+		return $reinstatable;
 	}
 
 	/**
