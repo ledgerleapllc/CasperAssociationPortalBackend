@@ -31,19 +31,19 @@ class AdminGetEmailerTriggers extends Endpoints {
 		$email_revoked          = $helper->fetch_setting('email_revoked');
 		$email_warning          = $helper->fetch_setting('email_warning');
 
-		$enabled_letter_uploaded  = $helper->fetch_setting('enabled_letter_uploaded');
-		$enabled_kyc_needs_review = $helper->fetch_setting('enabled_kyc_needs_review');
-		$enabled_welcome          = $helper->fetch_setting('enabled_welcome');
-		$enabled_node_verified    = $helper->fetch_setting('enabled_node_verified');
-		$enabled_letter_received  = $helper->fetch_setting('enabled_letter_received');
-		$enabled_letter_approved  = $helper->fetch_setting('enabled_letter_approved');
-		$enabled_letter_denied    = $helper->fetch_setting('enabled_letter_denied');
-		$enabled_new_perk         = $helper->fetch_setting('enabled_new_perk');
-		$enabled_vote_started     = $helper->fetch_setting('enabled_vote_started');
-		$enabled_vote_reminder    = $helper->fetch_setting('enabled_vote_reminder');
-		$enabled_probation        = $helper->fetch_setting('enabled_probation');
-		$enabled_revoked          = $helper->fetch_setting('enabled_revoked');
-		$enabled_warning          = $helper->fetch_setting('enabled_warning');
+		$enabled_letter_uploaded  = (int)$helper->fetch_setting('enabled_letter_uploaded');
+		$enabled_kyc_needs_review = (int)$helper->fetch_setting('enabled_kyc_needs_review');
+		$enabled_welcome          = (int)$helper->fetch_setting('enabled_welcome');
+		$enabled_node_verified    = (int)$helper->fetch_setting('enabled_node_verified');
+		$enabled_letter_received  = (int)$helper->fetch_setting('enabled_letter_received');
+		$enabled_letter_approved  = (int)$helper->fetch_setting('enabled_letter_approved');
+		$enabled_letter_denied    = (int)$helper->fetch_setting('enabled_letter_denied');
+		$enabled_new_perk         = (int)$helper->fetch_setting('enabled_new_perk');
+		$enabled_vote_started     = (int)$helper->fetch_setting('enabled_vote_started');
+		$enabled_vote_reminder    = (int)$helper->fetch_setting('enabled_vote_reminder');
+		$enabled_probation        = (int)$helper->fetch_setting('enabled_probation');
+		$enabled_revoked          = (int)$helper->fetch_setting('enabled_revoked');
+		$enabled_warning          = (int)$helper->fetch_setting('enabled_warning');
 		$reinstatement_contact    = $helper->fetch_setting('reinstatement_contact');
 
 		$triggers = array(
