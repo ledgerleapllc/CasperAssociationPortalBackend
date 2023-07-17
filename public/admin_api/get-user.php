@@ -75,7 +75,7 @@ class AdminGetUser extends Endpoints {
 		$sus = $suspensions->is_suspended($guid);
 
 		if ($sus) {
-			$user["membership_status"] = "Suspended";
+			$user["membership_status"] = "Revoked";
 		} else {
 			$user["membership_status"] = $kyc["kyc_status"];
 		}
