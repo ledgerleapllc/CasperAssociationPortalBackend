@@ -138,18 +138,27 @@ foreach ($nodes as $node) {
 			AND   era_id     = $current_era_id
 		");
 
-		// insert into suspensions
-		$db->do_query("
-			INSERT INTO suspensions (
-				guid,
-				created_at,
-				reason
-			) VALUES (
-				'$guid',
-				'$now',
-				'redmarks'
-			)
+		// check and insert suspension
+		$sus_check = $db->do_select("
+			SELECT guid
+			FROM  suspensions
+			WHERE guid       = '$guid'
+			AND   reinstated = 0
 		");
+
+		if (!$sus_check) {
+			$db->do_query("
+				INSERT INTO suspensions (
+					guid,
+					created_at,
+					reason
+				) VALUES (
+					'$guid',
+					'$now',
+					'redmarks'
+				)
+			");
+		}
 		continue;
 	}
 
@@ -320,18 +329,27 @@ foreach ($nodes as $node) {
 					AND   era_id     = $current_era_id
 				");
 
-				// insert into suspensions
-				$db->do_query("
-					INSERT INTO suspensions (
-						guid,
-						created_at,
-						reason
-					) VALUES (
-						'$guid',
-						'$now',
-						'uptime'
-					)
+				// check and insert suspension
+				$sus_check = $db->do_select("
+					SELECT guid
+					FROM  suspensions
+					WHERE guid       = '$guid'
+					AND   reinstated = 0
 				");
+
+				if (!$sus_check) {
+					$db->do_query("
+						INSERT INTO suspensions (
+							guid,
+							created_at,
+							reason
+						) VALUES (
+							'$guid',
+							'$now',
+							'uptime'
+						)
+					");
+				}
 				continue;
 			}
 
