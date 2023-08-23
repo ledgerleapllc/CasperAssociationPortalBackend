@@ -44,31 +44,35 @@ class AdminGetGlobalSettings extends Endpoints {
 		// terms
 		$esign_doc       = $helper->fetch_setting('esign_doc');
 
+		$detail = array(
+			'uptime_warning'           => $uptime_warning,
+			'uptime_probation'         => $uptime_probation,
+			'uptime_correction_units'  => $uptime_correction_units,
+			'uptime_correction_metric' => $uptime_correction_metric,
+
+			'eras_required_to_vote'    => $eras_required_to_vote,
+			'eras_since_redmark'       => $eras_since_redmark,
+
+			'redmark_revoke'           => $redmark_revoke,
+			'redmark_calc_size'        => $redmark_calc_size,
+
+			'kyc_lock_nodes'           => $kyc_lock_nodes,
+			'kyc_lock_discs'           => $kyc_lock_discs,
+			'kyc_lock_votes'           => $kyc_lock_votes,
+			'kyc_lock_perks'           => $kyc_lock_perks,
+			'prob_lock_nodes'          => $prob_lock_nodes,
+			'prob_lock_discs'          => $prob_lock_discs,
+			'prob_lock_votes'          => $prob_lock_votes,
+			'prob_lock_perks'          => $prob_lock_perks,
+
+			'esign_doc'                => $esign_doc
+		);
+
+		elog($detail);
+
 		_exit(
 			'success',
-			array(
-				'uptime_warning'           => $uptime_warning,
-				'uptime_probation'         => $uptime_probation,
-				'uptime_correction_units'  => $uptime_correction_units,
-				'uptime_correction_metric' => $uptime_correction_metric,
-
-				'eras_required_to_vote'    => $eras_required_to_vote,
-				'eras_since_redmark'       => $eras_since_redmark,
-
-				'redmark_revoke'           => $redmark_revoke,
-				'redmark_calc_size'        => $redmark_calc_size,
-
-				'kyc_lock_nodes'           => $kyc_lock_nodes,
-				'kyc_lock_discs'           => $kyc_lock_discs,
-				'kyc_lock_votes'           => $kyc_lock_votes,
-				'kyc_lock_perks'           => $kyc_lock_perks,
-				'prob_lock_nodes'          => $prob_lock_nodes,
-				'prob_lock_discs'          => $prob_lock_discs,
-				'prob_lock_votes'          => $prob_lock_votes,
-				'prob_lock_perks'          => $prob_lock_perks,
-
-				'esign_doc'                => $esign_doc
-			)
+			$detail
 		);
 	}
 }
