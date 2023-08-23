@@ -23,7 +23,7 @@ class AdminGetContactRecipients extends Endpoints {
 			email,
 			created_at
 			FROM contact_recipients
-		");
+		") ?? array();
 
 		_exit(
 			'success',
