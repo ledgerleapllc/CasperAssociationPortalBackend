@@ -1140,6 +1140,11 @@ class Helper {
 
 		$value = self::aes_decrypt($value);
 
+		// verify valid string
+		if (!preg_match('//u', $value)) {
+			$value = '';
+		}
+
 		if ($json) {
 			try {
 				$value = json_decode($value);

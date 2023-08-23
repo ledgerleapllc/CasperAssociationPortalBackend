@@ -68,7 +68,7 @@ class AdminGetGlobalSettings extends Endpoints {
 			'esign_doc'                => $esign_doc
 		);
 
-		elog($detail);
+		// elog($detail);
 
 		_exit(
 			'success',
