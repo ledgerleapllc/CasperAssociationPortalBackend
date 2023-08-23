@@ -23,7 +23,7 @@ class AdminGetEmailerAdmins extends Endpoints {
 			email,
 			created_at
 			FROM emailer_admins
-		");
+		") ?? array();
 
 		_exit(
 			'success',
