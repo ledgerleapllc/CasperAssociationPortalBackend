@@ -77,7 +77,7 @@ class AdminGetEmailerTriggers extends Endpoints {
 
 			"reinstatement_contact"    => $reinstatement_contact
 		);
-
+elog($triggers);
 		_exit(
 			'success',
 			$triggers
